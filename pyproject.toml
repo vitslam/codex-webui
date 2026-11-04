@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lazyfish-web"
+version = "0.5.0a6"
+description = "A lightweight, self-hosted web companion for an existing Codex CLI installation."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Lazyfish contributors"}]
+dependencies = []
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Environment :: Web Environment",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development",
+]
+
+[project.scripts]
+lazyfish = "lazyfish.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"lazyfish.web" = ["themes.json", "static/*.html", "static/*.css", "static/*.js"]

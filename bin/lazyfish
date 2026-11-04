@@ -1,0 +1,10 @@
+#!/bin/sh
+# Public command entry; the installer keeps Python isolated internally.
+set -eu
+project_dir="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+venv_dir="${VENV_DIR:-$project_dir/.venv}"
+if [ ! -x "$venv_dir/bin/lazyfish" ]; then
+    echo 'Run bash scripts/install.sh first.' >&2
+    exit 1
+fi
+exec "$venv_dir/bin/lazyfish" "$@"

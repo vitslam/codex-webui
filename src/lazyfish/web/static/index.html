@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfc">
+  <title>Lazyfish · Codex</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%2330312c'/%3E%3Cpath d='m8 9 7 7-7 7m9 0h7' fill='none' stroke='%23faf9f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/themes.css">
+  <link rel="stylesheet" href="/app.css">
+  <script src="/themes.js"></script>
+  <script defer src="/markdown.js"></script>
+  <script defer src="/scroll.js"></script>
+  <script defer src="/shortcuts.js"></script>
+  <script defer src="/run-settings.js"></script>
+  <script defer src="/panels.js"></script>
+  <script defer src="/skills.js"></script>
+  <script defer src="/images.js"></script>
+  <script defer src="/preferences.js"></script>
+  <script defer src="/activity.js"></script>
+  <script defer src="/features.js"></script>
+  <script defer src="/reference-i18n.js"></script>
+  <script defer src="/steps.js"></script>
+  <script defer src="/changes.js"></script>
+  <script defer src="/artifacts.js"></script>
+  <script defer src="/message-view.js"></script>
+  <script defer src="/composer-dock.js"></script>
+  <script defer src="/sidebar-order.js"></script>
+  <script defer src="/experience.js"></script>
+  <script defer src="/worker-monitor.js"></script>
+  <script defer src="/diagnostics.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body>
+<svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m6 7 5 5-5 5m7 0h5"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l8-8a2 2 0 0 1 3 3l-8 8a1 1 0 0 1-1.5-1.5L12 6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M15 9V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h4"/></symbol>
+  <symbol id="i-fork" viewBox="0 0 24 24"><circle cx="6" cy="4" r="2"/><circle cx="18" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6 6v3a6 6 0 0 0 12 0V6M12 15v3"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 4 8 8 10 4-2 8-5 8-10V6Z"/><path d="m8.5 11.5 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 13.2A8.6 8.6 0 0 1 10.8 3.5a8.6 8.6 0 1 0 9.7 9.7Z"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="m13.5 2-9 12h7l-1 8 9-12h-7Z"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M5.6 18.4a9 9 0 1 1 12.8 0M12 12l4.5-4.5"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M9 12h12m-5-5 5 5-5 5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="m16 3 5 5-4 1-4 4-1 5-6-6 5-1 4-4ZM9 15l-6 6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5m6-5v5M6 8h12v3a6 6 0 0 1-12 0Zm6 9v4"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M9.5 3h5l.5 2 2 1 2-.5 2.5 4L20 11v2l1.5 1.5-2.5 4-2-.5-2 1-.5 2h-5L9 19l-2-1-2 .5-2.5-4L4 13v-2L2.5 9.5l2.5-4L7 6l2-1Z"/><circle cx="12" cy="12" r="3"/></symbol>
+</svg>
+<a class="skip-link" href="#prompt" data-text="skipToComposer">Skip to message</a>
+<div class="utility-actions">
+  <button id="theme-toggle" class="icon-button theme-toggle" type="button" data-label="toggleTheme"><svg class="icon theme-sun" aria-hidden="true"><use href="#i-sun"/></svg><svg class="icon theme-moon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+</div>
+<main id="login-screen" class="login-page" hidden>
+  <a class="login-brand brand" href="/"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg></span><span>lazyfish<span class="brand-dot">.</span></span></a>
+  <section class="login-card" id="login-panel">
+    <div class="assistant-avatar login-mark" aria-hidden="true"><svg class="icon"><use href="#i-terminal"/></svg></div>
+    <p class="eyebrow" data-text="eyebrow">YOUR LOCAL CODEX</p>
+    <h1 data-text="welcomeBack">Welcome back.</h1>
+    <form id="login"><label for="token" data-text="token" data-title="tokenHelp">Web sign-in token</label><input id="token" name="token" aria-describedby="token-help" data-title="tokenHelp" type="password" required autocomplete="off" spellcheck="false" maxlength="4096"><button type="submit" class="login-submit"><span data-text="connect">Connect</span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></form>
+    <p id="token-help" data-text="tokenHelp" hidden>Run lazyfish token on the server, then paste the Web token into this field. This is separate from your OpenAI credentials.</p>
+    <p id="message" role="status" aria-live="polite"></p>
+  </section>
+  <p class="login-bottom">LAZYFISH <span aria-hidden="true">/</span> A LITTLE SPACE TO BUILD.</p>
+</main>
+<div id="app" hidden>
+  <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" data-label="closeSidebar" tabindex="-1" hidden></button>
+  <aside id="sidebar" class="sidebar" data-label="conversations">
+    <div class="sidebar-header"><a class="brand" href="/"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg></span><span>lazyfish<span class="brand-dot">.</span></span></a><button id="search-toggle" class="icon-button sidebar-search" type="button" data-label="searchConversations"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></button><button class="icon-button sidebar-close" id="sidebar-close" type="button" data-label="closeSidebar"><svg class="icon" aria-hidden="true"><use href="#i-panel"/></svg></button></div>
+    <nav id="conversation-list" data-label="conversations"></nav>
+    <button id="more-conversations" class="history-more" type="button" data-text="loadMore" hidden>Load more</button>
+    <div class="sidebar-bottom">
+      <div id="workspace-menu" class="avatar-menu" hidden data-label="settings">
+        <button id="account-toggle" class="menu-item account-menu-identity" data-native-page="account" type="button"><span class="avatar" id="account-avatar">LF</span><span><strong id="account-name" data-text="account">Account</strong><small id="account-plan">Codex CLI</small></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+        <div class="menu-divider"></div>
+        <button id="usage-toggle" class="menu-item" data-native-page="usage" type="button"><svg class="icon"><use href="#i-gauge"/></svg><span data-text="usage">Weekly usage</span><span id="usage-remaining" class="usage-remaining"></span></button>
+        <button id="settings-toggle" class="menu-item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg><span data-text="settings">Settings</span></button>
+        <button id="skills-toggle" class="menu-item" data-native-page="skills" type="button"><svg class="icon"><use href="#i-bolt"/></svg><span data-text="skills">Skills</span></button>
+        <button id="connections-toggle" class="menu-item" data-native-page="connections" type="button"><svg class="icon"><use href="#i-plug"/></svg><span data-text="connections">Tools and connections</span></button>
+        <button id="diagnostics-toggle" class="menu-item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-pulse"/></svg><span data-text="diagnostics">Installation checks</span></button>
+        <div class="menu-divider"></div>
+        <button id="logout" class="menu-item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg><span data-text="logout">Disconnect</span></button>
+      </div>
+      <button id="new-chat" class="new-chat" type="button"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg><span data-text="newChat">New chat</span></button>
+      <button id="menu-toggle" class="icon-button sidebar-settings" type="button" data-label="settings" aria-expanded="false" aria-controls="workspace-menu"><svg class="icon" aria-hidden="true"><use href="#i-gear"/></svg></button>
+    </div>
+  </aside>
+  <main id="chat" class="workspace is-empty">
+    <header class="topbar"><div class="topbar-leading"><button id="sidebar-toggle" class="icon-button" type="button" data-label="sidebar" aria-controls="sidebar" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-panel"/></svg></button><span class="workspace-name">Codex</span><span class="topbar-separator" aria-hidden="true">/</span><h1 id="conversation-title" class="topbar-label"></h1></div><span id="connection-state" role="status"></span></header>
+    <div id="messages" class="thread-scroll" tabindex="0" data-label="messages"><div id="transcript" class="timeline"><button id="older" class="history-more" type="button" data-text="older" hidden>Earlier messages</button><div id="empty" class="welcome"><h1 data-text="newTitle">What would you like to do?</h1><p class="welcome-description" data-text="emptyHelp">Write code, solve problems, or explore a new idea.</p></div><button id="newer" class="history-more" type="button" data-text="newer" hidden>Newer messages</button></div></div>
+    <div class="composer-dock">
+      <button id="latest" class="history-more latest" type="button" data-text="latest" hidden>Jump to latest ↓</button>
+      <div id="notice" role="status" aria-live="polite"></div>
+      <button id="composer-handle" class="composer-handle" type="button" aria-controls="composer" data-label="ui.show.message.composer" hidden></button>
+      <form id="composer" class="composer"><label class="sr-only" for="prompt" data-text="message">Message</label><div id="skill-picker" class="skill-picker" hidden></div><textarea id="prompt" rows="1" enterkeyhint="enter" maxlength="64000" data-placeholder="prompt"></textarea><div id="selected-skills" hidden></div><div id="image-previews" class="image-list"></div><p id="upload-state" class="settings-hint" role="status" hidden></p>
+        <div class="composer-toolbar"><div class="composer-actions">
+          <details class="attachment-settings" id="attachment-settings">
+            <summary class="icon-button attach-button" title="添加" aria-label="添加" data-title="ui.add" data-label="ui.add"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></summary>
+            <div class="attachment-panel">
+              <button type="button" id="add-image"><svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg><span data-text="ui.images">图片</span></button>
+              <button type="button" id="add-skill"><svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg><span data-text="skills.add">添加技能</span></button>
+              <button type="button" id="edit-workdir" aria-haspopup="dialog"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span data-text="ui.working.directory">工作目录</span><span id="workdir-preview" class="directory-preview"></span></button>
+              <input id="workdir" type="hidden">
+            </div>
+          </details><input id="image-input" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
+          <details class="permission-settings" id="permission-settings">
+            <summary class="icon-button permission-toggle" title="权限模式" aria-label="权限模式" data-title="ui.permissions" data-label="ui.permissions"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></summary>
+            <div class="permission-panel" role="group" aria-label="权限模式" data-label="ui.permissions">
+              <p class="attachment-heading"><span data-text="ui.permissions">权限模式</span></p>
+              <button type="button" data-permission="ask" aria-pressed="false"><span><span data-text="ui.ask.for.approval">请求批准</span><small><span data-text="ui.work.in.the.workspace.asking.for.approval.when.needed">在工作区内执行，需要时由你批准</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <button type="button" data-permission="auto_review" aria-pressed="false"><span><span data-text="ui.auto.review">帮我批准</span><small><span data-text="ui.codex.automatically.reviews.permission.requests">由 Codex 自动审查权限请求</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <button type="button" data-permission="full_access" aria-pressed="true"><span><span data-text="ui.full.access">完全访问</span><small><span data-text="ui.unrestricted.file.and.network.access.without.approval">不限制文件和网络访问，无需批准</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <button type="button" data-permission="read_only" aria-pressed="false"><span><span data-text="ui.read.only">只读</span><small><span data-text="ui.read.only.by.default.additional.operations.require.approval">默认仅查看，额外操作需要批准</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <button type="button" data-permission="custom" aria-pressed="false"><span><span data-text="ui.custom.configuration">自定义配置</span><small><span data-text="ui.use.the.permission.configuration.on.the.codex.machine">使用 Codex 所在机器的权限配置</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <p class="permission-hint" id="permission-hint"><span data-text="ui.applies.to.subsequent.tasks">仅对后续任务生效</span></p>
+            </div>
+          </details>
+          <span class="composer-spacer" aria-hidden="true"></span>
+<button type="button" id="plan-toggle" class="plan-toggle" aria-label="plan" aria-pressed="false" title="切换到计划模式" hidden data-title="ui.switch.to.plan.mode">plan</button>
+          <details class="context-settings" id="context-settings">
+            <summary class="context-toggle" aria-label="上下文用量待更新" data-label="context.pending">
+              <svg class="context-ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle id="context-ring-value" cx="12" cy="12" r="9" pathLength="100" stroke-dasharray="0 100"/></svg><span id="context-preview" class="context-tooltip" aria-hidden="true"><span data-text="ui.pending.update">待更新</span></span>
+            </summary>
+            <div class="context-panel"><div class="context-heading"><span><span data-text="ui.context">上下文</span></span><span id="context-percent"><span data-text="ui.pending.update">待更新</span></span></div><progress id="context-meter" max="100" value="0" aria-label="上下文用量" data-label="ui.context.usage"></progress><p id="context-detail" class="settings-hint"></p><button id="compact-context" type="button" disabled><span data-text="ui.compact.context">压缩上下文</span></button></div>
+          </details>
+          <details id="model-options" class="composer-settings"><summary data-label="modelOptions"><span class="run-preview"><svg class="icon run-speed" aria-hidden="true"><use href="#i-bolt"/></svg><span id="model-preview">Codex</span><span id="effort-preview"></span></span><span class="run-settings-prompt" data-text="chooseEffort">Reasoning effort</span><svg class="icon run-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="settings-panel">
+              <div id="dashboard-controls"><div class="dashboard-heading"><button type="button" id="fast-toggle" data-label="fastMode" class="icon-button fast-toggle" aria-pressed="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="ultra-bolt-gradient" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#7945e8"/><stop offset=".25" stop-color="#537bff"/><stop offset=".5" stop-color="#d7dce7"/><stop offset=".75" stop-color="#9a63f5"/><stop offset="1" stop-color="#7945e8"/></linearGradient></defs><use href="#i-bolt"/></svg></button><div class="dashboard-current"><output id="effort-name"></output><button id="model-toggle" class="model-control" type="button" aria-expanded="false" aria-controls="model-picker" data-label="chooseModel"><span id="model-label"></span><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></button></div><button id="effort-reset" class="icon-button effort-reset" type="button" data-label="resetEffort"><svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg></button></div>
+              <div class="effort-slider"><div class="effort-track" aria-hidden="true"><div class="effort-particles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div id="effort-ticks" class="effort-ticks"></div></div><div class="effort-handle" aria-hidden="true"><span class="effort-thumb"></span></div><input id="effort-slider" type="range" min="0" max="5" value="1" step="1" data-label="effort"></div>
+              </div>
+              <div id="model-picker" hidden><p class="model-picker-heading" data-text="chooseModel">Choose model</p><div id="model-choices" class="model-options" role="listbox" data-label="model"></div><div class="model-divider"></div><label class="model-picker-heading" for="custom-model" data-text="customModel">Custom model ID</label><div class="custom-model-row"><input id="custom-model" type="text" maxlength="120" autocomplete="off" spellcheck="false" data-placeholder="modelId"><button id="apply-model" class="icon-button" type="button" data-label="applyModel"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button></div></div>
+              <input id="model" type="hidden"><select id="effort" hidden><option value=""></option><option value="none">none</option><option value="minimal">minimal</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max</option><option value="ultra">ultra</option></select>
+            </div></details>
+        </div><button id="cancel" class="stop-button" type="button" data-label="stop" hidden><span aria-hidden="true"></span></button><button id="send" class="send-button" type="submit" data-label="send"><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div>
+      </form>
+    </div>
+  </main>
+</div>
+<div id="shortcut-hints" class="shortcut-hints-panel" role="region" data-label="switchConversation" hidden></div>
+<dialog id="account-dialog" aria-labelledby="account-dialog-title"><div class="account-shell"><nav class="account-nav" data-label="settingsNavigation"><span class="account-nav-brand">lazyfish<span>.</span></span><button type="button" data-account-tab="account" data-text="account">Account</button><button type="button" data-account-tab="usage" data-text="usage">Weekly usage</button><button type="button" data-account-tab="settings" data-text="settings">Settings</button><button type="button" data-account-tab="skills" data-text="skills">Skills</button><button type="button" data-account-tab="connections" data-text="connections">Tools and connections</button><button type="button" data-account-tab="diagnostics" data-text="diagnostics">Installation checks</button><button type="button" data-account-tab="installation" data-text="installation">Installation</button></nav><section class="account-main"><header class="account-toolbar"><h2 id="account-dialog-title"></h2><div><button id="account-reload" class="icon-button" type="button" data-label="refresh"><svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg></button><button id="account-close" class="icon-button" type="button" data-label="close">×</button></div></header><div class="account-content"><section id="native-page" hidden aria-live="polite"></section>
+  <section id="settings" class="account-settings"><div class="account-section-heading"><h3 data-text="preferences">Preferences</h3><p class="account-note" data-text="preferencesHelp">Personalize this workspace in your browser.</p></div><div class="account-row"><label class="account-row-label" for="appearance" data-text="appearance">Appearance</label><select id="appearance"></select></div><div class="account-row"><label class="account-row-label" for="language" data-text="language">Language</label><select id="language"><option value="en">English</option><option value="zh">简体中文</option></select></div><div class="account-section-heading"><h3 data-text="keyboardShortcuts">Keyboard shortcuts</h3></div><div class="account-row"><label class="account-row-label" for="shortcut-prefix" data-text="shortcutPrefix">Switch conversation</label><select id="shortcut-prefix"><option value="ctrlShift">Control + Shift</option><option value="ctrl">Control</option><option value="metaAlt">Cmd + Option</option><option value="alt">Option / Alt</option><option value="altShift">Option / Alt + Shift</option><option value="ctrlAlt">Control + Option / Alt</option><option value="ctrlAltShift">Control + Option / Alt + Shift</option><option value="disabled" data-text="disabled">Disabled</option></select></div><p class="account-note" data-text="shortcutHelp"></p></section>
+  <section id="diagnostics" hidden><div class="account-section-heading"><h3 data-text="diagnostics">Installation checks</h3><p class="account-note" data-text="scope"></p></div><span id="readiness" class="badge"></span><dl id="details"></dl><ul id="checks"></ul></section>
+  <section id="installation" hidden>
+    <div class="account-section-heading"><h3 data-text="aboutLazyfish">About Lazyfish</h3></div>
+    <p class="account-note" data-text="nonAffiliation">Lazyfish is an independently developed third-party project. It is not affiliated with, sponsored by, or endorsed by OpenAI. OpenAI, Codex, ChatGPT, and other referenced trademarks belong to their respective owners.</p>
+    <p class="account-note" data-text="codexPathHelp"></p>
+    <a href="https://learn.chatgpt.com/docs/codex/cli" target="_blank" rel="noopener noreferrer" data-text="codexOfficial">Official Codex CLI installation documentation</a>
+    <div class="account-section-heading"><h3 data-text="installation">Installation</h3><p class="account-note" data-text="local"></p></div><div class="account-row"><span class="account-row-label" data-text="version">Lazyfish</span><span id="version" class="account-row-value"></span></div><div class="account-row"><span class="account-row-label" data-text="workspace">Workspace</span><span id="workspace-label" class="account-row-value"></span></div><div class="account-row"><span class="account-row-label" data-text="codexVersion">Codex CLI</span><span id="installation-codex" class="account-row-value"></span></div><p class="account-note" data-text="installationHelp"></p>
+  </section>
+</div></section></div></dialog>
+<dialog id="workdir-dialog" aria-labelledby="workdir-heading">
+  <form id="workdir-form" novalidate>
+    <h2 id="workdir-heading"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span data-text="ui.working.directory">工作目录</span></h2>
+    <label for="workdir-input" data-text="directory.path">目录路径</label>
+    <input id="workdir-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" aria-describedby="workdir-hint workdir-error">
+    <p id="workdir-hint" data-text="directory.hint">输入服务器上的绝对路径；留空使用默认工作目录。</p>
+    <p id="workdir-error" role="alert" hidden></p>
+    <div class="directory-actions"><button type="button" id="workdir-cancel" data-text="ui.cancel">取消</button><button type="submit" id="workdir-save" data-text="ui.save">保存</button></div>
+  </form>
+</dialog>
+<dialog id="search-dialog" aria-labelledby="search-title"><h2 id="search-title" class="sr-only" data-text="searchConversations">Search conversations</h2><form id="conversation-search-form" class="search-controls" role="search"><label class="search-field"><input id="conversation-search" type="text" maxlength="200" autocomplete="off" data-label="searchConversations" data-placeholder="searchByTitle"></label></form><div id="search-results" class="search-results" aria-live="polite"></div></dialog>
+<dialog id="question-dialog" aria-labelledby="question-heading" aria-describedby="question-hint">
+  <form id="question-form">
+    <div class="question-heading"><span class="question-mark" aria-hidden="true"><svg class="icon"><use href="#i-shield"/></svg></span><h2 id="question-heading"><span data-text="ui.codex.has.a.question">Codex 想了解你的选择</span></h2><button id="question-close" type="button" aria-label="关闭" data-label="dialog.close">×</button></div>
+    <p id="question-hint" class="meta"><span data-text="ui.codex.will.keep.working.while.you.consider.your.answer">你可以边考虑边选择，Codex 会继续处理任务。</span></p>
+    <div id="question-fields"></div>
+    <p id="question-status" role="status" aria-live="polite"></p>
+    <div class="question-actions"><button id="question-later" type="button"><span data-text="ui.not.now">暂不回答</span></button><button id="question-submit" type="submit"><span data-text="ui.submit.answer">提交回答</span></button></div>
+  </form>
+</dialog>
+</body>
+</html>

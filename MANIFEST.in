@@ -1,0 +1,9 @@
+include LICENSE README.md README.zh-CN.md AGENTS.md CONTRIBUTING.md SECURITY.md CHANGELOG.md THIRD_PARTY_NOTICES.md .env.example
+recursive-include docs *.md *.png
+recursive-include scripts *.sh
+recursive-include tests *.py
+recursive-include tests *.cjs
+recursive-include src/lazyfish/web/static *.html *.css *.js
+include src/lazyfish/web/themes.json
+
+include bin/lazyfish
