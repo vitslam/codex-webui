@@ -57,4 +57,16 @@ jobs:
           export LAZYFISH_BROWSER_MODULE="$RUNNER_TEMP/lazyfish-browser/node_modules/playwright"
           export LAZYFISH_BROWSER_EXECUTABLE="$(node -e 'console.log(require(process.env.LAZYFISH_BROWSER_MODULE).chromium.executablePath())')"
           export LAZYFISH_BROWSER_OUTPUT="$RUNNER_TEMP/lazyfish-browser/output"
-          python -m unittest discover -s tests -p test_browser.py -v
+          python -m unittest discover -s tests -p test_browser.py -v 2>&1 | tee "$LAZYFISH_BROWSER_OUTPUT/unittest.log"
+      - name: Report browser failure details
+        if: failure()
+        run: |
+          python - <<'PYTHON'
+          import os
+          from pathlib import Path
+          log = Path(os.environ['RUNNER_TEMP']) / 'lazyfish-browser/output/unittest.log'
+          if log.is_file():
+              text = log.read_text(errors='replace')[-24000:]
+              text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print('::error title=Browser regression details::' + text)
+          PYTHON
