@@ -16,7 +16,8 @@ const {chromium}=require(process.env.LAZYFISH_BROWSER_MODULE),f=JSON.parse(fs.re
    for(const size of [{width:1440,height:1000},{width:390,height:844}]){
     await page.setViewportSize(size);await page.evaluate(()=>document.body.classList.add('sidebar-hidden'));
     assert.equal(await page.locator('.composer-hint').count(),0);assert.equal(await prompt.getAttribute('rows'),'1');
-    await prompt.fill('');await prompt.click();assert.equal(await style(prompt,'outlineStyle'),'none');assert.equal(await style(prompt,'outlineWidth'),'0px');assert.ok(await prompt.evaluate(el=>document.activeElement===el));
+    // outline-style:none means no painted outline; Chromium may retain a nonzero computed width.
+    await prompt.fill('');await prompt.click();assert.equal(await style(prompt,'outlineStyle'),'none');assert.equal(await style(prompt,'boxShadow'),'none');assert.ok(await prompt.evaluate(el=>document.activeElement===el));
     assert.ok((await prompt.boundingBox()).height<48,'No extra two-row/min-height scaffold');
     const font=Number.parseFloat(await style(prompt,'fontSize')),line=Number.parseFloat(await style(prompt,'lineHeight'));assert.ok(Math.abs(line-font*(size.width<760?1.5:1.7))<.1,'Reference line-height survives the CSS cascade');
     await prompt.fill('Typing still works');await prompt.press('ArrowLeft');assert.equal(await style(prompt,'outlineStyle'),'none');assert.equal(await prompt.inputValue(),'Typing still works');

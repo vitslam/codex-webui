@@ -12,6 +12,11 @@ const {chromium}=require(process.env.LAZYFISH_BROWSER_MODULE),f=JSON.parse(fs.re
  async function panel(){await wake();if(await page.evaluate(()=>document.body.classList.contains('sidebar-hidden')))await page.locator('#sidebar-toggle').click();await page.locator('#menu-toggle').click();await page.locator('#settings-toggle').click();}
  async function close(){await page.locator('#account-close').click();}
  async function openProcess(job){const node=page.locator('.turn[data-job="'+job+'"] .execution-process');if(!await node.getAttribute('open')){if(!await node.evaluate(el=>el.open))await node.locator(':scope > summary').click();}await page.waitForFunction(job=>document.querySelector('.turn[data-job="'+job+'"] .execution-timeline')&&!document.querySelector('.turn[data-job="'+job+'"] .execution-timeline .meta'),job);return node;}
+ // A process shell exists before its deferred step response has rendered.
+ async function assertReasoning(process,count,message){
+   if(count)await process.locator('.reasoning-body').first().waitFor({state:'attached'});
+   assert.equal(await process.locator('.reasoning-body').count(),count,message);
+ }
  async function switchTo(id,collapsed){
    const state=await page.evaluate(id=>{window.switchAnimations=0;window.lastSwitch=loadConversation(id);const form=document.querySelector('#composer');return {hidden:form.hidden,inert:form.inert,animations:form.getAnimations().length};},id);
    assert.deepEqual(state,{hidden:collapsed,inert:collapsed,animations:0});
@@ -28,10 +33,12 @@ const {chromium}=require(process.env.LAZYFISH_BROWSER_MODULE),f=JSON.parse(fs.re
    await page.evaluate(()=>{window.savedStorageSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='lazyfish.preferences.v1')throw new Error('Storage disabled by fixture');return window.savedStorageSetItem.call(this,key,value);};});
    await page.locator('#show-reasoning').click();assert.equal(await page.locator('#show-reasoning').isChecked(),false);await page.getByText('Could not save preferences. Check your browser storage settings.',{exact:true}).waitFor();
    await page.evaluate(()=>Storage.prototype.setItem=window.savedStorageSetItem);await page.locator('#show-reasoning').check();await close();
-   main=await openProcess(f.jobs[0]);assert.equal(await main.locator('.reasoning-body').count(),1);only=await openProcess(f.only);assert.ok((await only.locator('.reasoning-body').textContent()).includes('Only saved summary'));
+   main=await openProcess(f.jobs[0]);await assertReasoning(main,1);only=await openProcess(f.only);await assertReasoning(only,1);assert.ok((await only.locator('.reasoning-body').textContent()).includes('Only saved summary'));
    assert.ok(!writes.slice(start).some(url=>/\/(turns|settings)$/.test(url)),'Display preferences do not send or change run settings');
-   await page.reload();await page.locator('.assistant-text').waitFor();main=await openProcess(f.jobs[0]);assert.equal(await main.locator('.reasoning-body').count(),1);
-   await page.evaluate(id=>loadConversation(id),f.chats[1]);await page.evaluate(id=>loadConversation(id),f.chats[0]);main=await openProcess(f.jobs[0]);assert.equal(await main.locator('.reasoning-body').count(),1,'Cached history uses current visibility');
+   // Exercise reload with a slow summary response, rather than relying on local timing.
+   await page.route('**/api/jobs/*/steps?view=summary*',async route=>{await new Promise(resolve=>setTimeout(resolve,200));await route.continue();});
+   await page.reload();await page.locator('.assistant-text').waitFor();main=await openProcess(f.jobs[0]);await assertReasoning(main,1);
+   await page.evaluate(id=>loadConversation(id),f.chats[1]);await page.evaluate(id=>loadConversation(id),f.chats[0]);main=await openProcess(f.jobs[0]);await assertReasoning(main,1,'Cached history uses current visibility');
    await panel();await page.locator('#show-reasoning').uncheck();await close();main=await openProcess(f.jobs[0]);assert.equal(await main.locator('.reasoning-body').count(),0);assert.equal(await main.locator('.command-group .tool-step').count(),2);
    assert.equal((await get('/api/conversations/'+f.chats[0])).run_settings,settings);assert.deepEqual((await get('/api/jobs/'+f.jobs[0]+'/steps')).items,before.items);
    await panel();await page.locator('#language').selectOption('zh');await page.getByRole('switch',{name:'显示思考摘要',exact:true}).check();page.once('dialog',dialog=>dialog.accept());await page.locator('#restore-defaults').click();assert.equal(await page.locator('#show-reasoning').isChecked(),false);assert.equal(await page.evaluate(()=>localStorage.getItem('lazyfish.preferences.v1')),null);await close();main=await openProcess(f.jobs[0]);assert.equal(await main.locator('.reasoning-body').count(),0);

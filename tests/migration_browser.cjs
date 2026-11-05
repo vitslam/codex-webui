@@ -25,7 +25,7 @@ const {chromium}=require(process.env.LAZYFISH_BROWSER_MODULE),fixture=JSON.parse
   const webGroup=article.locator('.step-group > summary').filter({hasText:/Browse|Browsing|Web|浏览/}).first();await webGroup.click();
   const webStep=article.locator('.tool-step').filter({has:page.locator('.web-step-body')}).first();await webStep.locator(':scope > summary').click();assert.equal(await webStep.locator('.web-result').count(),1);assert.ok((await webStep.innerText()).includes('A useful excerpt'));assert.ok((await webStep.locator('.step-metadata dd').boundingBox()).width>150,'Web metadata must use the full content column');
   await page.screenshot({path:fixture.output+'/migrated-web.png'});
-  await article.locator('.change-panel > summary').click();const changed=article.locator('.review-file').filter({hasText:'report.csv'});await changed.locator('summary').click();assert.ok((await changed.locator('.review-diff').innerText()).includes('+fish,3'));
+  await article.locator('.change-panel > summary').click();const changed=article.locator('.review-file').filter({hasText:'report.csv'});await changed.locator('summary').click();await changed.locator('.review-diff .diff-added').filter({hasText:'+fish,3'}).waitFor({state:'visible'});assert.ok((await changed.locator('.review-diff').innerText()).includes('+fish,3'));
   await page.screenshot({path:fixture.output+'/migrated-diff.png'});
   await panel('#settings-toggle');await page.locator('#show-plan').check();await close();await page.locator('#plan-toggle').click();
   const plan=await start('Make a plan');await done(plan);await composer();await page.locator('#prompt').fill('keep my unsent draft');
