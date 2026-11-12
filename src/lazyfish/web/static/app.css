@@ -763,15 +763,15 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 .conversation:focus-visible, .conversation-rename-input:focus-visible { outline: none; }
 
 /* Reference output, disclosure, editor and composer interactions. */
-.output-artifacts { display: grid; gap: 18px; margin: 16px 0; min-width: 0; }
-.output-artifact { margin: 0; width: 100%; max-width: 640px; min-width: 0; }
+.output-artifacts { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; margin: 16px 0; min-width: 0; }
+.output-artifact { margin: 0; width: min(100%, 320px); min-width: 0; }
 .output-image { display: block; width: fit-content; max-width: 100%; }
-.output-image img { display: block; width: auto; height: auto; max-width: 100%; max-height: 520px; object-fit: contain; border-radius: 12px; }
+.output-image img { display: block; width: auto; height: auto; max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 10px; cursor: zoom-in; }
 .output-artifact figcaption { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 12px; color: var(--secondary); }
 .output-name { overflow-wrap: anywhere; }
 .output-artifact figcaption a { color: var(--accent); white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; }
-.output-step-body .output-artifact { max-width: 360px; }
-.output-step-body .output-image img { max-height: 360px; }
+.output-step-body .output-artifact { max-width: 280px; }
+.output-step-body .output-image img { max-height: 180px; }
 .output-prompt { margin-top: 12px; color: var(--secondary); }
 .output-prompt p { white-space: pre-wrap; overflow-wrap: anywhere; }
 #question-dialog { width: min(460px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 20px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); color: var(--text); box-shadow: var(--floating-shadow); overflow-y: auto; }
@@ -922,15 +922,15 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 }
 
 .workspace {position:relative;} .message-editor textarea{width:100%;background:transparent;color:var(--text);border:0;}
-.output-artifacts { display: grid; gap: 18px; margin: 16px 0; min-width: 0; }
-.output-artifact { margin: 0; width: 100%; max-width: 640px; min-width: 0; }
+.output-artifacts { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; margin: 16px 0; min-width: 0; }
+.output-artifact { margin: 0; width: min(100%, 320px); min-width: 0; }
 .output-image { display: block; width: fit-content; max-width: 100%; }
-.output-image img { display: block; width: auto; height: auto; max-width: 100%; max-height: 520px; object-fit: contain; border-radius: 12px; }
+.output-image img { display: block; width: auto; height: auto; max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 10px; cursor: zoom-in; }
 .output-artifact figcaption { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 12px; color: var(--secondary); }
 .output-name { overflow-wrap: anywhere; }
 .output-artifact figcaption a { color: var(--accent); white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; }
-.output-step-body .output-artifact { max-width: 360px; }
-.output-step-body .output-image img { max-height: 360px; }
+.output-step-body .output-artifact { max-width: 280px; }
+.output-step-body .output-image img { max-height: 180px; }
 .output-prompt { margin-top: 12px; color: var(--secondary); }
 .output-prompt p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .message-editor-error { margin: 8px 0; font-size: 11px; line-height: 1.6; color: var(--danger); }
@@ -938,10 +938,10 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 .message-editor-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .message-editor-buttons button { padding: 5px 12px; border-radius: 8px; background: var(--surface); font-size: 12px; }
 .message-editor-buttons .message-edit-send { background: var(--button); color: var(--inverse); }
-.markdown .reply-image { display: block; width: min(100%, 640px); height: 320px; margin: 12px 0; border-radius: 10px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); }
-.reply-image img { display: block; width: 100%; height: 100%; object-fit: contain; cursor: zoom-in; }
+.markdown .reply-image { display: block; width: fit-content; max-width: min(100%, 360px); margin: 12px 0; border-radius: 10px; overflow: hidden; }
+.reply-image img { display: block; width: auto; height: auto; max-width: 100%; max-height: 240px; object-fit: contain; cursor: zoom-in; }
 .markdown .reply-image-failed { height: auto; min-height: 48px; padding: 12px; }
-@media (max-width: 600px) { .markdown .reply-image { height: 240px; } .markdown .reply-image-failed { height: auto; } }
+@media (max-width: 600px) { .reply-image img { max-height: 200px; } }
 .question-reopen { padding: 0; color: var(--muted); font-size: inherit; text-decoration: underline; text-underline-offset: 3px; }
 #question-hint { margin: 8px 0 16px; font-size: 12px; line-height: 1.6; }
 #question-fields fieldset { min-width: 0; padding: 0; margin: 0 0 14px; border: 0; }
@@ -1121,3 +1121,11 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 .native-login-session { margin-top: 20px; }
 .native-login-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .native-login-actions .account-button { margin-top: 10px; }
+
+/* Local Markdown paths keep server filesystem locations out of HTTP navigation. */
+.local-path-dialog h2 { margin: 0 0 16px; font-size: 16px; }
+.local-path-value { display: block; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+.local-path-dialog .meta { margin: 16px 0; }
+.local-path-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.local-path-actions a { color: var(--accent); text-underline-offset: 3px; }
+.local-path-actions>button:last-child { margin-left: auto; }

@@ -14,6 +14,63 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_compact_image_outputs(self):
+        import hashlib
+        import struct
+        import zlib
+
+        def png(width, height):
+            def chunk(kind, data):
+                return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind+data))
+            pixels = b''.join(b'\0' + (bytes((235, 240, 246)) if y % 100 < 70 else bytes((116, 151, 185))) * width
+                              for y in range(height))
+            return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(pixels)) + chunk(b'IEND', b'')
+
+        store = Store(self.settings.data_dir/'lazyfish.db')
+        chat = store.create_conversation(str(self.workspace), 'Image output preview')
+        job, _ = store.reserve(chat['id'], 'fixture', uuid.uuid4().hex, 'Show image output examples', None, None)
+        artifacts = []
+        for name, width, height in [('linked.png', 1100, 850), ('inline.png', 1200, 800),
+                                    ('landscape.png', 1400, 900), ('portrait.png', 800, 1600)]:
+            raw = png(width, height)
+            artifacts.append(store.save_artifact(job['id'], hashlib.sha256(raw).hexdigest(), name, 'image/png', raw))
+        text = '### 图片展示\n\n[查看截图](' + artifacts[0]['url'] + '?download=1#preview)\n\n' + \
+               '![正文图片](' + artifacts[1]['url'] + ')\n\n[下载原图](' + artifacts[1]['url'] + '?download=1)'
+        store.item(job['id'], 'reply', 'assistant', text, 'completed')
+        store.report(job['id'], {'artifacts':artifacts+[artifacts[-1]]}); store.finish(job['id'], 'completed')
+        fixture = self.root/'image-outputs-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}', token=self.settings.token,
+                                          chat=chat['id'], output=os.environ.get('LAZYFISH_BROWSER_OUTPUT', str(self.root)))))
+        result = subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'], str(Path(__file__).with_name('image_outputs_browser.cjs'))],
+                                env=dict(os.environ, LAZYFISH_BROWSER_FIXTURE=str(fixture)), capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        self.assertIn('compact image outputs passed', result.stdout)
+
+    def test_local_markdown_links(self):
+        store = Store(self.settings.data_dir/'lazyfish.db')
+        chat = store.create_conversation(str(self.workspace), 'Local Markdown paths')
+        job, _ = store.reserve(chat['id'], 'fixture', uuid.uuid4().hex, 'Show local repositories', None, None)
+        content = '\n\n'.join([
+            '- [aclone](/projects/dataset/aclone)',
+            '| File | Purpose |\n| --- | --- |\n| [报告](</projects/My Report (draft).md:12:3>) | Notes |',
+            '**[nested](/projects/a(b(c)).py#L42C2)**',
+            '[中文](/projects/数据/说明.md)',
+            '[web](https://example.org/docs) [mail](mailto:user@example.org)',
+            '[download](/api/jobs/' + job['id'] + '/artifacts/' + 'a'*64 + '?download=1)',
+            '`[literal](/projects/code)`\n\n```text\n[fenced](/projects/code)\n```',
+            '[unsafe](javascript:alert(1)) [network](//example.org/file) [empty]()',
+            '[html](/projects/<img src=x onerror=alert(1)>.md)',
+            '[unfinished](/projects/draft\n<script>window.compromised=true</script>',
+        ])
+        store.item(job['id'], 'reply', 'assistant', content, 'completed'); store.finish(job['id'], 'completed')
+        fixture = self.root/'local-links-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}', token=self.settings.token,
+                                          chat=chat['id'], output=os.environ.get('LAZYFISH_BROWSER_OUTPUT', str(self.root)))))
+        result = subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'], str(Path(__file__).with_name('local_links_browser.cjs'))],
+                                env=dict(os.environ, LAZYFISH_BROWSER_FIXTURE=str(fixture)), capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        self.assertIn('local Markdown links passed', result.stdout)
+
     def test_native_login_recovery(self):
         (self.settings.runtime_dir/'tmp/login-delay').write_text('30')
         fixture=self.root/'native-login-browser.json'

@@ -1,25 +1,70 @@
 'use strict';
-// DOM-only Markdown: raw HTML stays text, links accept only safe protocols.
+// DOM-only Markdown: raw HTML stays text; local paths use an explicit path dialog.
 (function (root, create) {
   if (typeof module !== 'undefined' && module.exports) module.exports = create;
   else root.LazyfishMarkdown = create;
 })(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global,
 function createMarkdown({document, node, copyButton, imageNode, t}) {
-  // Raw HTML stays text; only safe protocols and authenticated attachments become links.
+  // Read balanced destinations, including angle-wrapped paths containing spaces.
+  function linkEnd(text, start) {
+    let angle = false, nesting = 1;
+    for (let i = start; i < text.length; i++) {
+      const char = text[i];
+      if (char === '\n' || char === '\r') return -1;
+      if (char === '\\') { i++; continue; }
+      if (i === start && char === '<') angle = true;
+      else if (angle && char === '>') angle = false;
+      else if (!angle && char === '(') nesting++;
+      else if (!angle && char === ')' && --nesting === 0) return i + 1;
+    }
+    return -1;
+  }
+  function localTarget(href) {
+    // Never treat network-path references, controls or backslashes as local links.
+    if (!/^\/(?!\/)/.test(href) || /[\\\x00-\x1f\x7f]/.test(href)) return null;
+    const location = /^(.*?)(?::([1-9]\d*)(?::([1-9]\d*))?|#L([1-9]\d*)(?:C([1-9]\d*))?)$/.exec(href);
+    const path = location ? location[1] : href;
+    const line = location && (location[2] || location[4]);
+    const column = location && (location[3] || location[5]);
+    return {path, editor: 'vscode://file' + path.split('/').map(encodeURIComponent).join('/')
+      + (line ? ':' + line + (column ? ':' + column : '') : '')};
+  }
+  function showLocalPath(target, source) {
+    const dialog = node('dialog', undefined, 'local-path-dialog');
+    dialog.setAttribute('aria-label', t('links.local_path'));
+    const title = node('h2', t('links.local_path'));
+    const path = node('code', target.path, 'local-path-value');
+    const help = node('p', t('links.local_help'), 'meta');
+    const actions = node('div', undefined, 'local-path-actions');
+    const copy = copyButton(target.path, t('links.copy_path'));
+    copy.setAttribute('aria-label', t('links.copy_path')); copy.title = t('links.copy_path');
+    const editor = node('a', t('links.open_editor')); editor.href = target.editor;
+    const close = node('button', t('close')); close.type = 'button';
+    close.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => { dialog.remove(); if (source.isConnected) source.focus({preventScroll:true}); }, {once:true});
+    actions.append(copy, editor, close); dialog.append(title, path, help, actions);
+    document.body.append(dialog); dialog.showModal(); close.focus({preventScroll:true});
+  }
+  // Raw HTML stays text; no arbitrary local file is fetched by the browser.
   function inlineMarkdown(text, parent, renderedImages = new Set(), allowLinks = true, depth = 0) {
     if (depth >= 16) {
       parent.append(document.createTextNode(text));
       return !!text.trim();
     }
-    const pattern = /(`[^`\n]+`|\*\*(?:(?!\*\*)[^\n])+\*\*|\*[^*\n]+\*|!?\[[^\]]*\]\([^)]+\))/g;
+    const pattern = /(`[^`\n]+`|\*\*(?:(?!\*\*)[^\n])+\*\*|\*[^*\n]+\*|!?\[[^\]\n]*\]\()/g;
     let last = 0, visible = false;
     let match;
     while ((match = pattern.exec(text)) !== null) {
+      let token = match[0];
+      if (/^!?\[/.test(token)) {
+        const end = linkEnd(text, pattern.lastIndex);
+        if (end < 0) continue;
+        token = text.slice(match.index, end); pattern.lastIndex = end;
+      }
       const prefix = text.slice(last, match.index);
       parent.append(document.createTextNode(prefix));
       if (prefix.trim()) visible = true;
       let hidden = false;
-      const token = match[0];
       if (token.startsWith('`')) parent.append(node('code', token.slice(1, -1)));
       else if (token.startsWith('*')) {
         const strong = token.startsWith('**'), width = strong ? 2 : 1;
@@ -28,8 +73,9 @@ function createMarkdown({document, node, copyButton, imageNode, t}) {
         if (!hidden) parent.append(formatted);
       } else if (!allowLinks) parent.append(document.createTextNode(token));
       else {
-        const link = /^(!?)\[([^\]]*)\]\(([^)]+)\)$/.exec(token);
+        const link = /^(!?)\[([^\]]*)\]\(([\s\S]*)\)$/.exec(token);
         const href = link[3].trim().replace(/^<|>$/g, '');
+        const local = localTarget(href);
         const attachment = /^\/api\/jobs\/[a-f0-9]{32}\/artifacts\/[a-f0-9]{64}(?:\?download=1)?(?:#[^\s]*)?$/.test(href);
         if (link[1] && attachment) {
           renderedImages.add(href.split(/[?#]/)[0]);
@@ -44,6 +90,10 @@ function createMarkdown({document, node, copyButton, imageNode, t}) {
           hidden = true; // Image downloads are available in the image context menu.
         } else if (!link[1] && (attachment || /^(https?:\/\/|mailto:)/i.test(href))) {
           const a = node('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+          inlineMarkdown(link[2], a, renderedImages, false, depth + 1); parent.append(a);
+        } else if (!link[1] && local) {
+          const a = node('a', undefined, 'local-path-link'); a.href = local.editor; a.title = href;
+          a.addEventListener('click', event => { event.preventDefault(); showLocalPath(local, a); });
           inlineMarkdown(link[2], a, renderedImages, false, depth + 1); parent.append(a);
         } else parent.append(document.createTextNode(token));
       }

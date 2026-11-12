@@ -106,6 +106,14 @@ const pendingSends=new Map(),stoppedJobs=new Map(),settingWrites=new Map(),readR
 let expandedDetails = new Set();
 try { const ids = JSON.parse(localStorage.getItem("lazyfish.details")); if (Array.isArray(ids)) expandedDetails = new Set(ids.filter((id)=>typeof id === "string").slice(-300)); } catch { /* optional */ }
 const scroll = LazyfishScroll($("#messages"),$("#transcript"),{onRestore:()=>dock.settlePosition()});
+Object.assign(translations.en, {
+  "links.local_path":"Local path", "links.copy_path":"Copy path", "links.open_editor":"Open in VS Code",
+  "links.local_help":"This path is on the service machine. VS Code opens on the device running your browser; remote files require a matching remote workspace."
+});
+Object.assign(translations.zh, {
+  "links.local_path":"本地路径", "links.copy_path":"复制路径", "links.open_editor":"在 VS Code 中打开",
+  "links.local_help":"此路径位于服务端机器。VS Code 会在浏览器所在设备打开；远程文件需要对应的远程工作区。"
+});
 const markdown = LazyfishMarkdown({document,node:(tag,text,cls)=>node(tag,cls,text),copyButton,imageNode:(...args)=>features.nativeImageNode(...args),t:(...args)=>t(...args)}).markdown;
 const shortcuts = LazyfishShortcuts({entries:()=>conversations.slice(0,9),current:()=>conversation?.id,
   select:(id)=>loadConversation(id).catch(report),hints:showHints,toggleSidebar,

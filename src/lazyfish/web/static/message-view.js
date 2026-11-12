@@ -195,10 +195,11 @@ function createMessageView({document, node, icon, t, i18n, markdown, copyButton,
     const stoppedAnswer = job && job.local_stopped && job.live_message && job.live_message.text &&
       job.live_message.phase === 'final_answer' && job.live_message.delivery !== 'async';
     const renderedAnswer = answer ? markdown(answer) : null;
-    // A linked image already present in the final answer needs no second preview.
-    const inlineImages = renderedAnswer && renderedAnswer.querySelectorAll
-      ? Array.from(renderedAnswer.querySelectorAll('img')).map(image => image.getAttribute('src')) : [];
-    const outputs = artifactList(job && job.artifacts, inlineImages);
+    // Only actual inline images replace thumbnails; text links keep the image visible.
+    const referencedOutputs = renderedAnswer && renderedAnswer.querySelectorAll
+      ? Array.from(renderedAnswer.querySelectorAll('img[src]'))
+        .map(image => image.getAttribute('src').split(/[?#]/)[0]) : [];
+    const outputs = artifactList(job && job.artifacts, referencedOutputs);
     if (renderedAnswer) card.append(renderedAnswer);
     else if (finished && !stoppedAnswer && !outputs) card.append(markdown(fallback));
     if (outputs) card.append(outputs);

@@ -67,8 +67,10 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
       }
     }
     if(answer){for(const item of job.items.filter(i=>i.kind==='assistant'&&i.text)){const body=markdown(item.text);body.classList.add('assistant-text');[...body.children].forEach((block,index)=>block.dataset.anchor=item.id+':'+index);nodes.push(body);}}
-    const inline=nodes.flatMap(el=>[...el.querySelectorAll('img')].map(img=>img.getAttribute('src')?.split('?')[0]));
-    const gallery=artifactList(job.artifacts||job.report?.artifacts,inline);if(gallery)nodes.push(gallery);
+    // Only actual inline images replace thumbnails; text links keep the image visible.
+    const referencedOutputs=nodes.filter(el=>el.classList.contains('assistant-text')).flatMap(el=>
+      [...el.querySelectorAll('img[src]')].map(image=>image.getAttribute('src').split(/[?#]/)[0]));
+    const gallery=artifactList(job.artifacts||job.report?.artifacts,referencedOutputs);if(gallery)nodes.push(gallery);
     const actions=node('div','reply-actions meta');
     if(finished(job)&&job.status==='completed'&&job.inputs?.collaboration_mode==='plan'){
       const implement=node('button','implement-plan',t('ui.start.implementation'));implement.type='button';implement.disabled=getBusy();implement.addEventListener('click',async()=>{implement.disabled=true;try{await onImplement(job);}catch(error){report(error);implement.disabled=false;}});actions.append(implement);
