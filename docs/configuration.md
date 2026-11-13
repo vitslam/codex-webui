@@ -99,11 +99,38 @@ authentication/provider setup; adding an API key here does not replace native lo
 里的 `.env`。只有允许列表中的网络、原生 Codex 配置和必要系统环境会传给 CLI，
 不会传递 Web 令牌。API Key 是否启用仍取决于原生 Codex 的登录及提供方配置。
 
-To rotate the Web token, stop the service, replace `LAZYFISH_TOKEN` with a random
-ASCII token of at least 32 characters, keep permissions `600`, and restart. Never
-put a token in a URL, Git commit or issue. Existing browser sessions die on restart.
+To rotate the Web token, stop the service first, then run:
 
-更换 Web 令牌：先停服，替换为至少 32 字符的随机 ASCII 令牌，保持权限 `600`，再启动。
+```bash
+lazyfish stop
+lazyfish token --rotate
+lazyfish serve
+```
+
+`--rotate` prints only the new token to stdout and a confirmation to stderr. It
+atomically updates the configured secrets file with mode `600`, preserving other
+keys and comments. It refuses while this data directory's instance is running;
+it does not stop the service automatically. If a nonempty `LAZYFISH_TOKEN` is set
+in the process environment, unset it first: environment values override the file.
+Use the same configuration for all three commands; for a custom instance, put
+`--config /path/to/config.toml` before each command. Plain `lazyfish token` only
+reveals the current token; init and the installer never rotate existing tokens.
+
+更换 Web 令牌时，先执行 `lazyfish stop`，再执行 `lazyfish token --rotate`，最后
+`lazyfish serve`。新令牌输出到标准输出，确认信息输出到标准错误。命令以权限 `600`
+原子更新配置指定的密钥文件，保留其他键和注释；实例运行时会拒绝更换，不会自动停服。
+如果进程环境中设置了非空的 `LAZYFISH_TOKEN`，请先取消该变量，因为它会覆盖文件值。
+三个命令必须使用同一配置；自定义实例可在每个子命令前加 `--config /path/to/config.toml`。
+不带参数的 `lazyfish token` 仅显示当前令牌；初始化和安装程序不会更换已有令牌。
+
+Manual fallback: while stopped, replace `LAZYFISH_TOKEN` in the configured secrets
+file with a random ASCII token of at least 32 non-whitespace characters, retain
+mode `600`, and restart. Never put a token in a URL, Git commit or issue. Existing
+browser sessions die on restart.
+
+手动替代方式：停服后，在配置指定的密钥文件中将 `LAZYFISH_TOKEN` 替换为至少 32 字符、
+不含空白的随机 ASCII 令牌，保持权限 `600`，再启动。不要把令牌放进 URL、Git 提交或
+issue；重启后原有浏览器会话失效。
 
 `PYTHON` and `VENV_DIR` apply to the installer only. It uses an isolated temporary
 directory under `$XDG_CACHE_HOME/lazyfish` and removes that temporary directory

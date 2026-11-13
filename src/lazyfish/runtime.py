@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timezone
 import ipaddress
 import fcntl
@@ -15,7 +16,7 @@ import urllib.request
 
 from .codex import diagnose
 from .execution import Manager
-from .config import ConfigError, Settings, read_private, write_private
+from .config import ConfigError, Settings, load, read_private, write_private
 from .logging_setup import setup
 from .network import access_hosts, request_host
 from .storage import record_start, record_stop
@@ -71,6 +72,9 @@ def serve(settings: Settings) -> None:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
             raise ConfigError("This data directory already has a running Lazyfish instance.") from exc
+        # Rotation holds the same lock; discard credentials loaded before it completed.
+        current = load(settings.config)
+        settings = replace(settings, token=current.token, secret_env=current.secret_env)
         logger = setup(settings)
         logger.info("Starting local chat service")
         report = diagnose(settings)

@@ -17,7 +17,7 @@ import sys
 import time
 
 from lazyfish import runtime
-from lazyfish.config import write_private
+from lazyfish.config import load, rotate_token, write_private
 from lazyfish.web.server import Handler, Server
 from support import IsolatedTest
 
@@ -151,6 +151,44 @@ class ServiceTests(ServiceCase):
         self.assertEqual(self.http("/healthz")[0], 200)
         write_private(self.metadata_path, original)
 
+    def test_rotate_refuses_running_service_without_changing_credentials(self):
+            secret_file = self.config.parent / "secrets.env"
+            before = secret_file.read_bytes()
+            result = subprocess.run(self.command("token", "--rotate"), capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(result.stdout, "")
+            self.assertIn("Run `lazyfish stop`, then `lazyfish token --rotate`, then `lazyfish serve`.", result.stderr)
+            self.assertEqual(secret_file.read_bytes(), before)
+            self.assertIsNotNone(runtime.request(self.settings))
+            self.assertIsNone(self.process.poll())
+
+    def test_rotated_token_is_used_after_restart_and_old_session_is_rejected(self):
+            origin = {"Origin": f"http://127.0.0.1:{self.port}"}
+            code, headers, _ = self.http("/api/session", "POST", {"token": self.settings.token}, origin)
+            self.assertEqual(code, 200)
+            cookie = headers["Set-Cookie"].split(";", 1)[0]
+            old_token = self.settings.token
+            self.assertTrue(runtime.stop(self.settings))
+            self.process.wait(timeout=5)
+            new_token = rotate_token(self.config)
+            self.settings = load(self.config)
+            self.process = subprocess.Popen(self.command("serve"), stdout=self.output, stderr=self.output,
+                                            start_new_session=True)
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                report = runtime.request(self.settings)
+                if report:
+                    break
+                if self.process.poll() is not None:
+                    self.fail(self.output_path.read_text())
+                time.sleep(0.03)
+            else:
+                self.fail("Restarted service did not become available")
+            self.port = json.loads(self.metadata_path.read_text())["port"]
+            self.assertEqual(self.http("/api/status", headers={"Authorization": "Bearer " + new_token})[0], 200)
+            self.assertEqual(self.http("/api/status", headers={"Authorization": "Bearer " + old_token})[0], 401)
+            self.assertEqual(self.http("/api/status", headers={"Cookie": cookie})[0], 401)
+
     def test_sigterm_cleanup(self):
         self.process.terminate()
         self.process.wait(timeout=5)
@@ -180,6 +218,38 @@ class CliTests(IsolatedTest):
                 if process.poll() is None:
                     process.kill()
                 process.wait(timeout=5)
+
+    def test_serve_refreshes_credentials_loaded_before_rotation(self):
+            ready = self.root / "loaded"
+            proceed = self.root / "proceed"
+            script = ("import sys, time\nfrom pathlib import Path\n"
+                      "from lazyfish.config import load\nfrom lazyfish.runtime import serve\n"
+                      "settings = load(Path(sys.argv[1]))\nPath(sys.argv[2]).touch()\n"
+                      "while not Path(sys.argv[3]).exists(): time.sleep(0.02)\nserve(settings)\n")
+            command = [sys.executable, "-c", script, str(self.config), str(ready), str(proceed)]
+            with subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) as process:
+                try:
+                    deadline = time.monotonic() + 5
+                    while not ready.exists() and time.monotonic() < deadline:
+                        time.sleep(0.02)
+                    self.assertTrue(ready.exists())
+                    rotate_token(self.config)
+                    current = load(self.config)
+                    proceed.touch()
+                    deadline = time.monotonic() + 10
+                    report = None
+                    while time.monotonic() < deadline and report is None:
+                        report = runtime.request(current)
+                        time.sleep(0.03)
+                    self.assertIsNotNone(report)
+                    self.assertIsNone(runtime.request(self.settings))
+                    self.assertTrue(runtime.stop(current))
+                    process.wait(timeout=5)
+                    self.assertEqual(process.returncode, 0)
+                finally:
+                    if process.poll() is None:
+                        process.terminate()
+                    process.wait(timeout=5)
 
     def test_doctor_output_and_token_are_explicit(self):
         command = [sys.executable, "-m", "lazyfish", "--config", str(self.config)]

@@ -20,9 +20,13 @@ Cookie 为 HttpOnly/SameSite，会话最长 12 小时且重启失效。停服需
 
 No credentials, filled-in `.env`, auth files, databases or private logs belong in
 issues or pull requests. Rotate any exposed credential immediately; deleting a
-file from the latest commit does not remove it from Git history.
+file from the latest commit does not remove it from Git history. For the Web token,
+run `lazyfish stop`, `lazyfish token --rotate`, then `lazyfish serve`; see
+[configuration](docs/configuration.md) for environment overrides.
 
 不要公开上传凭据、配置、数据库或私有日志。泄露后立即轮换，仅删除最新文件不能清除 Git 历史。
+Web 令牌可依次执行 `lazyfish stop`、`lazyfish token --rotate`、`lazyfish serve` 更换；
+环境变量覆盖的处理见[配置文档](docs/configuration.md)。
 
 `127.0.0.1` is the default. Opting into `0.0.0.0` listens on all IPv4 interfaces,
 including any public-facing interface; a specific unicast IPv4 binds only that

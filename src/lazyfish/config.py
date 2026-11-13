@@ -245,6 +245,49 @@ def load(path: Path) -> Settings:
                     model, effort, sandbox, policy, bool(workspace))
 
 
+def rotate_token(path: Path) -> str:
+    """Replace the Web token only while this installation is stopped."""
+    from . import runtime
+
+    if os.environ.get("LAZYFISH_TOKEN"):
+        raise ConfigError("LAZYFISH_TOKEN is set in the environment; unset it before rotating the file token.")
+    private_dir(path.parent)
+    fd = os.open(path.parent / ".init.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        settings = load(path)
+        private_dir(settings.data_dir)
+        private_dir(settings.runtime_dir)
+        service_fd = os.open(settings.runtime_dir / "service.lock",
+                             os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        try:
+            message = ("Cannot rotate the token while this instance is running. "
+                       "Run `lazyfish stop`, then `lazyfish token --rotate`, then `lazyfish serve`.")
+            try:
+                fcntl.flock(service_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as exc:
+                raise ConfigError(message) from exc
+            if runtime.request(settings) is not None:
+                raise ConfigError(message)
+            raw = tomllib.loads(read_private(path))
+            secret_file = _path(raw.get("security", {}).get("secrets_file", "secrets.env"), path.parent)
+            lines = read_private(secret_file).splitlines(keepends=True)
+            token = secrets.token_urlsafe(36)
+            for index, line in enumerate(lines):
+                key, sep, value = line.rstrip("\r\n").partition("=")
+                if sep and key.strip() == "LAZYFISH_TOKEN":
+                    ending = line[len(line.rstrip("\r\n")):]
+                    leading = value[:len(value) - len(value.lstrip())]
+                    trailing = value[len(value.rstrip()):]
+                    lines[index] = key + "=" + leading + token + trailing + ending
+            write_private(secret_file, "".join(lines))
+            return token
+        finally:
+            os.close(service_fd)
+    finally:
+        os.close(fd)
+
+
 def initialize(path: Path, workspace: str = "", data_dir: str | None = None,
                port: int = 3210, binary: str = "codex") -> Settings:
     private_dir(path.parent)

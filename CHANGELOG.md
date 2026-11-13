@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add `lazyfish token --rotate` to atomically replace the Web token while stopped, preserving other secrets and comments; refuse running instances and environment token overrides.
+- 新增 `lazyfish token --rotate`，停服后原子更换 Web 令牌并保留其他密钥和注释；实例运行或环境变量覆盖令牌时拒绝更换。
+
 - Allow an explicit unicast IPv4 bind, including public addresses; keep `127.0.0.1` as the default. Host checks still require an address of this process.
 - 允许显式绑定任意单播 IPv4（包括公网地址），默认仍为 `127.0.0.1`；Host 检查仍要求为本进程的地址。
 

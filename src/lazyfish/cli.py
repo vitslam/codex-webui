@@ -11,7 +11,7 @@ import sys
 
 from . import __version__
 from .codex import diagnose
-from .config import ConfigError, config_path, initialize, load, remember_config
+from .config import ConfigError, config_path, initialize, load, remember_config, rotate_token
 from . import runtime
 
 
@@ -55,7 +55,9 @@ def _main(argv: list[str] | None = None) -> int:
     commands.add_parser("serve", help="Start the foreground local chat service")
     commands.add_parser("status", help="Check this data directory's running instance")
     commands.add_parser("stop", help="Gracefully stop this instance using authentication, never a stale PID")
-    commands.add_parser("token", help="Reveal the private Web sign-in token in this terminal")
+    token = commands.add_parser("token", help="Reveal or rotate the private Web sign-in token in this terminal")
+    token.add_argument("--rotate", action="store_true",
+                       help="Generate a new Web sign-in token; stop the service first")
     args = parser.parse_args(argv)
     try:
         path = config_path(args.config)
@@ -71,6 +73,13 @@ def _main(argv: list[str] | None = None) -> int:
             if automatic != settings.config:
                 command += ["--config", str(settings.config)]
             print(f"Existing configuration and token are preserved. Use `{shlex.join(command + ['token'])}` to view the token.")
+            return 0
+        if args.command == "token" and args.rotate:
+            token = rotate_token(path)
+            print(token)
+            print("Web sign-in token rotated; the previous token is no longer valid. "
+                  "Run `lazyfish serve` to start the service.", file=sys.stderr)
+            _remember(path)
             return 0
         settings = load(path)
         _remember(settings.config)

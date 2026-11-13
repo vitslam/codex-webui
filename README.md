@@ -154,7 +154,7 @@ See the [feature guide](docs/features.md) for detailed behavior and limits, and 
 | `lazyfish serve` | Start the chat service in the foreground |
 | `lazyfish status` | Query the authenticated instance for this data directory |
 | `lazyfish stop` | Stop that instance gracefully; never signal a PID from a stale file |
-| `lazyfish token` | Reveal the Web sign-in token deliberately in your terminal |
+| `lazyfish token [--rotate]` | Reveal the Web sign-in token; `--rotate` replaces it while the service is stopped |
 
 Ordinary commands find the default configuration automatically. If no default
 exists, the first successfully initialized/used custom configuration is remembered

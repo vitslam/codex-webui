@@ -146,7 +146,7 @@ ssh -N -L 3210:127.0.0.1:3210 user@your-server
 | `lazyfish serve` | 前台启动聊天服务 |
 | `lazyfish status` | 通过认证接口查看当前数据目录对应的实例 |
 | `lazyfish stop` | 安全停止该实例，不会根据遗留 PID 文件直接结束进程 |
-| `lazyfish token` | 主动在终端显示 Web 登录令牌 |
+| `lazyfish token [--rotate]` | 在终端显示 Web 登录令牌；`--rotate` 在停服后更换令牌 |
 
 普通命令自动查找默认配置；没有默认配置时，会记住首次成功初始化或使用的自定义配置，
 以后切换目录也无需反复指定 `--config`。仅操作其他实例等高级场景，才需要用

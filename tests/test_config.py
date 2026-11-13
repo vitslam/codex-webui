@@ -1,4 +1,5 @@
 import os
+import fcntl
 import json
 from pathlib import Path
 import subprocess
@@ -7,7 +8,7 @@ from unittest.mock import patch
 
 import lazyfish
 from lazyfish.config import (ConfigError, config_path, default_config, initialize,
-                             load, read_secrets, remember_config, write_private)
+                             load, read_secrets, remember_config, rotate_token, write_private)
 from lazyfish.codex import child_env
 from support import IsolatedTest
 
@@ -144,6 +145,145 @@ class ConfigTests(IsolatedTest):
             self.assertEqual(process.returncode, 0, stderr.decode())
         before = load(config).token
         self.assertEqual(load(config).token, before)
+
+    def test_token_without_flags_does_not_rotate(self):
+        secret_file = self.config.parent / "secrets.env"
+        before = secret_file.read_bytes()
+        result = self.cli("--config", str(self.config), "token")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, self.settings.token + "\n")
+        self.assertEqual(result.stderr, "")
+        self.assertEqual(secret_file.read_bytes(), before)
+
+    def test_rotate_preserves_other_secrets_comments_and_custom_path(self):
+        secret_file = self.config.parent / "private" / "credentials.env"
+        original = ("# Keep these credentials private.\n\nOPENAI_API_KEY='test-key'\n"
+                    "  LAZYFISH_TOKEN = \"" + self.settings.token + "\"\n"
+                    "HTTPS_PROXY=http://proxy.example:3128\n# Token override\n"
+                    "LAZYFISH_TOKEN=" + self.settings.token)
+        write_private(secret_file, original)
+        self.config.write_text(self.config.read_text().replace('secrets.env', 'private/credentials.env'))
+        config_before = self.config.read_bytes()
+        token = rotate_token(self.config)
+        self.assertNotEqual(token, self.settings.token)
+        self.assertGreaterEqual(len(token), 32)
+        self.assertTrue(token.isascii())
+        self.assertFalse(any(c.isspace() for c in token))
+        expected = original.replace('\"' + self.settings.token + '\"', token).replace(self.settings.token, token)
+        self.assertEqual(secret_file.read_text(), expected)
+        self.assert_private(secret_file, 0o600)
+        self.assertEqual(self.config.read_bytes(), config_before)
+        settings = load(self.config)
+        self.assertEqual(settings.token, token)
+        self.assertEqual(settings.secret_env["OPENAI_API_KEY"], "test-key")
+        self.assertEqual(settings.secret_env["HTTPS_PROXY"], "http://proxy.example:3128")
+        self.assertEqual(initialize(self.config).token, token)
+
+    def test_rotate_cli_prints_only_new_token_on_stdout(self):
+        result = self.cli("--config", str(self.config), "token", "--rotate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        token = load(self.config).token
+        self.assertNotEqual(token, self.settings.token)
+        self.assertEqual(result.stdout, token + "\n")
+        self.assertEqual(result.stderr, "Web sign-in token rotated; the previous token is no longer valid. "
+                         "Run `lazyfish serve` to start the service.\n")
+        self.assertNotIn(self.settings.token, result.stdout + result.stderr)
+        self.assertEqual(self.cli("token").stdout, token + "\n")
+
+    def test_rotate_refuses_environment_override_without_writing(self):
+        secret_file = self.config.parent / "secrets.env"
+        before = secret_file.read_bytes()
+        for value in ("x" * 48, "short"):
+            with self.subTest(valid=len(value) >= 32), patch.dict(os.environ, {"LAZYFISH_TOKEN": value}):
+                with self.assertRaisesRegex(ConfigError, "unset it before rotating"):
+                    rotate_token(self.config)
+                result = self.cli("--config", str(self.config), "token", "--rotate")
+                self.assertEqual(result.returncode, 2)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("LAZYFISH_TOKEN is set in the environment", result.stderr)
+                self.assertEqual(secret_file.read_bytes(), before)
+
+    def test_rotate_help_does_not_load_configuration(self):
+        result = self.cli("--config", str(self.root / "missing.toml"), "token", "--help")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--rotate", result.stdout)
+        self.assertIn("Generate a new Web sign-in token; stop the service first", result.stdout)
+        self.assertEqual(result.stderr, "")
+
+    def test_rotate_refuses_locked_service_even_without_metadata(self):
+        secret_file = self.config.parent / "secrets.env"
+        before = secret_file.read_bytes()
+        with (self.settings.runtime_dir / "service.lock").open("w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            result = self.cli("--config", str(self.config), "token", "--rotate")
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("Run `lazyfish stop`, then `lazyfish token --rotate`, then `lazyfish serve`.", result.stderr)
+        self.assertEqual(secret_file.read_bytes(), before)
+
+    def test_rotate_refuses_authenticated_instance_even_without_service_lock(self):
+        secret_file = self.config.parent / "secrets.env"
+        before = secret_file.read_bytes()
+        with patch("lazyfish.runtime.request", return_value={"instance": "matching-instance"}) as request:
+            with self.assertRaisesRegex(ConfigError, "Cannot rotate the token while this instance is running"):
+                rotate_token(self.config)
+        request.assert_called_once()
+        self.assertEqual(request.call_args.args[0].data_dir, self.settings.data_dir)
+        self.assertEqual(secret_file.read_bytes(), before)
+
+    def test_rotate_write_failure_preserves_token_and_releases_locks(self):
+        secret_file = self.config.parent / "secrets.env"
+        before = secret_file.read_bytes()
+        with patch("lazyfish.config.os.replace", side_effect=OSError("write failed")):
+            with self.assertRaises(OSError):
+                rotate_token(self.config)
+        self.assertEqual(secret_file.read_bytes(), before)
+        self.assertFalse(list(secret_file.parent.glob(".lazyfish-*")))
+        token = rotate_token(self.config)
+        self.assertEqual(load(self.config).token, token)
+        self.assertNotEqual(token, self.settings.token)
+
+    def test_rotate_ignores_stale_pid_metadata(self):
+        write_private(self.settings.runtime_dir / "service.json",
+                      json.dumps({"pid": os.getpid(), "port": 0, "instance": "stale-instance"}))
+        token = rotate_token(self.config)
+        self.assertNotEqual(token, self.settings.token)
+        self.assertEqual(load(self.config).token, token)
+
+    def test_rotate_refuses_unsafe_secrets(self):
+        secret_file = self.config.parent / "secrets.env"
+        before = secret_file.read_bytes()
+        secret_file.chmod(0o644)
+        with self.assertRaisesRegex(ConfigError, "600"):
+            rotate_token(self.config)
+        secret_file.chmod(0o600)
+        target = secret_file.with_suffix(".original")
+        secret_file.rename(target)
+        secret_file.symlink_to(target)
+        with self.assertRaises(ConfigError):
+            rotate_token(self.config)
+        self.assertEqual(target.read_bytes(), before)
+        self.assertTrue(secret_file.is_symlink())
+
+    def test_concurrent_rotation_and_initialization_preserve_secrets(self):
+        secret_file = self.config.parent / "secrets.env"
+        write_private(secret_file, secret_file.read_text() + "OPENAI_API_KEY=test-key\n")
+        command = [sys.executable, "-m", "lazyfish", "--config", str(self.config)]
+        processes = [subprocess.Popen(command + ["token", "--rotate"],
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE) for _ in range(3)]
+        processes.append(subprocess.Popen(command + ["init"], stdout=subprocess.PIPE, stderr=subprocess.PIPE))
+        tokens = []
+        for index, process in enumerate(processes):
+            stdout, stderr = process.communicate(timeout=10)
+            self.assertEqual(process.returncode, 0, stderr.decode())
+            if index < 3:
+                tokens.append(stdout.decode().strip())
+        self.assertEqual(len(set(tokens)), 3)
+        self.assertNotIn(self.settings.token, tokens)
+        settings = load(self.config)
+        self.assertIn(settings.token, tokens)
+        self.assertEqual(settings.secret_env["OPENAI_API_KEY"], "test-key")
+        self.assert_private(secret_file, 0o600)
 
     def test_environment_precedence_and_relative_paths(self):
         with patch.dict(os.environ, {"LAZYFISH_PORT": "12345", "LAZYFISH_DATA_DIR": "relative"}):
