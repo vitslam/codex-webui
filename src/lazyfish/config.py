@@ -12,7 +12,7 @@ import tempfile
 import tomllib
 from dataclasses import dataclass, field
 
-from .network import private_ipv4
+from .network import bindable_ipv4
 
 
 class ConfigError(ValueError):
@@ -20,8 +20,8 @@ class ConfigError(ValueError):
 
 
 def _valid_bind_host(value: object) -> bool:
-    """Wildcard binding is explicit opt-in; concrete addresses stay local/private."""
-    return isinstance(value, str) and (value in ("127.0.0.1", "0.0.0.0") or private_ipv4(value))
+    """Default is 127.0.0.1; 0.0.0.0 or any unicast IPv4 may be set explicitly."""
+    return bindable_ipv4(value)
 
 
 def private_dir(path: Path) -> None:
@@ -205,7 +205,7 @@ def load(path: Path) -> Settings:
         raise ConfigError("Workspace must be an existing directory.")
     host = env.get("LAZYFISH_HOST") or raw.get("server", {}).get("host", "127.0.0.1")
     if not _valid_bind_host(host):
-        raise ConfigError("Host must be 127.0.0.1, a private IPv4 address, or 0.0.0.0.")
+        raise ConfigError("Host must be 0.0.0.0 or a unicast IPv4 address.")
     port = env.get("LAZYFISH_PORT") or raw.get("server", {}).get("port", 3210)
     try:
         if isinstance(port, bool) or not isinstance(port, (str, int)):

@@ -60,12 +60,12 @@ level = "INFO"
 Relative paths are resolved against the configuration directory. A bare Codex
 command is resolved through PATH; executable paths may also be absolute or relative.
 Workspace is optional. An empty value uses a private `workspace/` under the data directory. An explicit workspace must exist and restricts directory selection to that tree. Port `0` asks the OS for an available port, shown at start.
-The server binds to `127.0.0.1` by default. Set `server.host = "0.0.0.0"` (or `LAZYFISH_HOST=0.0.0.0`) to access it from the LAN using the machine’s current private IPv4 and port; startup prints the available addresses. A specific private IPv4 (e.g. `192.168.1.10`) can bind just one interface. Public bind addresses and public-IP Host headers are rejected. Token authentication is still required. Wildcard binding listens on all IPv4 interfaces; restrict access with a firewall and do not expose the service to the public internet. LAN HTTP is unencrypted; use an SSH tunnel on untrusted networks.
+The server binds to `127.0.0.1` by default. Set `server.host = "0.0.0.0"` (or `LAZYFISH_HOST=0.0.0.0`) to listen on all IPv4 interfaces; startup prints the available addresses. A specific unicast IPv4 (e.g. `192.168.1.10` or a public address) can bind just one interface. Token authentication is still required. Host checks reject requests whose Host header is not an address of this process; they are not a firewall. HTTP is unencrypted; use a firewall to limit who can connect, and use an SSH tunnel on untrusted networks. You choose the bind address and are responsible for who can reach it.
 Unknown keys are rejected so spelling errors do not silently disable settings.
 
 相对路径以配置文件目录为基准。工作目录可留空，执行时使用数据目录下的私有 `workspace/`；显式指定时目录必须已存在，且网页选择目录被限制在该目录内。端口 `0` 由系统分配。
 默认从 PATH 查找 `codex`，找不到时请手动设置 `codex.binary` 或 `LAZYFISH_CODEX_BIN`。
-默认绑定 `127.0.0.1`。设 `server.host = "0.0.0.0"`（或 `LAZYFISH_HOST=0.0.0.0`）后，可在局域网通过本机当前内网 IPv4 加端口访问，启动时会打印可用地址；也可指定内网 IPv4（例如 `192.168.1.10`）只绑定一个网卡。拒绝公网绑定地址及公网 IP Host 请求；仍需令牌认证。通配绑定会监听所有 IPv4 网卡，请用防火墙限制访问，不要暴露到公网。局域网 HTTP 不加密，不可信网络使用 SSH 隧道。未知配置键会报错。
+默认绑定 `127.0.0.1`。设 `server.host = "0.0.0.0"`（或 `LAZYFISH_HOST=0.0.0.0`）后会监听所有 IPv4 网卡，启动时打印可用地址；也可指定单个 IPv4（例如 `192.168.1.10` 或公网地址）只绑定一个网卡。仍需令牌认证。Host 检查只拒绝 Host 不是本进程地址的请求，不能替代防火墙。HTTP 不加密，请用防火墙限制访问，不可信网络使用 SSH 隧道。绑定地址由你选择，谁能访问由你负责。未知配置键会报错。
 
 | Environment variable / 环境变量 | Overrides / 覆盖项 |
 | --- | --- |

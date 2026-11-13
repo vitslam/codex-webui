@@ -1,4 +1,4 @@
-"""Native interface discovery and explicit RFC1918 address policy (stdlib only)."""
+"""Native interface discovery and bind-address helpers (stdlib only)."""
 
 from __future__ import annotations
 
@@ -44,6 +44,19 @@ def private_ipv4(value: str) -> bool:
     return any(address in network for network in _PRIVATE_NETWORKS)
 
 
+def bindable_ipv4(value: object) -> bool:
+    """Accept 0.0.0.0 or a unicast IPv4 address, including public and loopback."""
+    if not isinstance(value, str):
+        return False
+    if value == "0.0.0.0":
+        return True
+    try:
+        address = ipaddress.IPv4Address(value)
+    except ipaddress.AddressValueError:
+        return False
+    return not address.is_multicast and address != ipaddress.IPv4Address("255.255.255.255")
+
+
 def local_ipv4s(*, for_display: bool = False) -> set[str]:
     """Read UP IPv4 interfaces, including aliases, without DNS or subprocesses.
 
@@ -85,4 +98,5 @@ def request_host(bind_host: str) -> str:
 def access_hosts(bind_host: str) -> list[str]:
     if bind_host != "0.0.0.0":
         return [bind_host]
-    return ["127.0.0.1", *sorted(host for host in local_ipv4s(for_display=True) if private_ipv4(host))]
+    displayed = {host for host in local_ipv4s(for_display=True) if host != "127.0.0.1"}
+    return ["127.0.0.1", *sorted(displayed)]

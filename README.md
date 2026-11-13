@@ -108,16 +108,17 @@ config), change `host` under `[server]` to `"0.0.0.0"`, then restart the service
 host = "0.0.0.0"
 ```
 
-Startup prints the localhost URL and detected private IPv4 URLs. Open a LAN URL
-from the other device and sign in with `lazyfish token`. Common container/bridge
-interfaces are omitted from the banner. To bind only one interface, set its private
-IPv4 instead (for example `192.168.1.10`). See [configuration](docs/configuration.md).
+Startup prints the localhost URL and detected IPv4 URLs. Open one from the other
+device and sign in with `lazyfish token`. Common container/bridge interfaces are
+omitted from the banner. To bind only one interface, set that IPv4 instead (for
+example `192.168.1.10`). See [configuration](docs/configuration.md).
 
-`0.0.0.0` listens on **all IPv4 interfaces**, not just the LAN. Use only on a trusted
-network and restrict access with a firewall; HTTP does not encrypt tokens or traffic.
-Public bind addresses and non-local Host headers are rejected, but those checks are
-**not a firewall**. Do not expose the service to the public internet or forward its
-port on a router. Use SSH on untrusted networks.
+`0.0.0.0` listens on **all IPv4 interfaces**, not just the LAN. You may also bind a
+specific public or private IPv4. HTTP does not encrypt tokens or traffic; use a
+firewall to limit who can connect. Host checks only reject requests whose Host
+header is not an address of this process; they are **not a firewall**. You choose
+the bind address and are responsible for who can reach it. Use SSH on untrusted
+networks.
 
 **SSH alternative:** leave the default `127.0.0.1` binding and forward its port:
 

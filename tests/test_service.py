@@ -227,7 +227,8 @@ class WildcardServiceTests(IsolatedTest):
                         connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
                         connection.request("GET", "/", headers={"Host": f"{host}:{server.server_port}"})
                         response = connection.getresponse()
-                        self.assertEqual(response.status, 200 if host in ("127.0.0.1", "localhost", "10.0.0.8") else 403)
+                        allowed = ("127.0.0.1", "localhost", "10.0.0.8", "8.8.8.8")
+                        self.assertEqual(response.status, 200 if host in allowed else 403)
                         response.read()
                         connection.close()
                 for origin, expected in (("http://10.0.0.8", 200), ("http://evil.com", 403)):
@@ -263,6 +264,7 @@ class WildcardServiceTests(IsolatedTest):
                 self.assertEqual(process.returncode, 0, stderr)
                 self.assertIn("Lazyfish: http://127.0.0.1:", stdout)
                 self.assertNotIn("Lazyfish: http://0.0.0.0:", stdout)
+                self.assertIn("HTTP is unencrypted. Reachability follows this bind address and your firewall.", stdout)
             finally:
                 if process.poll() is None:
                     process.terminate()
@@ -285,6 +287,12 @@ class HostPolicyTests(unittest.TestCase):
             self.assertTrue(self.handler("10.0.0.8", [host])._host_ok())
         for host in ("127.0.0.1", "localhost", "10.0.0.9", "8.8.8.8", "0.0.0.0"):
             self.assertFalse(self.handler("10.0.0.8", [host])._host_ok())
+
+    def test_specific_public_binding_only_accepts_configured_address(self):
+        for host in ("192.0.2.1", "192.0.2.1:3210"):
+            self.assertTrue(self.handler("192.0.2.1", [host])._host_ok())
+        for host in ("127.0.0.1", "localhost", "10.0.0.8", "8.8.8.8", "0.0.0.0"):
+            self.assertFalse(self.handler("192.0.2.1", [host])._host_ok())
 
     def test_wildcard_host_rejects_missing_duplicate_and_malformed_headers(self):
         with patch("lazyfish.web.server.local_ipv4s", return_value={"10.0.0.8"}):

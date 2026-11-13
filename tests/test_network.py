@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from lazyfish import network
-from lazyfish.network import access_hosts, local_ipv4s, private_ipv4, request_host
+from lazyfish.network import access_hosts, bindable_ipv4, local_ipv4s, private_ipv4, request_host
 
 
 class NetworkTests(unittest.TestCase):
@@ -15,14 +15,25 @@ class NetworkTests(unittest.TestCase):
                      "169.254.1.2", "224.0.0.1", "240.0.0.1", "255.255.255.255"):
             self.assertFalse(private_ipv4(host))
 
+    def test_bindable_ipv4(self):
+        for host in ("0.0.0.0", "127.0.0.1", "127.0.0.2", "10.0.0.8", "8.8.8.8",
+                     "192.0.2.1", "169.254.1.2", "240.0.0.1"):
+            self.assertTrue(bindable_ipv4(host), host)
+        for host in ("", "localhost", "255.255.255.255", "224.0.0.1", "::1",
+                     "not-an-ip", None, 123):
+            self.assertFalse(bindable_ipv4(host), host)
+
     def test_access_hosts_and_lifecycle_destination(self):
         with patch("lazyfish.network.local_ipv4s", return_value={"127.0.0.1", "10.0.0.8", "192.168.1.10", "8.8.8.8"}):
-            self.assertEqual(access_hosts("0.0.0.0"), ["127.0.0.1", "10.0.0.8", "192.168.1.10"])
+            self.assertEqual(access_hosts("0.0.0.0"),
+                             ["127.0.0.1", "10.0.0.8", "192.168.1.10", "8.8.8.8"])
             self.assertEqual(access_hosts("10.0.0.8"), ["10.0.0.8"])
+            self.assertEqual(access_hosts("8.8.8.8"), ["8.8.8.8"])
             self.assertEqual(access_hosts("127.0.0.1"), ["127.0.0.1"])
         self.assertEqual(request_host("0.0.0.0"), "127.0.0.1")
         self.assertEqual(request_host("127.0.0.1"), "127.0.0.1")
         self.assertEqual(request_host("10.0.0.8"), "10.0.0.8")
+        self.assertEqual(request_host("8.8.8.8"), "8.8.8.8")
 
     def interfaces(self, platform, entries):
         buffers, nodes = [], []

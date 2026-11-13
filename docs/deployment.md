@@ -33,20 +33,19 @@ primary client.
 
 For a trusted LAN, edit `host` under `[server]` in your local
 `~/.config/lazyfish/config.toml` (or selected config) to `"0.0.0.0"` and restart.
-Startup prints localhost and detected private IPv4 URLs, omitting common
+Startup prints localhost and detected IPv4 URLs, omitting common
 container/bridge interfaces. Open a LAN URL and use `lazyfish token` to sign in.
-A specific private IPv4 (for example `192.168.1.10`) binds only that interface.
-Allow the configured TCP port through the host firewall only from trusted devices.
+A specific unicast IPv4 (for example `192.168.1.10` or a public address) binds only
+that interface. You choose the bind address and are responsible for who can reach it.
 
 `0.0.0.0` listens on all IPv4 interfaces. HTTP traffic and tokens are unencrypted;
-Host checks and rejection of public bind addresses do not replace a firewall.
-Do not expose the service to the public internet, including via router port forwarding.
+Host checks are not a firewall. Use a firewall to limit who can connect.
 
 可信局域网可在本地 `~/.config/lazyfish/config.toml`（或选用的配置文件）的 `[server]` 下，
-将 `host` 改为 `"0.0.0.0"` 后重启。启动时打印本机及内网 IPv4 地址，省略常见容器和网桥接口。
-使用局域网地址访问，仍需 `lazyfish token` 显示的令牌。也可指定一个内网 IPv4，只绑定对应网卡。
-防火墙只应允许可信设备访问配置的 TCP 端口。`0.0.0.0` 监听所有 IPv4 网卡，HTTP 不加密内容和令牌；
-Host 检查及拒绝公网绑定地址不能替代防火墙。不要暴露公网，也不要在路由器上转发端口。
+将 `host` 改为 `"0.0.0.0"` 后重启。启动时打印本机及探测到的 IPv4 地址，省略常见容器和网桥接口。
+使用打印出的地址访问，仍需 `lazyfish token` 显示的令牌。也可指定一个 IPv4，只绑定对应网卡。
+`0.0.0.0` 监听所有 IPv4 网卡，HTTP 不加密内容和令牌；Host 检查不能替代防火墙。
+绑定地址由你选择，谁能访问由你负责，请按需要用防火墙限制访问。
 
 Alternatively, keep `127.0.0.1` and use an encrypted SSH tunnel (recommended on
 untrusted networks). / 也可保留默认本机绑定，使用加密 SSH 隧道（不可信网络推荐）：

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import ipaddress
 import fcntl
 import json
 import os
@@ -91,6 +92,12 @@ def serve(settings: Settings) -> None:
                 previous_handlers[signum] = signal.signal(signum, lambda *_: server.stop_async())
             for host in access_hosts(settings.host):
                 print(f"Lazyfish: http://{host}:{server.server_port}", flush=True)
+            try:
+                loopback = settings.host != "0.0.0.0" and ipaddress.IPv4Address(settings.host).is_loopback
+            except ValueError:
+                loopback = False
+            if not loopback:
+                print("HTTP is unencrypted. Reachability follows this bind address and your firewall.", flush=True)
             print("Stage 3: local chat and conversation tools. Use `lazyfish token` to sign in.", flush=True)
             logger.info("Listening on %s port %s (local checks ready=%s)", settings.host, server.server_port, report["ready"])
             server.serve_forever(poll_interval=0.1)

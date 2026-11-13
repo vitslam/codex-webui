@@ -18,7 +18,7 @@ from urllib.parse import parse_qs, urlsplit, quote
 
 from .. import __version__
 from ..config import Settings
-from ..network import local_ipv4s, private_ipv4
+from ..network import local_ipv4s
 from ..codex import diagnose
 from ..storage import ACTIVE, StoreError
 from .assets import assets
@@ -92,7 +92,7 @@ class Handler(BaseHTTPRequestHandler):
         if bind_host == "0.0.0.0":
             # Refresh on each request so interface changes need no restart.
             allowed = {"127.0.0.1", "localhost"}
-            allowed.update(host for host in local_ipv4s() if private_ipv4(host))
+            allowed.update(local_ipv4s())
             names = [re.escape(host) for host in allowed]
         else:
             names = [re.escape(bind_host)]

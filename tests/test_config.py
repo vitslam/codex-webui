@@ -151,19 +151,19 @@ class ConfigTests(IsolatedTest):
         self.assertEqual(settings.port, 12345)
         self.assertEqual(settings.data_dir, self.config.parent / "relative")
 
-    def test_reject_public_bind_and_invalid_port(self):
-        for overrides in ({"LAZYFISH_HOST": "8.8.8.8"}, {"LAZYFISH_PORT": "65536"},
-                          {"LAZYFISH_PORT": "1.2"}, {"LAZYFISH_TOKEN": "short"}):
+    def test_reject_invalid_port_and_token(self):
+        for overrides in ({"LAZYFISH_PORT": "65536"}, {"LAZYFISH_PORT": "1.2"},
+                          {"LAZYFISH_TOKEN": "short"}):
             with self.subTest(overrides=list(overrides)), patch.dict(os.environ, overrides):
                 with self.assertRaises(ConfigError):
                     load(self.config)
 
-    def test_allow_private_bind_host(self):
-        for host in ("0.0.0.0", "127.0.0.1", "10.0.0.8", "172.16.0.8", "192.168.1.10"):
+    def test_allow_unicast_bind_host(self):
+        for host in ("0.0.0.0", "127.0.0.1", "127.0.0.2", "10.0.0.8", "172.16.0.8",
+                     "192.168.1.10", "8.8.8.8", "192.0.2.1", "169.254.1.2", "240.0.0.1"):
             with self.subTest(host=host), patch.dict(os.environ, {"LAZYFISH_HOST": host}):
                 self.assertEqual(load(self.config).host, host)
-        for host in ("8.8.8.8", "127.0.0.2", "localhost", "255.255.255.255",
-                     "169.254.1.2", "224.0.0.1", "240.0.0.1", "192.0.2.1", "::1"):
+        for host in ("localhost", "255.255.255.255", "224.0.0.1", "::1", "not-an-ip"):
             with self.subTest(host=host), patch.dict(os.environ, {"LAZYFISH_HOST": host}):
                 with self.assertRaises(ConfigError):
                     load(self.config)

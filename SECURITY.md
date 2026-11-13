@@ -1,12 +1,12 @@
 # Security / 安全说明
 
-This pre-alpha supports one trusted owner with loopback, opt-in trusted LAN, or SSH access. It is not a
-multi-user execution sandbox and must not be exposed directly to the internet.
+This pre-alpha supports one trusted owner. The default bind is loopback; you may also
+bind a specific IPv4 address or `0.0.0.0`. It is not a multi-user execution sandbox.
 Authenticated chat endpoints start real local Codex turns. The selected workspace
 is not an OS sandbox. Native sandbox/approval settings and the OS user permissions
 control execution; use a dedicated OS account.
 
-当前预览版用于可信单用户，支持本机、显式开启的可信局域网或 SSH 访问，不是多租户执行沙箱，不应直接暴露公网。
+当前预览版用于可信单用户，默认本机绑定，也可显式绑定指定 IPv4 或 `0.0.0.0`，不是多租户执行沙箱。
 认证后的聊天接口会执行真实任务。工作目录不构成 OS 隔离，执行仍受原生沙箱、审批与系统权限控制。
 
 Web tokens and native Codex credentials are separate. Private directories/files
@@ -25,16 +25,14 @@ file from the latest commit does not remove it from Git history.
 不要公开上传凭据、配置、数据库或私有日志。泄露后立即轮换，仅删除最新文件不能清除 Git 历史。
 
 `127.0.0.1` is the default. Opting into `0.0.0.0` listens on all IPv4 interfaces,
-including any public-facing interface; only concrete RFC1918 addresses may otherwise
-be configured for LAN binding. Host validation is not a network access control:
-a client can supply a local Host header from any reachable network. Use a firewall,
-do not forward the port from the public internet, and use SSH on untrusted networks.
-LAN HTTP does not encrypt the Web token, session cookie or conversation data.
+including any public-facing interface; a specific unicast IPv4 binds only that
+address. Host validation is not a network access control: a client can supply an
+allowed Host header from any reachable network. Use a firewall as needed. HTTP
+does not encrypt the Web token, session cookie or conversation data.
 
 默认绑定 `127.0.0.1`。显式设为 `0.0.0.0` 会监听所有 IPv4 网卡（包括可能的公网网卡）；
-也可指定 RFC1918 内网 IPv4。Host 校验不是网络访问控制，任何能连接的客户端都可发送本机 Host。
-请通过防火墙限制访问，不要转发公网端口；不可信网络使用 SSH。局域网 HTTP 不加密 Web 令牌、
-会话 Cookie 或对话数据。
+也可指定单个 IPv4。Host 校验不是网络访问控制，任何能连接的客户端都可发送已允许的 Host。
+请按需要用防火墙限制访问。HTTP 不加密 Web 令牌、会话 Cookie 或对话数据。
 
 ## Reporting / 报告漏洞
 
