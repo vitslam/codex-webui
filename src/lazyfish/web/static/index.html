@@ -68,6 +68,7 @@
 <div class="utility-actions">
   <button id="theme-toggle" class="icon-button theme-toggle" type="button" data-label="toggleTheme"><svg class="icon theme-sun" aria-hidden="true"><use href="#i-sun"/></svg><svg class="icon theme-moon" aria-hidden="true"><use href="#i-moon"/></svg></button>
 </div>
+<div id="restore-loading" class="restore-loading" role="status" aria-live="polite" hidden><span data-text="loadingApp">Loading Lazyfish…</span></div>
 <main id="login-screen" class="login-page" hidden>
   <a class="login-brand brand" href="/"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg></span><span>lazyfish<span class="brand-dot">.</span></span></a>
   <section class="login-card" id="login-panel">
@@ -104,7 +105,7 @@
   </aside>
   <main id="chat" class="workspace is-empty">
     <header class="topbar"><div class="topbar-leading"><button id="sidebar-toggle" class="icon-button" type="button" data-label="sidebar" aria-controls="sidebar" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-panel"/></svg></button><span class="workspace-name">Codex</span><span class="topbar-separator" aria-hidden="true">/</span><h1 id="conversation-title" class="topbar-label"></h1></div><span id="connection-state" role="status"></span></header>
-    <div id="messages" class="thread-scroll" tabindex="0" data-label="messages"><div id="transcript" class="timeline"><button id="older" class="history-more" type="button" data-text="older" hidden>Earlier messages</button><div id="empty" class="welcome"><h1 data-text="newTitle">What would you like to do?</h1><p class="welcome-description" data-text="emptyHelp">Write code, solve problems, or explore a new idea.</p></div><button id="newer" class="history-more" type="button" data-text="newer" hidden>Newer messages</button></div></div>
+    <div id="messages" class="thread-scroll" tabindex="0" data-label="messages"><div id="transcript" class="timeline"><button id="older" class="history-more" type="button" data-text="older" hidden>Earlier messages</button><div id="empty" class="welcome" hidden><h1 data-text="newTitle">What would you like to do?</h1><p class="welcome-description" data-text="emptyHelp">Write code, solve problems, or explore a new idea.</p></div><button id="newer" class="history-more" type="button" data-text="newer" hidden>Newer messages</button></div></div>
     <div class="composer-dock">
       <button id="latest" class="history-more latest" type="button" data-text="latest" hidden>Jump to latest ↓</button>
       <div id="notice" role="status" aria-live="polite"></div>

@@ -14,6 +14,33 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_refresh_restores_conversation_without_welcome_flash(self):
+        self._display_browser('restore')
+
+    def test_cached_search_results_and_history_loading_feedback(self):
+        self._display_browser('search-history')
+
+    def _display_browser(self, mode):
+        from contextlib import closing
+        from datetime import datetime,timedelta,timezone
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        chat=store.create_conversation(str(self.workspace),'Restored conversation')
+        for index in range(125):
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question '+str(index),None,None)
+            store.item(job['id'],'reply','assistant','Saved answer '+str(index)+'\n\n'+'History paragraph. '*20,'completed');store.finish(job['id'],'completed')
+        now=datetime.now(timezone.utc);old=None
+        for index in range(61):
+            entry=store.create_conversation(str(self.workspace),'Needle conversation '+str(index))
+            stamp=now-timedelta(days=3) if index==0 else now-timedelta(minutes=index*3)
+            with closing(store.connect()) as db,db:db.execute('UPDATE conversations SET updated_at=?,pinned=? WHERE id=?',(stamp.isoformat(),int(index==0),entry['id']))
+            if not index:old=entry['id']
+        fixture=self.root/'display-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,chat=chat['id'],old=old,mode=mode)))
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('display_browser.cjs'))],
+                              env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=120)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn(mode+' checks passed',result.stdout)
+
     def test_workspace_skill_context_and_new_chat_defaults(self):
         self._interaction_browser('workspace')
 

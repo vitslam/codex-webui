@@ -271,7 +271,8 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     await page.waitForFunction(()=>[...document.querySelectorAll(".turn .task-status")].some(el=>el.dataset.state==="completed"));await wakeComposer();await page.locator("#context-settings summary").click();
     await page.waitForFunction(()=>document.querySelector("#context-percent").textContent==="32% 已用");await page.screenshot({path:fixture.output+"/context-usage.png"});
     await page.reload();await settle();await page.waitForSelector(".user-message img");
-    assert.equal(await page.locator("#fast-toggle").getAttribute("aria-pressed"),"true");assert.equal(await page.locator("#model").inputValue(),"example-model");assert.equal(await page.locator("#effort").inputValue(),"high");
+    // Reload restores this chat's submitted settings, independent of earlier chats.
+    assert.equal(await page.locator("#fast-toggle").getAttribute("aria-pressed"),String(submitted.fast_mode));assert.equal(await page.locator("#model").inputValue(),submitted.model||"");assert.equal(await page.locator("#effort").inputValue(),submitted.effort||"");
     await wakeComposer();await page.locator("#context-settings summary").click();assert.equal(await page.locator("#context-percent").innerText(),"32% 已用");
     await page.setViewportSize({width:390,height:844});await settle();
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

@@ -1,6 +1,6 @@
 "use strict";
 // Original Lazyfish panel structures with callbacks into the local chat adapter.
-window.LazyfishPanels = function({node,icon,t,api,getStatus,getConversation,selectConversation,onModel,refreshStatus,report,closeMenu}) {
+window.LazyfishPanels = function({node,icon,t,api,getStatus,getConversation,getConversations=()=>[],selectConversation,onModel,refreshStatus,report,closeMenu}) {
   const $=selector=>document.querySelector(selector);
   const run=LazyfishRunSettings({node,icon,t,getStatus,getConversation,onModel});
   const account=$("#account-dialog"), search=$("#search-dialog");
@@ -40,24 +40,38 @@ window.LazyfishPanels = function({node,icon,t,api,getStatus,getConversation,sele
     while((found=lower.indexOf(needle,offset))!==-1){root.append(document.createTextNode(text.slice(offset,found)),node("mark","",text.slice(found,found+query.length)));offset=found+query.length;}
     root.append(document.createTextNode(text.slice(offset)));return root;
   }
+  function relativeTime(value) {
+    const timestamp=Date.parse(value);
+    if(!Number.isFinite(timestamp))return t('unknown');
+    const minutes=Math.max(0,Math.floor((Date.now()-timestamp)/60000));
+    if(minutes<1)return t('ui.just.now');
+    const formatter=new Intl.RelativeTimeFormat(document.documentElement.lang,{numeric:'always'});
+    return minutes<60 ? formatter.format(-minutes,'minute') : minutes<1440 ? formatter.format(-Math.floor(minutes/60),'hour') : formatter.format(-Math.floor(minutes/1440),'day');
+  }
+  function drawResults(entries,q='',more=false) {
+    const target=$("#search-results");target.replaceChildren();
+    if(!entries.length) {
+      const empty=node("div","search-empty");empty.append(icon("search"),node("p","",t("noConversations")));target.append(empty);
+    }
+    for(const entry of entries) {
+      const button=node("button","search-result");button.type="button";button.dataset.id=entry.id;
+      const header=node("span","search-result-header"),time=node("time","search-result-time",relativeTime(entry.updated_at));
+      const timestamp=Date.parse(entry.updated_at);if(Number.isFinite(timestamp)){time.dateTime=new Date(timestamp).toISOString();time.title=new Date(timestamp).toLocaleString(document.documentElement.lang);}
+      header.append(node("span","search-result-title",entry.title || t("newChat")),time);
+      if(q){const title=header.querySelector(".search-result-title");title.replaceChildren(highlighted(entry.title||t("newChat"),q));}
+      button.append(header);
+      if(entry.snippet){const snippet=node("span","search-result-snippet");snippet.append(highlighted(entry.snippet.replace(/\s+/g," "),q));button.append(snippet);}button.addEventListener("click",async()=>{try{await selectConversation(entry.id);search.close();}catch(error){report(error);}});target.append(button);
+    }
+    if(more)target.append(node("p","search-limit",t("searchLimit")));
+  }
   async function find() {
     const request=++epoch,q=$("#conversation-search").value.trim(),target=$("#search-results");
+    if(!q){drawResults([...getConversations()].sort((a,b)=>Date.parse(b.updated_at)-Date.parse(a.updated_at)).slice(0,20));return;}
     target.replaceChildren(node("p","search-loading",t("searching")));
     try {
-      const result=await api(`/api/conversations?limit=30&q=${encodeURIComponent(q)}`);
+      const result=await api(`/api/conversations?limit=50&q=${encodeURIComponent(q)}`);
       if(request!==epoch || !search.open)return;
-      target.replaceChildren();
-      if(!result.conversations.length) {
-        const empty=node("div","search-empty");empty.append(icon("search"),node("p","",t("noConversations")));target.append(empty);
-      }
-      for(const entry of result.conversations) {
-        const button=node("button","search-result");button.type="button";button.dataset.id=entry.id;
-        const header=node("span","search-result-header");header.append(node("span","search-result-title",entry.title || t("newChat")),node("span","search-result-time",new Date(entry.updated_at).toLocaleDateString()));
-        if(q){const title=header.querySelector(".search-result-title");title.replaceChildren(highlighted(entry.title||t("newChat"),q));}
-        button.append(header);
-        if(entry.snippet){const snippet=node("span","search-result-snippet");snippet.append(highlighted(entry.snippet.replace(/\s+/g," "),q));button.append(snippet);}button.addEventListener("click",async()=>{try{await selectConversation(entry.id);search.close();}catch(error){report(error);}});target.append(button);
-      }
-      if(result.next_cursor)target.append(node("p","search-limit",t("searchLimit")));
+      drawResults(result.conversations,q,Boolean(result.next_cursor));
     } catch { if(request===epoch)target.replaceChildren(node("p","search-loading",t("requestFailed"))); }
   }
   for(const button of account.querySelectorAll("[data-account-tab]"))button.addEventListener("click",()=>selectPage(button.dataset.accountTab));

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Avoid welcome-screen flashes while restoring a conversation; show cached recent chats immediately in search, display up to 50 matches with relative timestamps, and label in-progress history loads.
+- 刷新恢复对话时不再闪现欢迎页；搜索立即展示本地最近对话，最多显示 50 条匹配结果并使用相对时间；加载历史消息时显示明确的进行中提示。
+
 - Keep skill discovery and selection aligned with the chosen directory, isolate delayed directory saves to their conversation, preserve question choices and ordinary answer drafts, and restore new-chat defaults instead of inheriting the previous conversation's run settings.
 - 技能发现和选择跟随当前目录；目录保存的慢响应不再影响其他会话；提问保留所选选项与普通回答草稿；新对话恢复默认参数，不再继承上一会话的临时设置。
 
