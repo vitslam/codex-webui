@@ -132,6 +132,7 @@ const panels = LazyfishPanels({node,icon,t,api,getStatus:()=>status,getConversat
   refreshStatus:()=>refreshStatus(true).catch(report),report,closeMenu});
 const preferences=LazyfishPreferences({node,t,panels,shortcuts,getConversation:()=>conversation,onChange:()=>{features.render();renderControls();},onDisplayChange:()=>conversation?.jobs.forEach(renderJob),onReset:()=>{language=navigator.language.startsWith("zh")?"zh":"en";appearance.set("system");render();}});
 const features = LazyfishFeatures({node,icon,t,api,getStatus:()=>status,getConversation:()=>conversation,panels,report,preferences,refreshStatus,getBusy:()=>sending||Boolean(activeJob()),onCompact:()=>compactContext().catch(report),onChange:()=>{resizePrompt();renderControls();}});
+const archives=LazyfishArchives({node,icon,t,api,onRestore:()=>refreshList()});
 const active = (job) => ["queued","running", "cancelling"].includes(job.status);
 const activeJob = () => conversation?.jobs.find(active) || (conversation?.active_job && active(conversation.active_job) ? conversation.active_job : null);
 
@@ -266,7 +267,7 @@ function render() {
     button.setAttribute("aria-label",button.title);
   });
   document.querySelectorAll(".branch").forEach((button)=>{button.title=`${t("branch")} · ${t("branchHelp")}`;button.setAttribute("aria-label",t("branch"));});
-  panels.render();features.render();preferences.render();
+  panels.render();features.render();preferences.render();archives.render();
   renderControls();renderPending();
 }
 function renderDiagnostics() {
@@ -282,7 +283,7 @@ function renderDiagnostics() {
   }
   $("#workspace-label").textContent = status.workspace;
 }
-function listButton(entry,index,compact=false) {
+function listButton(entry,index,compact=false,onRename=null) {
   const button = node("button",`conversation${conversation?.id === entry.id ? " selected" : ""}${hintCandidate === entry.id ? " preselected" : ""}`);
   button.type = "button"; button.dataset.id = entry.id;
   const activity=sidebarStatus(entry);button.append(node("span",`dot ${activity || ""}`),node("span","conversation-name",entry.title || t("emptyTitle")));
@@ -290,7 +291,7 @@ function listButton(entry,index,compact=false) {
   const kbd = node("kbd","shortcut-number",`${shortcuts.label()} ${index+1}`);
   kbd.hidden = !hintsHeld || index >= 9; button.append(kbd);
   button.addEventListener("click",event => {clearTimeout(listClickTimer);shortcuts.clear();if(event.detail===0)loadConversation(entry.id).catch(report);else if(event.detail===1&&entry.id!==conversation?.id)listClickTimer=setTimeout(()=>loadConversation(entry.id).catch(report),300);});
-  if(!compact)button.addEventListener('dblclick',event=>{event.preventDefault();clearTimeout(listClickTimer);button.closest('.conversation-row').querySelector('.conversation-rename').click();});
+  if(onRename)button.addEventListener('dblclick',event=>{event.preventDefault();clearTimeout(listClickTimer);onRename();});
   if (compact) button.setAttribute("aria-pressed",String(hintCandidate === entry.id));
   return button;
 }
@@ -309,19 +310,18 @@ function groupedList(container,entries,compact=false) {
         try {const result=await api(`/api/conversations/${entry.id}/settings`,{pinned:!entry.pinned});if(conversation?.id===entry.id)conversation.pinned=result.pinned;await refreshList();$("#conversation-list").querySelector(`.conversation-row[data-id="${entry.id}"]`)?.scrollIntoView({block:"nearest"});}
         catch(error){report(error);}finally{button.disabled=false;}
       });
-      const rename=node("button","conversation-action conversation-rename");rename.type="button";rename.title=t("rename");rename.setAttribute("aria-label",t("rename"));rename.append(icon("edit"));
-      rename.addEventListener("click",()=>{
+      const rename=()=>{
         const input=node("input","conversation-rename-input");input.value=entry.title;input.maxLength=100;input.setAttribute("aria-label",t("rename"));
         const original=row.querySelector(".conversation");original.replaceWith(input);input.focus();input.select();let busy=false;
         async function save(){if(busy)return;busy=true;const title=input.value.trim();try{if(title){await api(`/api/conversations/${entry.id}/settings`,{title});entry.title=title;const current=conversations.find(chat=>chat.id===entry.id);if(current)current.title=title;if(conversation?.id===entry.id){conversation.title=title;$("#conversation-title").textContent=title;}}}catch(error){report(error);}finally{input.remove();listSignature='';renderList();}}
         input.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();save();}else if(event.key==="Escape"){event.preventDefault();busy=true;input.remove();listSignature='';renderList();}});input.addEventListener("blur",save);
+      };
+      const remove=node("button","conversation-action conversation-archive");remove.type="button";remove.title=t("archive.action");remove.setAttribute("aria-label",t("archive.action"));remove.append(icon("archive"));
+      remove.disabled=sending||["queued","running","cancelling"].includes(entry.status);
+      remove.addEventListener("click",async()=>{remove.disabled=true;
+        try{await api(`/api/conversations/${entry.id}/archive`,{});conversations=conversations.filter(c=>c.id!==entry.id);if(conversation?.id===entry.id)await newConversation();else renderList();savedViews.delete(entry.id);readReceipts.delete(entry.id);}catch(error){report(error);remove.disabled=false;}
       });
-      const remove=node("button","conversation-action conversation-delete");remove.type="button";remove.title=t("delete");remove.setAttribute("aria-label",t("delete"));remove.append(icon("trash"));
-      remove.disabled=sending||["running","cancelling"].includes(entry.status);
-      remove.addEventListener("click",async()=>{if(!confirm(t("deleteConversation")+"\n"+t("deleteHelp")))return;remove.disabled=true;
-        try{await api(`/api/conversations/${entry.id}/delete`,{});conversations=conversations.filter(c=>c.id!==entry.id);if(conversation?.id===entry.id)await newConversation();else renderList();savedViews.delete(entry.id);drafts.delete(entry.id);readReceipts.delete(entry.id);}catch(error){report(error);remove.disabled=false;}
-      });
-      row.append(listButton(entry,index),rename,button,remove);parent.append(row);
+      row.append(listButton(entry,index,false,rename),button,remove);parent.append(row);
     }
   });
 }

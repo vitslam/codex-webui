@@ -376,6 +376,43 @@ class Store:
         with closing(self.connect()) as db:removed=[row[0] for row in db.execute('SELECT id FROM conversations WHERE archived=1 ORDER BY rowid DESC LIMIT 1000')]
         return {"conversations":rows,"next_cursor":cursor,"removed_ids":removed}
 
+    def archived_page(self, limit=50, cursor=None, query='', workspace=None):
+        where, values = 'WHERE c.archived=1', []
+        boundary=None
+        if cursor:
+            try:
+                stamp, identifier = json.loads(base64.urlsafe_b64decode(cursor.encode()+b'='*(-len(cursor)%4)))
+                if not isinstance(stamp,str) or not isinstance(identifier,str): raise ValueError()
+            except (ValueError,TypeError,UnicodeError) as exc:
+                raise StoreError('invalid_cursor') from exc
+            boundary=[stamp,identifier]
+        if workspace is not None:
+            where += ' AND c.workspace=?'; values.append(workspace)
+        if query:
+            where += ''' AND (instr(lower(c.title),lower(?))>0 OR EXISTS(
+                SELECT 1 FROM jobs j WHERE j.retired=0 AND j.conversation_id=c.id AND
+                (instr(lower(j.prompt),lower(?))>0 OR EXISTS(SELECT 1 FROM items i
+                WHERE i.job_id=j.id AND instr(lower(i.text),lower(?))>0))))'''
+            values.extend([query,query,query])
+        with closing(self.connect()) as db:
+            db.execute('BEGIN')
+            counts={row[0]:row[1] for row in db.execute(f'SELECT c.workspace,COUNT(*) FROM conversations c {where} GROUP BY c.workspace',values)}
+            if boundary:
+                where += ' AND (c.updated_at,c.id)<(?,?)';values.extend(boundary)
+            rows=[dict(row) for row in db.execute(f'''SELECT c.id,c.title,c.workspace,c.updated_at
+                FROM conversations c {where} ORDER BY c.updated_at DESC,c.id DESC LIMIT ?''',[*values,limit+1])]
+            workspaces=[row[0] for row in db.execute('SELECT DISTINCT workspace FROM conversations WHERE archived=1 ORDER BY workspace')]
+        more=len(rows)>limit; rows=rows[:limit]
+        next_cursor=base64.urlsafe_b64encode(json.dumps([rows[-1]['updated_at'],rows[-1]['id']]).encode()).decode().rstrip('=') if more else None
+        return {'conversations':rows,'workspaces':workspaces,'counts':counts,'next_cursor':next_cursor}
+
+    def restore(self, identifier):
+        with closing(self.connect()) as db,db:
+            db.execute('BEGIN IMMEDIATE')
+            if not db.execute('SELECT 1 FROM conversations WHERE id=?',(identifier,)).fetchone(): raise StoreError('not_found')
+            db.execute('UPDATE conversations SET archived=0 WHERE id=? AND archived=1',(identifier,))
+        return self.conversation(identifier)
+
     def update_conversation(self, identifier: str, title=None, pinned=None) -> dict:
         self.conversation(identifier)
         with closing(self.connect()) as db, db:

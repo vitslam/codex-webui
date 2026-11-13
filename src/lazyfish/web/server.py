@@ -225,13 +225,18 @@ class Handler(BaseHTTPRequestHandler):
             if match := re.fullmatch(r"/api/attachments/([a-f0-9]{32})",parsed.path):
                 attachment = store.attachment(match[1],True)
                 return self._send(200,attachment["content"],attachment["mime"])
-            if parsed.path == "/api/conversations":
+            if parsed.path in ("/api/conversations", "/api/conversations/archived"):
                 cursor = query.get("cursor",[None])[0]
                 if cursor and len(cursor)>1024:
                     return self._send(400,{"error":"invalid_cursor"})
                 search = query.get("q",[""])[0].strip()
                 if len(search)>200:
                     return self._send(400,{"error":"invalid_query"})
+                if parsed.path.endswith('/archived'):
+                    workspace=query.get('workspace',[None])[0]
+                    if workspace is not None and len(workspace)>4096:
+                        return self._send(400,{'error':'invalid_query'})
+                    return self._send(200,store.archived_page(limit,cursor,search,workspace))
                 return self._send(200,store.conversation_page(limit,cursor,search))
             if match := re.fullmatch(r'/api/conversations/([a-f0-9]{32})/(events|sync)',parsed.path):
                 if match[2]=='events':return self._conversation_events(match[1],query.get('since',[''])[0])
@@ -459,8 +464,10 @@ class Handler(BaseHTTPRequestHandler):
             key=body.get('client_request_id')
             if key is not None and (not isinstance(key,str) or not re.fullmatch(r'[a-zA-Z0-9_-]{16,80}',key)):raise StoreError('invalid_request_key')
             return self._send(201,manager.store.create_conversation(self._workspace(body.get("workspace",str(self.server.settings.workspace))),title,validate(body.get('run_settings',{})),key))
-        if match := re.fullmatch(r"/api/conversations/([a-f0-9]{32})/delete",self.path):
+        if match := re.fullmatch(r"/api/conversations/([a-f0-9]{32})/(archive|delete)",self.path):
             return self._send(200,manager.store.archive(match[1]))
+        if match := re.fullmatch(r"/api/conversations/([a-f0-9]{32})/restore",self.path):
+            return self._send(200,manager.store.restore(match[1]))
         if match := re.fullmatch(r"/api/conversations/([a-f0-9]{32})/compact",self.path):
             key=body.get("client_request_id")
             if not isinstance(key,str) or not re.fullmatch(r"[a-zA-Z0-9_-]{16,80}",key):return self._send(400,{"error":"invalid_request_key"})

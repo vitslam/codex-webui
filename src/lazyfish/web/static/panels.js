@@ -10,13 +10,14 @@ window.LazyfishPanels = function({node,icon,t,api,getStatus,getConversation,sele
   function closePopovers() { for(const id of ["#model-options","#permission-settings","#attachment-settings","#context-settings"]) $(id).open=false; }
   function selectPage(next,load=true) {
     page=next;
-    for(const id of ["settings","diagnostics","installation"]) $("#"+id).hidden=id!==page;
+    account.dataset.page=page;
+    for(const id of ["settings","diagnostics","installation","data-management"]) $("#"+id).hidden=(id==='data-management'?'dataManagement':id)!==page;
     for(const button of account.querySelectorAll("[data-account-tab]")) {
       const selected=button.dataset.accountTab===page; button.classList.toggle("selected",selected);
       if(selected)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");
     }
-    $("#account-dialog-title").textContent=t(page);
-    $("#native-page").hidden=["settings","diagnostics","installation"].includes(page);
+    $("#account-dialog-title").textContent=t(page==='dataManagement'?'archive.heading':page);
+    $("#native-page").hidden=["settings","diagnostics","installation","dataManagement"].includes(page);
     $("#account-reload").hidden=["settings","installation"].includes(page);
     if(load&&account.open)window.dispatchEvent(new CustomEvent("lazyfish-panel",{detail:{page}}));
   }

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Replace the sidebar delete action with reversible chat archiving; add searchable, workspace-grouped archive management and restoration in Settings.
+- 侧栏删除改为可恢复的聊天归档；设置新增支持搜索、工作目录分组和恢复的数据管理页面。
+
 - Fold user-message text after 20 rendered lines, keeping attachments visible and preserving full-text copy/edit; show localized, bounded skill-loading diagnostics and catalog truncation notices.
 - 用户消息超过 20 个显示行时折叠正文，附件保持可见，复制和编辑使用全文；技能页新增本地化、有数量上限的加载诊断及列表截断提示。
 

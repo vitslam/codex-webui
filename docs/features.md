@@ -178,6 +178,15 @@ slot cards and timing chart, adapted to local owned executors and configurable q
 
 ## Recent display parity / 最近显示更新
 
+The sidebar archives chats with a box-shaped action. Settings → Data management
+lists archived chats by workspace, with search, workspace filtering and pagination.
+Unarchive returns a chat to the sidebar with its history, native thread, settings
+and pin state intact. Active or queued chats must finish before archiving.
+
+侧栏通过箱形图标归档聊天。设置 → 数据管理按工作目录分组展示归档记录，支持搜索、
+目录筛选和分页。取消归档后会话重新进入侧栏，保留历史、原生会话、设置及置顶状态。
+执行中或排队中的聊天需先结束任务再归档。
+
 User-message text keeps the first 20 rendered lines visible, with Show more / Show
 less for overflow, including wrapped lines. Images and skill labels remain visible.
 Copy and Edit always use the full text. Expansion survives cached conversation

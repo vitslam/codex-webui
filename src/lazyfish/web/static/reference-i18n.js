@@ -2,6 +2,18 @@
 // Reference UI labels; credentials and installation data never belong here.
 window.LazyfishReferenceI18n={
   "en": {
+    "dataManagement": "Data management",
+    "archive.heading": "Archived chats",
+    "archive.action": "Archive chat",
+    "archive.search": "Search archived chats",
+    "archive.allProjects": "All projects",
+    "archive.noProject": "No project",
+    "archive.count": {"one":"{count} chat","other":"{count} chats"},
+    "archive.restore": "Unarchive",
+    "archive.restoreNamed": "Unarchive {title}",
+    "archive.restored": "Unarchived “{title}”.",
+    "archive.empty": "No archived chats yet.",
+    "archive.noResults": "No archived chats found.",
     "skills.discovery.heading": "Skill loading issues",
     "skills.discovery.none_loaded": "No skills could be loaded. See the issues below.",
     "skills.discovery.missing_name": "Required skill name is missing or empty.",
@@ -645,6 +657,18 @@ window.LazyfishReferenceI18n={
     "ui.answered": "Answered"
   },
   "zh": {
+    "dataManagement": "数据管理",
+    "archive.heading": "已归档的聊天",
+    "archive.action": "归档聊天",
+    "archive.search": "搜索已归档的聊天",
+    "archive.allProjects": "所有项目",
+    "archive.noProject": "无项目",
+    "archive.count": "{count} 个聊天",
+    "archive.restore": "取消归档",
+    "archive.restoreNamed": "取消归档 {title}",
+    "archive.restored": "已取消归档“{title}”。",
+    "archive.empty": "暂无已归档的聊天。",
+    "archive.noResults": "未找到符合条件的已归档聊天。",
     "skills.discovery.heading": "技能加载问题",
     "skills.discovery.none_loaded": "未能加载任何技能，请查看下方问题。",
     "skills.discovery.missing_name": "技能缺少必填的名称，或名称为空。",

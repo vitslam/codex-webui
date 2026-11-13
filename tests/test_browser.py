@@ -14,6 +14,27 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_conversation_archive_and_restore(self):
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        workspaces=[self.workspace/'lazyfish',self.workspace/'example-project']
+        for path in workspaces:path.mkdir()
+        archived=[]
+        for index,title in enumerate(('梳理会话归档交互','修复技能加载诊断','检查长消息折叠效果','Review project notes')):
+            chat=store.create_conversation(str(workspaces[index//3]),title)
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question',None,None)
+            store.item(job['id'],'answer','assistant','Saved response.','completed');store.finish(job['id'],'completed')
+            store.archive(chat['id']);archived.append(chat['id'])
+        active=[]
+        for title in ('归档功能预览','发布前检查','界面交互记录'):
+            chat=store.create_conversation(str(workspaces[0]),title)
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'请检查项目当前的状态。',None,None)
+            store.item(job['id'],'answer','assistant','已完成检查。\n\n项目文件和会话记录均正常，可以继续处理后续任务。','completed');store.finish(job['id'],'completed');active.append(chat['id'])
+        fixture=self.root/'archive-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,active=active,archived=archived,workspaces=[str(p) for p in workspaces],output=os.environ.get('LAZYFISH_BROWSER_OUTPUT',str(self.root)))))
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('archive_browser.cjs'))],env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=120)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('archive and restore passed',result.stdout)
+
     def test_message_folding_and_skill_diagnostics(self):
         import base64
         store=Store(self.settings.data_dir/'lazyfish.db')

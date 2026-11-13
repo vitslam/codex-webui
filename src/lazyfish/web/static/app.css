@@ -73,7 +73,7 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .conversation-action .icon { width: 14px; height: 14px; }
 .conversation-row:hover .conversation-action, .conversation-row:focus-within .conversation-action { opacity: 1; }
 .conversation-action:hover { color: var(--text); }
-.conversation-action:last-child:hover { color: var(--danger); }
+.conversation-action:last-child:hover { color: var(--text); }
 .shortcut-hint-key { flex: none; display: inline-block; padding: 1px 5px; border: 1px solid var(--border); border-radius: 5px; background: var(--soft); color: var(--muted); font: 11px/1.5 -apple-system, BlinkMacSystemFont, sans-serif; white-space: nowrap; }
 [data-shortcut-hints] .conversation-action { display: none; }
 .shortcut-inline-hint { pointer-events: none; }
@@ -286,7 +286,7 @@ body.signed-in { height:100dvh; overflow:hidden; }
 .pin-button { width:24px; height:24px; opacity:0; }
 .pin-button .icon { width:14px; height:14px; }
 .topbar:hover .pin-button,.pin-button:focus-visible,.pin-button[aria-pressed="true"] { opacity:1; }
-.pin-button[aria-pressed="true"] { color:var(--accent); }
+.pin-button[aria-pressed="true"] .icon { fill:currentColor; }
 #connection-state { color:var(--danger); font-size:10px; white-space:nowrap; }
 #messages { scroll-behavior:auto; overflow-anchor:none; }
 .composer-settings .settings-panel { width:260px; }
@@ -536,7 +536,7 @@ select option { background: var(--surface); color: var(--text); }
 .topbar { padding-right:70px; }
 .conversation-row .conversation { flex:1; width:auto; padding:6px 10px; }
 .conversation-row .conversation.selected { background:transparent; }
-.conversation-row .conversation-pin[aria-pressed="true"] { color:var(--accent); }
+.conversation-row .conversation-pin[aria-pressed="true"] .icon { fill:currentColor; }
 .conversation-row:hover .conversation-action,.conversation-row:focus-within .conversation-action { opacity:1; }
 #account-dialog .account-row>label { flex:1; margin:0; }
 #account-dialog .account-row select { flex:none; }
@@ -1133,3 +1133,51 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 .local-path-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .local-path-actions a { color: var(--accent); text-underline-offset: 3px; }
 .local-path-actions>button:last-child { margin-left: auto; }
+
+/* Archived chats keep the project groups and quiet controls of the sidebar. */
+.conversation-archive .icon { width:17px; height:17px; stroke-width:1.5; }
+#account-dialog[data-page="dataManagement"] { width:min(1120px,calc(100vw - 40px)); height:min(780px,calc(100dvh - 56px)); }
+#account-dialog[data-page="dataManagement"] .account-nav { width:196px; }
+#account-dialog[data-page="dataManagement"] .account-main { background:var(--bg); }
+#account-dialog[data-page="dataManagement"] .account-toolbar { padding:38px 36px 26px; border-bottom:0; }
+#account-dialog[data-page="dataManagement"] .account-toolbar h2 { font-size:27px; letter-spacing:-.7px; }
+#account-dialog[data-page="dataManagement"] .account-content { padding:4px 36px 36px; }
+.archive-controls { display:flex; gap:12px; margin-bottom:28px; }
+.archive-search,.archive-filter { display:flex; align-items:center; gap:9px; min-width:0; height:40px; border:1px solid var(--strong-border); background:var(--soft); padding:0 14px; border-radius:24px; color:var(--muted); }
+.archive-search { flex:1; }
+.archive-search .icon,.archive-filter .icon { width:18px; height:18px; flex-shrink:0; }
+.archive-search input { min-width:0; width:100%; padding:0; border:0; background:transparent; font-size:13px; outline:0; }
+.archive-search:focus-within,.archive-filter:focus-within { outline:2px solid var(--accent); outline-offset:2px; }
+.archive-filter { width:184px; border-radius:10px; background:transparent; color:var(--text); }
+.archive-filter select { min-width:0; width:100%; padding:0; border:0; background:transparent; font-size:13px; outline:0; }
+.archive-status { margin:0; color:var(--muted); font-size:12px; }
+.archive-status:not(:empty) { margin-bottom:18px; }
+.archive-group { margin-bottom:30px; }
+.archive-group-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+.archive-group-heading h3 { display:flex; align-items:center; gap:10px; min-width:0; font-size:14px; font-weight:500; }
+.archive-group-heading h3 span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.archive-group-heading .icon { width:18px; height:18px; flex-shrink:0; }
+.archive-count { color:var(--muted); font-size:12px; white-space:nowrap; }
+.archive-card { border:1px solid var(--border); border-radius:16px; padding:0 18px; background:var(--surface); }
+.archive-row { display:flex; align-items:center; gap:20px; min-height:80px; padding:16px 0; }
+.archive-row+.archive-row { border-top:1px solid var(--border); }
+.archive-row-text { min-width:0; flex:1; }
+.archive-title { display:block; font-size:14px; font-weight:400; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.archive-row time { display:block; margin-top:5px; color:var(--muted); font-size:12px; }
+.archive-restore { flex-shrink:0; padding:8px 12px; border-radius:10px; background:var(--hover); font-size:13px; font-weight:550; }
+.archive-restore:hover { background:var(--border); }
+.archive-empty { padding:64px 12px; text-align:center; font-size:14px; color:var(--muted); }
+.archive-more { display:block; margin:12px auto; }
+@media(max-width:600px) {
+  #account-dialog[data-page="dataManagement"] { width:calc(100vw - 20px); height:calc(var(--viewport-height,100dvh) - 24px); }
+  #account-dialog[data-page="dataManagement"] .account-nav { width:100%; }
+  #account-dialog[data-page="dataManagement"] .account-toolbar { padding:20px 18px; }
+  #account-dialog[data-page="dataManagement"] .account-toolbar h2 { font-size:22px; }
+  #account-dialog[data-page="dataManagement"] .account-content { padding:4px 18px 24px; }
+  .archive-controls { flex-direction:column; gap:10px; margin-bottom:24px; }
+  .archive-search { flex:auto; }
+  .archive-filter { width:100%; }
+  .archive-card { padding:0 14px; }
+  .archive-row { gap:12px; }
+  .archive-restore { padding:8px 10px; font-size:12px; }
+}

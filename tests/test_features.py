@@ -213,6 +213,50 @@ class FeatureTests(ServiceCase):
         self.call('/api/jobs/'+job['id']+'/cancel',{})
         self.finish(job)
 
+    def test_archive_restore_preserves_history_settings_and_native_identity(self):
+        from lazyfish.storage import Store
+        from urllib.parse import urlencode
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        conversation=self.call('/api/conversations',{'title':'Restore this chat'},201)['id']
+        self.call('/api/conversations/'+conversation+'/settings',{'pinned':True})
+        job=self.call('/api/conversations/'+conversation+'/turns',{'text':'Preserved body phrase','client_request_id':uuid.uuid4().hex},202)
+        self.finish(job)
+        before=self.call('/api/conversations/'+conversation)
+        self.assertEqual(self.http('/api/conversations/archived')[0],401)
+        self.call('/api/conversations/'+conversation+'/archive',{})
+        self.call('/api/conversations/'+conversation,expected=404)
+        self.assertEqual(self.call('/api/conversations')['conversations'],[])
+        archived=self.call('/api/conversations/archived?'+urlencode({'q':'body phrase','workspace':str(self.workspace)}))
+        self.assertEqual([row['id'] for row in archived['conversations']],[conversation])
+        self.assertEqual(archived['workspaces'],[str(self.workspace)])
+        self.call('/api/conversations/'+conversation+'/restore',{})
+        self.call('/api/conversations/'+conversation+'/restore',{})  # Retry is safe.
+        after=self.call('/api/conversations/'+conversation)
+        for key in ('native_thread_id','jobs','run_settings','pinned','pin_order'):
+            self.assertEqual(after[key],before[key])
+        self.assertEqual(self.call('/api/conversations/archived')['conversations'],[])
+        self.call('/api/conversations/'+'0'*32+'/restore',{},404)
+        busy,_=store.reserve(conversation,'fixture',uuid.uuid4().hex,'Still running',None,None,queued=True)
+        self.call('/api/conversations/'+conversation+'/archive',{},409)
+        store.finish(busy['id'],'cancelled')
+
+    def test_archived_pagination_filters_and_cursor_validation(self):
+        from lazyfish.storage import Store
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        for index in range(4):
+            chat=store.create_conversation(str(self.workspace),'Archived '+str(index));store.archive(chat['id'])
+        rows=[];path='/api/conversations/archived?limit=2'
+        while path:
+            page=self.call(path);rows.extend(page['conversations'])
+            self.assertEqual(page['counts'],{str(self.workspace):4})
+            path='/api/conversations/archived?limit=2&cursor='+quote(page['next_cursor']) if page['next_cursor'] else None
+        self.assertEqual(len({row['id'] for row in rows}),4)
+        self.assertEqual(len(self.call('/api/conversations/archived?q=Archived%201')['conversations']),1)
+        self.assertEqual(self.call('/api/conversations/archived?workspace=missing')['conversations'],[])
+        self.call('/api/conversations/archived?cursor=bad',expected=400)
+        self.call('/api/conversations/archived?limit=0',expected=400)
+        self.call('/api/conversations/archived?q='+('x'*201),expected=400)
+
     def test_activity_content_search_and_local_delete(self):
         activity=self.call('/api/native/activity')
         self.assertEqual(activity['summary'],{'lifetimeTokens':12345,'currentStreakDays':3})
