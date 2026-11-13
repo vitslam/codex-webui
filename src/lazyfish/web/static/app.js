@@ -256,7 +256,7 @@ function render() {
   renderAppearance();
   $("#login-screen").hidden = initializing || Boolean(status); $("#app").hidden = !status;
   $("#settings-toggle").hidden = !status;
-  $("#logout").hidden = !status; $("#diagnostics-toggle").hidden = !status; $("#sidebar-toggle").hidden = !status;
+  $("#logout").hidden = !status || status.web_auth_required === false; $("#diagnostics-toggle").hidden = !status; $("#sidebar-toggle").hidden = !status;
   $("#message").textContent = loginMessage ? t(loginMessage) : "";
   $("#conversation-title").textContent = conversation?.title || "";
   $(".topbar-separator").hidden = !conversation?.title;

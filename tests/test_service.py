@@ -23,12 +23,14 @@ from support import IsolatedTest
 
 
 class ServiceCase(IsolatedTest):
+    serve_args = ()
+
     def setUp(self):
         super().setUp()
         self.output_path = self.root / "service-output.txt"
         self.output = self.output_path.open("w+")
         self.addCleanup(self.output.close)
-        self.process = subprocess.Popen(self.command("serve"), stdout=self.output, stderr=self.output,
+        self.process = subprocess.Popen(self.command("serve", *self.serve_args), stdout=self.output, stderr=self.output,
                                         start_new_session=True)
         self.addCleanup(self.cleanup_process)
         deadline = time.monotonic() + 10
@@ -83,6 +85,8 @@ class ServiceTests(ServiceCase):
         self.assertEqual(self.http("/healthz")[0], 200)
         self.assertEqual(self.http("/readyz")[0], 200)
         self.assertEqual(self.http("/api/status")[0], 401)
+        self.assertEqual(self.http("/api/control/status")[0], 401)
+        self.assertNotIn("WARNING: Web token authentication is disabled.", self.output_path.read_text())
         for path in ("/", "/app.js", "/app.css", "/markdown.js", "/scroll.js", "/shortcuts.js", "/themes.css", "/themes.js", "/panels.js", "/run-settings.js", "/features.js", "/skills.js", "/images.js", "/preferences.js", "/reference-i18n.js", "/activity.js", "/experience.js", "/steps.js", "/changes.js", "/artifacts.js", "/message-view.js", "/composer-dock.js", "/sidebar-order.js"):
             code, headers, body = self.http(path)
             self.assertEqual(code, 200)
@@ -105,6 +109,8 @@ class ServiceTests(ServiceCase):
         bearer = {"Authorization": "Bearer " + self.settings.token}
         code, _, data = self.http("/api/status", headers=bearer)
         self.assertEqual(code, 200)
+        self.assertTrue(json.loads(data)["web_auth_required"])
+        self.assertEqual(self.http("/api/control/status", headers=bearer)[0], 200)
         self.assertNotIn(self.settings.token, data.decode())
 
     def test_host_origin_auth_and_body_rejection(self):
@@ -152,42 +158,42 @@ class ServiceTests(ServiceCase):
         write_private(self.metadata_path, original)
 
     def test_rotate_refuses_running_service_without_changing_credentials(self):
-            secret_file = self.config.parent / "secrets.env"
-            before = secret_file.read_bytes()
-            result = subprocess.run(self.command("token", "--rotate"), capture_output=True, text=True, timeout=5)
-            self.assertEqual(result.returncode, 2)
-            self.assertEqual(result.stdout, "")
-            self.assertIn("Run `lazyfish stop`, then `lazyfish token --rotate`, then `lazyfish serve`.", result.stderr)
-            self.assertEqual(secret_file.read_bytes(), before)
-            self.assertIsNotNone(runtime.request(self.settings))
-            self.assertIsNone(self.process.poll())
+        secret_file = self.config.parent / "secrets.env"
+        before = secret_file.read_bytes()
+        result = subprocess.run(self.command("token", "--rotate"), capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("Run `lazyfish stop`, then `lazyfish token --rotate`, then `lazyfish serve`.", result.stderr)
+        self.assertEqual(secret_file.read_bytes(), before)
+        self.assertIsNotNone(runtime.request(self.settings))
+        self.assertIsNone(self.process.poll())
 
     def test_rotated_token_is_used_after_restart_and_old_session_is_rejected(self):
-            origin = {"Origin": f"http://127.0.0.1:{self.port}"}
-            code, headers, _ = self.http("/api/session", "POST", {"token": self.settings.token}, origin)
-            self.assertEqual(code, 200)
-            cookie = headers["Set-Cookie"].split(";", 1)[0]
-            old_token = self.settings.token
-            self.assertTrue(runtime.stop(self.settings))
-            self.process.wait(timeout=5)
-            new_token = rotate_token(self.config)
-            self.settings = load(self.config)
-            self.process = subprocess.Popen(self.command("serve"), stdout=self.output, stderr=self.output,
-                                            start_new_session=True)
-            deadline = time.monotonic() + 10
-            while time.monotonic() < deadline:
-                report = runtime.request(self.settings)
-                if report:
-                    break
-                if self.process.poll() is not None:
-                    self.fail(self.output_path.read_text())
-                time.sleep(0.03)
-            else:
-                self.fail("Restarted service did not become available")
-            self.port = json.loads(self.metadata_path.read_text())["port"]
-            self.assertEqual(self.http("/api/status", headers={"Authorization": "Bearer " + new_token})[0], 200)
-            self.assertEqual(self.http("/api/status", headers={"Authorization": "Bearer " + old_token})[0], 401)
-            self.assertEqual(self.http("/api/status", headers={"Cookie": cookie})[0], 401)
+        origin = {"Origin": f"http://127.0.0.1:{self.port}"}
+        code, headers, _ = self.http("/api/session", "POST", {"token": self.settings.token}, origin)
+        self.assertEqual(code, 200)
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        old_token = self.settings.token
+        self.assertTrue(runtime.stop(self.settings))
+        self.process.wait(timeout=5)
+        new_token = rotate_token(self.config)
+        self.settings = load(self.config)
+        self.process = subprocess.Popen(self.command("serve"), stdout=self.output, stderr=self.output,
+                                        start_new_session=True)
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            report = runtime.request(self.settings)
+            if report:
+                break
+            if self.process.poll() is not None:
+                self.fail(self.output_path.read_text())
+            time.sleep(0.03)
+        else:
+            self.fail("Restarted service did not become available")
+        self.port = json.loads(self.metadata_path.read_text())["port"]
+        self.assertEqual(self.http("/api/status", headers={"Authorization": "Bearer " + new_token})[0], 200)
+        self.assertEqual(self.http("/api/status", headers={"Authorization": "Bearer " + old_token})[0], 401)
+        self.assertEqual(self.http("/api/status", headers={"Cookie": cookie})[0], 401)
 
     def test_sigterm_cleanup(self):
         self.process.terminate()
@@ -196,7 +202,115 @@ class ServiceTests(ServiceCase):
         self.assertFalse(self.metadata_path.exists())
 
 
+class NoTokenServiceTests(ServiceCase):
+    serve_args = ("--no-token",)
+
+    def test_web_access_needs_neither_token_nor_cookie(self):
+        for headers in ({}, {"Cookie": "lazyfish_session=expired"}, {"Authorization": "Bearer invalid"}):
+            with self.subTest(headers=headers):
+                code, response_headers, body = self.http("/api/status", headers=headers)
+                self.assertEqual(code, 200)
+                self.assertFalse(json.loads(body)["web_auth_required"])
+                self.assertNotIn("Set-Cookie", response_headers)
+                self.assertNotIn(self.settings.token.encode(), body)
+                self.assertEqual(self.http("/api/conversations", headers=headers)[0], 200)
+        origin = {"Origin": f"http://127.0.0.1:{self.port}"}
+        code, _, body = self.http("/api/conversations", "POST", {"title": "No sign-in"}, origin)
+        self.assertEqual(code, 201, body)
+        self.assertEqual(self.http("/api/conversations/" + json.loads(body)["id"])[0], 200)
+
+    def test_no_web_session_is_created_and_logout_does_not_revoke_open_access(self):
+        origin = {"Origin": f"http://127.0.0.1:{self.port}"}
+        for payload in ({}, {"token": "invalid"}, {"token": self.settings.token}):
+            code, headers, body = self.http("/api/session", "POST", payload, origin)
+            self.assertEqual(code, 200)
+            self.assertTrue(json.loads(body)["authenticated"])
+            self.assertNotIn("Set-Cookie", headers)
+        code, headers, body = self.http("/api/logout", "POST", {}, origin)
+        self.assertEqual(code, 200)
+        self.assertTrue(json.loads(body)["authenticated"])
+        self.assertIn("Max-Age=0", headers["Set-Cookie"])
+        self.assertEqual(self.http("/api/status")[0], 200)
+        # Web access never mints a credential usable for lifecycle operations.
+        self.assertEqual(self.http("/api/control/status")[0], 401)
+
+    def test_host_and_origin_protection_remains_enabled(self):
+        self.assertEqual(self.http("/api/status", headers={"Host": "attacker.example"})[0], 403)
+        for headers in ({}, {"Origin": "http://attacker.example"}, {"Origin": "null"}):
+            self.assertEqual(self.http("/api/conversations", "POST", {}, headers)[0], 403)
+        self.assertEqual(self.http("/api/session", "POST", {}, {
+            "Host": "attacker.example", "Origin": "http://attacker.example"})[0], 403)
+
+    def test_lifecycle_still_requires_credentials_and_instance_identity(self):
+        origin = {"Origin": f"http://127.0.0.1:{self.port}"}
+        for headers in (origin, {"Authorization": "Bearer invalid"}):
+            self.assertEqual(self.http("/api/control/status", headers=headers)[0], 401)
+            self.assertEqual(self.http("/api/shutdown", "POST", {"instance": self.metadata["instance"]}, headers)[0], 401)
+        wrong_token = replace(self.settings, token="wrong-credential" * 3)
+        self.assertIsNone(runtime.request(wrong_token))
+        self.assertFalse(runtime.stop(wrong_token))
+        original = self.metadata_path.read_text()
+        write_private(self.metadata_path, json.dumps(dict(self.metadata, instance="stale", pid=os.getpid())))
+        self.assertIsNone(runtime.request(self.settings))
+        self.assertFalse(runtime.stop(self.settings))
+        self.assertIsNone(self.process.poll())
+        write_private(self.metadata_path, original)
+        status = subprocess.run(self.command("status"), capture_output=True, text=True, timeout=10)
+        self.assertEqual(status.returncode, 0, status.stderr)
+        self.assertEqual(json.loads(status.stdout)["instance"], self.metadata["instance"])
+        stopped = subprocess.run(self.command("stop"), capture_output=True, text=True, timeout=10)
+        self.assertEqual(stopped.returncode, 0, stopped.stderr)
+        self.process.wait(timeout=5)
+        self.assertEqual(self.process.returncode, 0)
+
+    def test_startup_warning_and_logs_do_not_reveal_token(self):
+        output = self.output_path.read_text()
+        self.assertIn("WARNING: Web token authentication is disabled. "
+                      "Anyone who can reach the URL can use this Codex session.", output)
+        self.assertNotIn("Use `lazyfish token` to sign in.", output)
+        self.assertNotIn(self.settings.token, output)
+        self.assertNotIn(self.settings.token, (self.settings.data_dir / "logs/lazyfish.log").read_text())
+        self.assertNotIn(self.settings.token, self.metadata_path.read_text())
+
+    def test_token_is_preserved_and_rotation_requires_stopping_even_without_web_auth(self):
+        self.assertEqual(load(self.config).token, self.settings.token)
+        result = subprocess.run(self.command("token"), capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), self.settings.token)
+        result = subprocess.run(self.command("token", "--rotate"), capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(load(self.config).token, self.settings.token)
+        self.assertTrue(runtime.stop(self.settings))
+        self.process.wait(timeout=5)
+        new_token = rotate_token(self.config)
+        self.assertNotEqual(new_token, self.settings.token)
+        self.settings = load(self.config)
+        self.process = subprocess.Popen(self.command("serve"), stdout=self.output, stderr=self.output,
+                                        start_new_session=True)
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline and runtime.request(self.settings) is None:
+            if self.process.poll() is not None:
+                self.fail(self.output_path.read_text())
+            time.sleep(0.03)
+        self.assertIsNotNone(runtime.request(self.settings))
+        self.port = json.loads(self.metadata_path.read_text())["port"]
+        self.assertEqual(self.http("/api/status")[0], 401)
+        origin = {"Origin": f"http://127.0.0.1:{self.port}"}
+        self.assertEqual(self.http("/api/session", "POST", {"token": new_token}, origin)[0], 200)
+
+
 class CliTests(IsolatedTest):
+    def test_serve_no_token_help_and_flag_scope(self):
+        command = [sys.executable, "-m", "lazyfish", "--config", str(self.config)]
+        result = subprocess.run(command + ["serve", "--help"], capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--no-token", result.stdout)
+        self.assertIn("Disable Web sign-in authentication", result.stdout)
+        for args in (["--no-token", "serve"], ["token", "--no-token"], ["status", "--no-token"]):
+            result = subprocess.run(command + args, capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 2)
+
     def test_sigterm_during_startup_reaps_owned_diagnostic(self):
         pid_path = self.root / "owned.pid"
         self.binary.write_text(f"#!{sys.executable}\nimport os,time\nfrom pathlib import Path\n"
@@ -220,36 +334,36 @@ class CliTests(IsolatedTest):
                 process.wait(timeout=5)
 
     def test_serve_refreshes_credentials_loaded_before_rotation(self):
-            ready = self.root / "loaded"
-            proceed = self.root / "proceed"
-            script = ("import sys, time\nfrom pathlib import Path\n"
-                      "from lazyfish.config import load\nfrom lazyfish.runtime import serve\n"
-                      "settings = load(Path(sys.argv[1]))\nPath(sys.argv[2]).touch()\n"
-                      "while not Path(sys.argv[3]).exists(): time.sleep(0.02)\nserve(settings)\n")
-            command = [sys.executable, "-c", script, str(self.config), str(ready), str(proceed)]
-            with subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) as process:
-                try:
-                    deadline = time.monotonic() + 5
-                    while not ready.exists() and time.monotonic() < deadline:
-                        time.sleep(0.02)
-                    self.assertTrue(ready.exists())
-                    rotate_token(self.config)
-                    current = load(self.config)
-                    proceed.touch()
-                    deadline = time.monotonic() + 10
-                    report = None
-                    while time.monotonic() < deadline and report is None:
-                        report = runtime.request(current)
-                        time.sleep(0.03)
-                    self.assertIsNotNone(report)
-                    self.assertIsNone(runtime.request(self.settings))
-                    self.assertTrue(runtime.stop(current))
-                    process.wait(timeout=5)
-                    self.assertEqual(process.returncode, 0)
-                finally:
-                    if process.poll() is None:
-                        process.terminate()
-                    process.wait(timeout=5)
+        ready = self.root / "loaded"
+        proceed = self.root / "proceed"
+        script = ("import sys, time\nfrom pathlib import Path\n"
+                  "from lazyfish.config import load\nfrom lazyfish.runtime import serve\n"
+                  "settings = load(Path(sys.argv[1]))\nPath(sys.argv[2]).touch()\n"
+                  "while not Path(sys.argv[3]).exists(): time.sleep(0.02)\nserve(settings)\n")
+        command = [sys.executable, "-c", script, str(self.config), str(ready), str(proceed)]
+        with subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) as process:
+            try:
+                deadline = time.monotonic() + 5
+                while not ready.exists() and time.monotonic() < deadline:
+                    time.sleep(0.02)
+                self.assertTrue(ready.exists())
+                rotate_token(self.config)
+                current = load(self.config)
+                proceed.touch()
+                deadline = time.monotonic() + 10
+                report = None
+                while time.monotonic() < deadline and report is None:
+                    report = runtime.request(current)
+                    time.sleep(0.03)
+                self.assertIsNotNone(report)
+                self.assertIsNone(runtime.request(self.settings))
+                self.assertTrue(runtime.stop(current))
+                process.wait(timeout=5)
+                self.assertEqual(process.returncode, 0)
+            finally:
+                if process.poll() is None:
+                    process.terminate()
+                process.wait(timeout=5)
 
     def test_doctor_output_and_token_are_explicit(self):
         command = [sys.executable, "-m", "lazyfish", "--config", str(self.config)]
@@ -315,9 +429,18 @@ class WildcardServiceTests(IsolatedTest):
             thread.join(timeout=5)
 
     def test_wildcard_lifecycle_and_banner(self):
+        self.wildcard_lifecycle(no_token=False)
+
+    def test_wildcard_no_token_lifecycle_and_banner(self):
+        self.wildcard_lifecycle(no_token=True)
+
+    def wildcard_lifecycle(self, *, no_token):
         self.config.write_text(self.config.read_text().replace('host = "127.0.0.1"', 'host = "0.0.0.0"'))
         settings = replace(self.settings, host="0.0.0.0")
-        with subprocess.Popen([sys.executable, "-m", "lazyfish", "--config", str(self.config), "serve"],
+        command = [sys.executable, "-m", "lazyfish", "--config", str(self.config), "serve"]
+        if no_token:
+            command.append("--no-token")
+        with subprocess.Popen(command,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
             try:
                 deadline = time.monotonic() + 10
@@ -335,6 +458,8 @@ class WildcardServiceTests(IsolatedTest):
                 self.assertIn("Lazyfish: http://127.0.0.1:", stdout)
                 self.assertNotIn("Lazyfish: http://0.0.0.0:", stdout)
                 self.assertIn("HTTP is unencrypted. Reachability follows this bind address and your firewall.", stdout)
+                self.assertEqual("WARNING: Web token authentication is disabled." in stderr, no_token)
+                self.assertNotIn(settings.token, stdout + stderr)
             finally:
                 if process.poll() is None:
                     process.terminate()

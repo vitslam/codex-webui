@@ -2,16 +2,16 @@
 
 This pre-alpha supports one trusted owner. The default bind is loopback; you may also
 bind a specific IPv4 address or `0.0.0.0`. It is not a multi-user execution sandbox.
-Authenticated chat endpoints start real local Codex turns. The selected workspace
+Chat endpoints start real local Codex turns (token-authenticated by default). The selected workspace
 is not an OS sandbox. Native sandbox/approval settings and the OS user permissions
 control execution; use a dedicated OS account.
 
 当前预览版用于可信单用户，默认本机绑定，也可显式绑定指定 IPv4 或 `0.0.0.0`，不是多租户执行沙箱。
-认证后的聊天接口会执行真实任务。工作目录不构成 OS 隔离，执行仍受原生沙箱、审批与系统权限控制。
+聊天接口会执行真实任务，默认需要令牌认证。工作目录不构成 OS 隔离，执行仍受原生沙箱、审批与系统权限控制。
 
 Web tokens and native Codex credentials are separate. Private directories/files
 use owner-only permissions. Requests validate Host against the bind address (local interface addresses for wildcard binds) and same-origin browser
-writes, use HttpOnly/SameSite session cookies, and do not load third-party assets.
+writes, use HttpOnly/SameSite session cookies in the default token-required mode, and do not load third-party assets.
 Sessions expire after 12 hours and are discarded at restart. Stop requests require
 authentication and an instance ID; no stale PID is killed.
 
@@ -37,6 +37,21 @@ does not encrypt the Web token, session cookie or conversation data.
 默认绑定 `127.0.0.1`。显式设为 `0.0.0.0` 会监听所有 IPv4 网卡（包括可能的公网网卡）；
 也可指定单个 IPv4。Host 校验不是网络访问控制，任何能连接的客户端都可发送已允许的 Host。
 请按需要用防火墙限制访问。HTTP 不加密 Web 令牌、会话 Cookie 或对话数据。
+
+`lazyfish serve --no-token` is an explicit, per-run opt-in to disable Web sign-in.
+Anyone who can reach the URL gets the same Codex access as the token owner,
+including downloads, native account controls and task execution. Host/same-origin
+checks stay enabled; they do not replace authentication. HTTP stays unencrypted.
+No Web session cookie or sign-out can restrict access in this mode. The CLI still
+uses the retained private token for status/stop; shutdown requires credentials and
+the matching instance ID. Restart without the flag to restore Web sign-in; token
+rotation still requires stopping first. See [configuration](docs/configuration.md).
+
+`lazyfish serve --no-token` 显式关闭本次运行的 Web 登录认证。任何能访问 URL 的人都具有
+令牌持有者的 Codex 访问能力，包括下载、原生账户操作及任务执行。Host/同源校验保留，
+但不能替代认证，HTTP 仍不加密。此模式下 Web 会话 Cookie 或退出不能限制访问。
+CLI 仍用保留的私有令牌查询状态和停服；停服必须认证并匹配实例 ID。重启时省略该参数即
+恢复 Web 登录；更换令牌仍需先停服。详见[配置说明](docs/configuration.md)。
 
 ## Reporting / 报告漏洞
 
@@ -73,7 +88,7 @@ is separate from native sign-out. Native question answers are sent to Codex; eve
 when secret fields are not directly persisted by Lazyfish, native history or model
 output can contain the submitted text.
 
-Output downloads require authentication. Generic file links snapshot only permitted
+Output downloads require authentication by default. Generic file links snapshot only permitted
 workspace/output paths, excluding app/native configuration and common credential
 files. Raster outputs are signature-checked; SVG/HTML download as attachments.
 This is not a secret detector or isolation boundary: the authenticated owner and
@@ -84,6 +99,6 @@ content may include workspace data; keep the data directory and backups private.
 Web 令牌具有操作原生账户的能力，退出网页和原生退出独立。秘密答案仍然是显式发给
 Codex 的内容，可能出现在原生历史或模型输出。
 
-下载需认证，普通文件链接限制路径并排除应用/原生配置和常见凭据，栅格图检查签名，
+下载默认需认证，普通文件链接限制路径并排除应用/原生配置和常见凭据，栅格图检查签名，
 SVG/HTML 强制下载。这不是秘密检测器或隔离边界；diff、回复及产物可能包含工作目录
 内容，应保护数据目录与备份。

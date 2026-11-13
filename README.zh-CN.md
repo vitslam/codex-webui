@@ -143,10 +143,15 @@ ssh -N -L 3210:127.0.0.1:3210 user@your-server
 | `lazyfish init [--workspace PATH]` | 初始化；已有配置和令牌不会被覆盖 |
 | `lazyfish doctor` | 检查可执行文件、已保存的登录状态、工作目录和 app-server 命令 |
 | `lazyfish doctor --probe --json` | 额外启动并关闭独立 app-server，只做初始化握手，不调用模型 |
-| `lazyfish serve` | 前台启动聊天服务 |
+| `lazyfish serve` | 前台启动聊天服务，默认需要 Web 令牌 |
+| `lazyfish serve --no-token` | 显式关闭本次运行的 Web 登录认证，风险见下方说明 |
 | `lazyfish status` | 通过认证接口查看当前数据目录对应的实例 |
 | `lazyfish stop` | 安全停止该实例，不会根据遗留 PID 文件直接结束进程 |
 | `lazyfish token [--rotate]` | 在终端显示 Web 登录令牌；`--rotate` 在停服后更换令牌 |
+
+**警告：**`serve --no-token` 允许任何能访问该 URL 的人使用此 Codex 会话，
+包括其可访问的文件和原生账户。此选项只对本次运行生效，普通 `serve` 仍需令牌。
+Host 检查不是访问控制，HTTP 仍不加密。详见[配置说明](docs/configuration.md#optional-web-sign-in-bypass--可选的免-web-登录模式)。
 
 普通命令自动查找默认配置；没有默认配置时，会记住首次成功初始化或使用的自定义配置，
 以后切换目录也无需反复指定 `--config`。仅操作其他实例等高级场景，才需要用
@@ -171,7 +176,7 @@ ssh -N -L 3210:127.0.0.1:3210 user@your-server
 应用目录权限为 `700`，配置、密钥及数据文件为 `600`，权限不安全的配置及密钥文件会被拒绝。
 Git 默认忽略填写过的环境文件、数据库、日志和运行数据。
 不包含统计服务、外部 CDN、账号凭据或私有部署钩子。
-浏览器使用 HttpOnly Cookie 保存会话，不将令牌写入 localStorage；重启后需重新登录。
+默认模式下浏览器使用 HttpOnly Cookie 保存会话，不将令牌写入 localStorage；重启后需重新登录。
 localStorage 仅保存语言、外观、快捷键、侧边栏偏好，以及数量受限的消息 ID、滚动几何信息和
 工具展开状态，不保存消息正文和令牌。
 

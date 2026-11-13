@@ -28,8 +28,9 @@ class Server(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, settings: Settings, report: dict, instance: str, manager=None):
+    def __init__(self, settings: Settings, report: dict, instance: str, manager=None, *, no_token: bool = False):
         self.settings = settings
+        self.no_token = no_token
         self.report = report
         self.instance = instance
         self.manager = manager
@@ -101,6 +102,10 @@ class Handler(BaseHTTPRequestHandler):
         return bool(re.fullmatch(r"(?:%s)(?::[0-9]{1,5})?" % "|".join(names), hosts[0]))
 
     def _authorized(self) -> bool:
+        return self.server.no_token or self._credential_authorized()
+
+    def _credential_authorized(self) -> bool:
+        """Lifecycle requests still require credentials when Web sign-in is disabled."""
         authorization = self.headers.get("Authorization", "")
         if authorization.startswith("Bearer "):
             return secrets.compare_digest(authorization[7:].encode(), self.server.settings.token.encode())
@@ -151,11 +156,13 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/readyz":
             ready = self.server.report["ready"] and not (self.server.manager and self.server.manager.blocked)
             return self._send(200 if ready else 503, {"ready": ready})
-        if self.path == "/api/status":
-            if not self._authorized():
+        if self.path in ("/api/status", "/api/control/status"):
+            authorized = self._credential_authorized() if self.path == "/api/control/status" else self._authorized()
+            if not authorized:
                 return self._send(401, {"error": "authentication_required"})
             return self._send(200, {
                 "version": __version__, "stage": 4, "instance": self.server.instance,
+                "web_auth_required": not self.server.no_token,
                 "metadata_scope": self.server.manager.capabilities.scope if self.server.manager else "",
                 "workspace": str(self.server.settings.workspace) if self.server.settings.workspace_configured else "",
                 "data_dir": str(self.server.settings.data_dir), "codex": self.server.report,
@@ -326,6 +333,8 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, OSError):
             return self._send(400, {"error": "invalid_body"})
         if self.path == "/api/session":
+            if self.server.no_token:
+                return self._send(200, {"authenticated": True})
             now = time.monotonic()
             with self.server.state_lock:
                 while self.server.attempts and self.server.attempts[0] < now - 60:
@@ -343,14 +352,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.server.sessions[session] = now + 3600 * 12
             return self._send(200, {"authenticated": True}, cookie=
                               f"lazyfish_session={session}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200")
-        if not self._authorized():
+        authorized = self._credential_authorized() if self.path == "/api/shutdown" else self._authorized()
+        if not authorized:
             return self._send(401, {"error": "authentication_required"})
         if self.path == "/api/logout":
             cookie = SimpleCookie(self.headers.get("Cookie", ""))
             if "lazyfish_session" in cookie:
                 with self.server.state_lock:
                     self.server.sessions.pop(cookie["lazyfish_session"].value, None)
-            return self._send(200, {"authenticated": False}, cookie=
+            return self._send(200, {"authenticated": self.server.no_token}, cookie=
                               "lazyfish_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0")
         if self.path == "/api/shutdown":
             if body.get("instance") != self.server.instance:

@@ -52,7 +52,9 @@ def _main(argv: list[str] | None = None) -> int:
     doctor = commands.add_parser("doctor", help="Check local CLI installation and stored login, without inference")
     doctor.add_argument("--probe", action="store_true", help="Also initialize/reap an owned app-server; no model request")
     doctor.add_argument("--json", action="store_true")
-    commands.add_parser("serve", help="Start the foreground local chat service")
+    serve = commands.add_parser("serve", help="Start the foreground local chat service")
+    serve.add_argument("--no-token", action="store_true",
+                       help="Disable Web sign-in authentication; anyone who can reach the URL can use this Codex session")
     commands.add_parser("status", help="Check this data directory's running instance")
     commands.add_parser("stop", help="Gracefully stop this instance using authentication, never a stale PID")
     token = commands.add_parser("token", help="Reveal or rotate the private Web sign-in token in this terminal")
@@ -99,7 +101,7 @@ def _main(argv: list[str] | None = None) -> int:
                 print("See docs/troubleshooting.md if a check fails.")
             return 0 if report["ready"] else 1
         elif args.command == "serve":
-            runtime.serve(settings)
+            runtime.serve(settings, no_token=args.no_token)
         elif args.command == "status":
             report = runtime.request(settings)
             print(json.dumps(report or {"running": False}, indent=2))

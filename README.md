@@ -151,10 +151,16 @@ See the [feature guide](docs/features.md) for detailed behavior and limits, and 
 | `lazyfish init [--workspace PATH]` | Initialize; preserve existing configuration and token |
 | `lazyfish doctor` | Check executable, stored login, workspace and app-server command |
 | `lazyfish doctor --probe --json` | Also initialize and close an owned app-server; no inference |
-| `lazyfish serve` | Start the chat service in the foreground |
+| `lazyfish serve` | Start the chat service in the foreground (Web token required) |
+| `lazyfish serve --no-token` | Explicitly disable Web sign-in for this run; see warning below |
 | `lazyfish status` | Query the authenticated instance for this data directory |
 | `lazyfish stop` | Stop that instance gracefully; never signal a PID from a stale file |
 | `lazyfish token [--rotate]` | Reveal the Web sign-in token; `--rotate` replaces it while the service is stopped |
+
+**Warning:** `serve --no-token` lets anyone who can reach the URL use this Codex
+session, including its files and native account. It applies only to that run;
+normal `serve` still requires the token. Host checks are not access control and
+HTTP remains unencrypted. See [configuration](docs/configuration.md#optional-web-sign-in-bypass--可选的免-web-登录模式).
 
 Ordinary commands find the default configuration automatically. If no default
 exists, the first successfully initialized/used custom configuration is remembered
@@ -185,7 +191,7 @@ Application directories are private (`700`) and config/secrets/data files are
 private (`600`). Configuration and secrets with unsafe permissions are rejected. Filled-in
 environment files, databases, logs and runtime data are excluded from Git.
 No analytics, CDN resources, account credentials or production deployment hooks
-are included. The browser stores authentication in an HttpOnly session cookie,
+are included. By default, the browser stores authentication in an HttpOnly session cookie,
 not local storage. Only language, shortcut/sidebar preferences, bounded message
 IDs/scroll geometry, appearance and expanded-tool IDs are saved in browser local storage;
 message bodies and tokens are not. Sanitized quota/activity snapshots are additionally cached under a native account scope. Restarting the service invalidates browser sessions.

@@ -56,11 +56,13 @@ ssh -N -L 3210:127.0.0.1:3210 user@your-server
 
 The browser connects to `http://127.0.0.1:3210`. If the local port is occupied,
 forward a different local port (for example `-L 3211:127.0.0.1:3210`) and use that
-URL. Do not publish the port using a public tunnel or disable authentication.
+URL. Do not publish the port using a public tunnel. Keep Web authentication enabled
+unless deliberately opting into the [per-run bypass and its risks](configuration.md#optional-web-sign-in-bypass--可选的免-web-登录模式).
 Public TLS/reverse proxy deployment and containers are deferred until their
 authentication, credential storage and workspace isolation can be tested together.
 
 本地端口被占用时可以改用 `3211` 等端口。不要将当前服务通过公开隧道暴露给公网。
+保持 Web 认证开启，除非显式选择[单次免登录模式并接受其风险](configuration.md#optional-web-sign-in-bypass--可选的免-web-登录模式)。
 TLS/反向代理和容器部署会在认证、凭据和工作目录隔离验证完成后加入。
 
 ## Upgrade and backup / 升级与备份

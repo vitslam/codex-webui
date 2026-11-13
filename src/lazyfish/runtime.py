@@ -10,6 +10,7 @@ import json
 import os
 import secrets
 import signal
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -34,7 +35,8 @@ def request(settings: Settings, method: str = "GET", body: dict | None = None) -
         port = metadata["port"]
         if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
             return None
-        path = "/api/shutdown" if method == "POST" else "/api/status"
+        # Never use the open Web status endpoint to identify a lifecycle target.
+        path = "/api/shutdown" if method == "POST" else "/api/control/status"
         payload = {"instance": metadata["instance"]} if method == "POST" else body
         req = urllib.request.Request(f"http://{request_host(settings.host)}:{port}{path}", method=method,
                                      data=json.dumps(payload).encode() if payload is not None else None,
@@ -63,7 +65,7 @@ def stop(settings: Settings) -> bool:
     return not (settings.runtime_dir / "service.json").exists()
 
 
-def serve(settings: Settings) -> None:
+def serve(settings: Settings, *, no_token: bool = False) -> None:
     settings.prepare()
     lock = settings.runtime_dir / "service.lock"
     fd = os.open(lock, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
@@ -80,7 +82,7 @@ def serve(settings: Settings) -> None:
         report = diagnose(settings)
         instance = secrets.token_hex(16)
         manager = Manager(settings,instance)
-        server = Server(settings, report, instance,manager)
+        server = Server(settings, report, instance,manager, no_token=no_token)
         metadata_path = settings.runtime_dir / "service.json"
         db = settings.data_dir / "lazyfish.db"
         previous_handlers = {}
@@ -102,7 +104,12 @@ def serve(settings: Settings) -> None:
                 loopback = False
             if not loopback:
                 print("HTTP is unencrypted. Reachability follows this bind address and your firewall.", flush=True)
-            print("Stage 3: local chat and conversation tools. Use `lazyfish token` to sign in.", flush=True)
+            if no_token:
+                print("WARNING: Web token authentication is disabled. "
+                      "Anyone who can reach the URL can use this Codex session.", file=sys.stderr, flush=True)
+                print("Stage 3: local chat and conversation tools. Web sign-in is disabled.", flush=True)
+            else:
+                print("Stage 3: local chat and conversation tools. Use `lazyfish token` to sign in.", flush=True)
             logger.info("Listening on %s port %s (local checks ready=%s)", settings.host, server.server_port, report["ready"])
             server.serve_forever(poll_interval=0.1)
         finally:

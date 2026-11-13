@@ -60,12 +60,12 @@ level = "INFO"
 Relative paths are resolved against the configuration directory. A bare Codex
 command is resolved through PATH; executable paths may also be absolute or relative.
 Workspace is optional. An empty value uses a private `workspace/` under the data directory. An explicit workspace must exist and restricts directory selection to that tree. Port `0` asks the OS for an available port, shown at start.
-The server binds to `127.0.0.1` by default. Set `server.host = "0.0.0.0"` (or `LAZYFISH_HOST=0.0.0.0`) to listen on all IPv4 interfaces; startup prints the available addresses. A specific unicast IPv4 (e.g. `192.168.1.10` or a public address) can bind just one interface. Token authentication is still required. Host checks reject requests whose Host header is not an address of this process; they are not a firewall. HTTP is unencrypted; use a firewall to limit who can connect, and use an SSH tunnel on untrusted networks. You choose the bind address and are responsible for who can reach it.
+The server binds to `127.0.0.1` by default. Set `server.host = "0.0.0.0"` (or `LAZYFISH_HOST=0.0.0.0`) to listen on all IPv4 interfaces; startup prints the available addresses. A specific unicast IPv4 (e.g. `192.168.1.10` or a public address) can bind just one interface. Token authentication remains required by default. Host checks reject requests whose Host header is not an address of this process; they are not a firewall. HTTP is unencrypted; use a firewall to limit who can connect, and use an SSH tunnel on untrusted networks. You choose the bind address and are responsible for who can reach it.
 Unknown keys are rejected so spelling errors do not silently disable settings.
 
 相对路径以配置文件目录为基准。工作目录可留空，执行时使用数据目录下的私有 `workspace/`；显式指定时目录必须已存在，且网页选择目录被限制在该目录内。端口 `0` 由系统分配。
 默认从 PATH 查找 `codex`，找不到时请手动设置 `codex.binary` 或 `LAZYFISH_CODEX_BIN`。
-默认绑定 `127.0.0.1`。设 `server.host = "0.0.0.0"`（或 `LAZYFISH_HOST=0.0.0.0`）后会监听所有 IPv4 网卡，启动时打印可用地址；也可指定单个 IPv4（例如 `192.168.1.10` 或公网地址）只绑定一个网卡。仍需令牌认证。Host 检查只拒绝 Host 不是本进程地址的请求，不能替代防火墙。HTTP 不加密，请用防火墙限制访问，不可信网络使用 SSH 隧道。绑定地址由你选择，谁能访问由你负责。未知配置键会报错。
+默认绑定 `127.0.0.1`。设 `server.host = "0.0.0.0"`（或 `LAZYFISH_HOST=0.0.0.0`）后会监听所有 IPv4 网卡，启动时打印可用地址；也可指定单个 IPv4（例如 `192.168.1.10` 或公网地址）只绑定一个网卡。默认仍需令牌认证。Host 检查只拒绝 Host 不是本进程地址的请求，不能替代防火墙。HTTP 不加密，请用防火墙限制访问，不可信网络使用 SSH 隧道。绑定地址由你选择，谁能访问由你负责。未知配置键会报错。
 
 | Environment variable / 环境变量 | Overrides / 覆盖项 |
 | --- | --- |
@@ -140,6 +140,49 @@ virtual environment path, including a custom `VENV_DIR`. Normal service diagnost
 安装脚本的 `PYTHON`、`VENV_DIR` 只影响安装。`~/.local/bin/lazyfish` 命令入口会记录
 虚拟环境的绝对路径，因此自定义 `VENV_DIR` 后也无需在日常运行时重复指定。安装临时目录位于用户缓存中并自动清理；
 服务诊断的临时目录位于数据目录内部，不使用公共 `/tmp` 存放应用临时文件。
+
+## Optional Web sign-in bypass / 可选的免 Web 登录模式
+
+`lazyfish serve --no-token` explicitly disables Web token authentication for that
+run only. The default `lazyfish serve` still requires a token. There is no saved
+configuration setting or environment switch for this mode; pass the flag on each
+start where you intend to disable sign-in.
+
+**Warning:** anyone who can reach the URL can use this Codex session, including
+conversation history, accessible files, task execution and native account controls.
+This applies to every supported bind, including `0.0.0.0` and public IPv4 addresses.
+Host and same-origin checks remain enabled but are not authentication or a firewall.
+HTTP remains unencrypted. Restrict reachability to people you trust with that access.
+This flag does not bypass native Codex login or change its permissions.
+
+The UI opens without a token or a Web session cookie. Web disconnect is hidden
+because it cannot revoke open access. `lazyfish status` and `lazyfish stop` work
+unchanged: the CLI still uses the private token for authenticated lifecycle requests
+(the status probe uses `/api/control/status`), and stop still checks the instance ID.
+The open Web API cannot shut down the service without valid credentials. Keep the
+private configuration and token files even when Web sign-in is disabled.
+
+`lazyfish token` still reveals the retained token deliberately; `token --rotate`
+still requires stopping the instance first. Neither startup nor this flag prints
+or rotates the token. Starting again without `--no-token` requires the current
+(possibly rotated) token. Init and the installer preserve existing tokens.
+
+`lazyfish serve --no-token` 仅对本次运行关闭 Web 令牌认证，默认 `lazyfish serve`
+仍需令牌。不提供持久化配置项或环境变量开关；每次需要免登录时必须显式传入此参数。
+
+**警告：**任何能访问该 URL 的人都能使用此 Codex 会话，包括查看历史、访问文件、
+执行任务和操作原生账户。此行为适用于所有支持的绑定方式，包括 `0.0.0.0` 和公网 IPv4。
+Host 和同源校验仍然保留，但不构成认证或防火墙。HTTP 仍不加密，请限制可访问的人群。
+此参数不会绕过原生 Codex 登录，也不改变其权限。
+
+网页无需令牌或 Web 会话 Cookie 即可打开；由于退出不能撤销开放访问，网页退出按钮隐藏。
+`lazyfish status` 和 `lazyfish stop` 用法不变：CLI 仍用私有令牌认证生命周期请求，
+状态探测使用 `/api/control/status`，停服仍校验实例 ID；开放的 Web 接口不能在没有有效凭据时
+关闭服务。请保留私有配置及令牌文件。
+
+`lazyfish token` 仍可显式显示现有令牌，`token --rotate` 仍需先停服。启动和此参数均不会
+打印或更换令牌。下次不带 `--no-token` 启动时需使用当前令牌（包括更换后的令牌）；
+初始化和安装程序也仍会保留已有令牌。
 
 ## Execution defaults / 执行默认值
 
