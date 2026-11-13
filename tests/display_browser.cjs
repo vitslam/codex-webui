@@ -17,7 +17,7 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
       });
       let release,arrived;const gate=new Promise(r=>release=r),seen=new Promise(r=>arrived=r);
       await page.route('**/api/conversations/'+f.chat+'?view=summary*',async route=>{arrived();await gate;await route.continue();});
-      await page.reload({waitUntil:'domcontentloaded'});await seen;await page.locator('#restore-loading:not([hidden])').waitFor();
+      await page.reload({waitUntil:'domcontentloaded'});await seen;assert.equal(await page.locator('#restore-loading').count(),0);assert.equal(await page.getByText('Loading Lazyfish…',{exact:true}).count(),0);
       assert.equal(await page.locator('#empty').isVisible(),false);assert.equal(await page.locator('#app').isVisible(),false);assert.equal(await page.locator('#login-screen').isVisible(),false);
       await page.evaluate(()=>new Promise(r=>setTimeout(r,150)));release();await page.locator('#app:not([hidden])').waitFor();await page.locator('.assistant-text').first().waitFor();
       assert.deepEqual(await page.evaluate(()=>[...new Set(restoreFrames)]),[],'Refresh never paints a welcome or login page before the restored conversation');await page.unrouteAll({behavior:'wait'});

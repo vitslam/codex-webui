@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Search after 50 ms of settled input, defer loading feedback until requests take 300 ms, retain previous results, and support IME composition and explicit retry; restore conversations silently without a loading splash.
+- 搜索输入防抖改为 50ms，请求超过 300ms 才显示加载提示并保留上一组结果，支持中文输入、过期结果隔离与失败重试；刷新静默恢复会话，不再显示整屏加载文案。
+
 - Avoid welcome-screen flashes while restoring a conversation; show cached recent chats immediately in search, display up to 50 matches with relative timestamps, and label in-progress history loads.
 - 刷新恢复对话时不再闪现欢迎页；搜索立即展示本地最近对话，最多显示 50 条匹配结果并使用相对时间；加载历史消息时显示明确的进行中提示。
 

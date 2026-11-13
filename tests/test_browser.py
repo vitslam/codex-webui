@@ -14,6 +14,9 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_search_timing_composition_stale_results_and_retry(self):
+        self._display_browser('search-timing')
+
     def test_refresh_restores_conversation_without_welcome_flash(self):
         self._display_browser('restore')
 
@@ -36,7 +39,8 @@ class BrowserTests(ServiceCase):
             if not index:old=entry['id']
         fixture=self.root/'display-browser.json'
         fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,chat=chat['id'],old=old,mode=mode)))
-        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('display_browser.cjs'))],
+        script='search_timing_browser.cjs' if mode=='search-timing' else 'display_browser.cjs'
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name(script))],
                               env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=120)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         self.assertIn(mode+' checks passed',result.stdout)

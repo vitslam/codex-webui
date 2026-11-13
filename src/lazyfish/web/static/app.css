@@ -117,7 +117,6 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 
 .history-more { display: block; margin: 0 auto 20px; padding: 5px 12px; background: transparent; color: var(--muted); font-size: 12px; }
 .history-more:hover { color: var(--text); }
-.restore-loading { min-height:100dvh; display:grid; place-items:center; color:var(--muted); font-size:14px; }
 .welcome { text-align: center; padding: 0 12px; }
 .eyebrow { font-size: 11px; color: var(--muted); letter-spacing: 2px; margin: 0 0 12px; }
 h1 { font-size: clamp(28px, 2.8vw, 36px); line-height: 1.4; font-weight: 450; letter-spacing: -1.1px; margin: 0; }
