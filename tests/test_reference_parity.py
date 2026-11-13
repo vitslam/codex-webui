@@ -15,6 +15,17 @@ from lazyfish.storage import Store
 
 
 class ReferenceParityTests(ServiceCase):
+    def test_user_message_echoes_are_not_execution_steps(self):
+        chat=self.chat();job=self.wait(self.send(chat,'[user-message-echo]'))
+        self.assertEqual(job['status'],'completed')
+        self.assertEqual(job['prompt'],'[user-message-echo]')
+        items=self.call('/api/jobs/'+job['id']+'/steps')['items']
+        self.assertFalse(any(item['detail'].get('type')=='user_message' for item in items))
+        self.assertFalse(any(item['id'] in ('echo-live','echo-final') for item in items))
+        self.assertEqual(next(item for item in items if item['id']=='future-tool')['detail']['type'],'future_tool')
+        self.assertEqual(next(item for item in items if item['id']=='kept-command')['kind'],'command')
+        self.assertTrue(any(item['kind']=='assistant' and '[user-message-echo]' in item['text'] for item in items))
+
     def call(self,path,data=None,expected=200):
         code,_,body=self.http(path,'GET' if data is None else 'POST',data,{'Authorization':'Bearer '+self.settings.token})
         value=json.loads(body);self.assertEqual(code,expected,value);return value

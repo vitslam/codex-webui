@@ -389,6 +389,6 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
   }
   return {render,renderContext,updateBusy,refreshBasics,imageNode,nativeImageNode:images.imageNode,preview,workspace:()=>desiredWorkspace || preferences.settings().workspace || getStatus()?.workspace,inputs:()=>({images:draft().images.map(i=>i.id),skills:draft().skills,...preferences.inputs()}),selectedImages:()=>draft().images.slice(),hasImages:()=>draft().images.length,hasInputs:()=>draft().images.length||draft().skills.length,busy:()=>pending>0,
     clear:()=>{cacheGeneration++;snapshots.clear();metadataRequests.clear();snapshotScope="";clearTimeout(authTimer);authSession=null;++authRevision;++epoch;++basics;drafts.clear();picker.close();desiredWorkspace="";$("#account-name").textContent=t("account");$("#account-plan").textContent="Codex CLI";$("#usage-remaining").textContent="";},
-    sent:id=>{drafts.delete(id);drafts.delete("new");picker.close();render();},
+    sent:id=>{drafts.delete(id);picker.close();render();},
     move:(from,to)=>{if(drafts.has(from)){drafts.set(to,drafts.get(from));drafts.delete(from);}picker.close();},switch:()=>{picker.close();render();}};
 };

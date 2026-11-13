@@ -14,6 +14,46 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_unsent_new_chat_inputs_survive_other_conversation_sends(self):
+        self._composer_browser('drafts')
+
+    def test_http_text_copy_fallback_and_failure_feedback(self):
+        self._composer_browser('clipboard')
+
+    def _composer_browser(self, mode):
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        skill=self.workspace/'.agents/skills/draft-check/SKILL.md'
+        skill.parent.mkdir(parents=True)
+        skill.write_text('---\nname: draft-check\ndescription: Isolated draft check\n---\nFixture instructions.\n')
+        chats=[]
+        prompt='\n'.join('Saved question line '+str(i) for i in range(25))
+        for title in ('Conversation A','Conversation B'):
+            chat=store.create_conversation(str(self.workspace),title)
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,prompt,None,None)
+            store.item(job['id'],'answer','assistant',"Saved answer.\n\n```python\nprint('fish')\n```",'completed')
+            store.finish(job['id'],'completed');chats.append(chat['id'])
+        fixture=self.root/'composer-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,chats=chats,prompt=prompt,mode=mode)))
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('composer_browser.cjs'))],
+                              env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=90)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn(mode+' checks passed',result.stdout)
+
+    def test_saved_user_echoes_are_hidden_without_hiding_tools(self):
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        chat=store.create_conversation(str(self.workspace),'Saved user echoes')
+        job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved request',None,None)
+        for identifier,kind in [('echo-before','echo'),('command-one','command'),('echo-between','echo'),('command-two','command'),('echo-after','echo'),('future-tool','future')]:
+            store.item(job['id'],identifier,'command' if kind=='command' else 'tool','Saved request' if kind=='echo' else identifier,'completed')
+            detail={'type':'user_message','content':[{'type':'text','text':'Saved request'}]} if kind=='echo' else {'type':'command_execution','command':'echo '+identifier,'aggregated_output':'fixture','exit_code':0} if kind=='command' else {'type':'future_tool'}
+            store.detail(job['id'],identifier,detail)
+        store.item(job['id'],'answer','assistant','Saved answer','completed');store.finish(job['id'],'completed')
+        fixture=self.root/'user-echo-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,chat=chat['id'],job=job['id'])))
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('user_echo_browser.cjs'))],env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=90)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('saved user echoes passed',result.stdout)
+
     def test_http_request_ids_and_missing_workspace_recovery(self):
         missing=self.workspace/'removed-project';missing.mkdir()
         store=Store(self.settings.data_dir/'lazyfish.db')

@@ -42,7 +42,8 @@ def main():
         event("thread/tokenUsage/updated",{"turnId":job["id"],"tokenUsage":{"last":{"totalTokens":3200,"inputTokens":3000,"cachedInputTokens":2400,"outputTokens":200},"total":{"inputTokens":3000,"cachedInputTokens":2400,"outputTokens":200},"modelContextWindow":10000}})
         if status=="completed":
             event("item/completed",{"turnId":job["id"],"item":item,"completedAtMs":0})
-        event("turn/completed",{"turn":{"id":job["id"],"status":status,"items":[]}})
+        final_items=[{'type':'userMessage','id':'echo-final','content':[{'type':'text','text':job['prompt']}]}] if job['prompt']=='[user-message-echo]' else []
+        event("turn/completed",{"turn":{"id":job["id"],"status":status,"items":final_items}})
         job = None
 
     while True:
@@ -151,6 +152,11 @@ def main():
                 history["prompts"].append(prompt); history["turns"].append(job["id"]); path.write_text(json.dumps(history))
                 event("turn/started",{"turn":{"id":job["id"],"status":"inProgress"}})
                 event("item/started",{"turnId":job["id"],"item":{"id":"reply","type":"plan" if prompt=='[plan-only]' else "agentMessage","text":""}})
+                if prompt=='[user-message-echo]':
+                    echo={'type':'userMessage','id':'echo-live','content':[{'type':'text','text':prompt}]}
+                    for event_method in ('item/started','item/completed'):event(event_method,{'turnId':job['id'],'item':echo})
+                    event('item/completed',{'turnId':job['id'],'item':{'type':'futureTool','id':'future-tool','tool':'fixture-future'}})
+                    event('item/completed',{'turnId':job['id'],'item':{'type':'commandExecution','id':'kept-command','command':'echo fixture','aggregatedOutput':'fixture','exitCode':0}})
                 if prompt=='[ephemeral-image]':
                     temporary=Path(params['cwd'])/'ephemeral-fixture.png';temporary.write_bytes(base64.b64decode(png))
                     viewed={'id':'view-ephemeral','type':'imageView','path':str(temporary)}

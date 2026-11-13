@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Preserve unsent new-chat images and skills when sending in another conversation; support text copying on HTTP pages with a selection-based fallback and specific failure feedback.
+- 在其他会话发送消息时保留尚未发送的新对话图片和技能；HTTP 页面复制文本增加兼容方式，并提供明确的复制失败提示。
+
+- Exclude native user-message echoes from execution steps and hide previously saved echoes in timelines while preserving genuine tool activity.
+- 执行步骤不再收录原生用户消息回显；时间线隐藏历史回显记录，保留真实工具活动。
+
 - Use cryptographic request IDs on HTTP LAN origins where randomUUID is unavailable; explain missing conversation directories in the Skills panel and keep global metadata available.
 - 修复内网 HTTP 地址缺少 randomUUID 导致消息无法发送的问题；技能页明确提示失效的会话目录，全局元数据仍可加载。
 

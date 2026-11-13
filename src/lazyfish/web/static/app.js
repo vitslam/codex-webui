@@ -372,6 +372,28 @@ function icon(name) {
   svg.setAttribute("class","icon"); svg.setAttribute("aria-hidden","true");
   const use = document.createElementNS(svg.namespaceURI,"use"); use.setAttribute("href",`#i-${name}`); svg.append(use); return svg;
 }
+async function copyText(content) {
+  if (window.isSecureContext && navigator.clipboard?.writeText) {
+    try { await navigator.clipboard.writeText(content); return; } catch { /* Try the selection-based fallback. */ }
+  }
+  const active=document.activeElement,selection=window.getSelection();
+  const ranges=selection ? Array.from({length:selection.rangeCount},(_,i)=>selection.getRangeAt(i).cloneRange()) : [];
+  const inputSelection=typeof active?.selectionStart === "number" ? [active.selectionStart,active.selectionEnd,active.selectionDirection] : null;
+  const area=node("textarea","",content);area.readOnly=true;area.tabIndex=-1;
+  area.style.cssText="position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:0;opacity:0";
+  (active?.closest("dialog[open]") || document.body).append(area);
+  try {
+    area.focus({preventScroll:true});area.select();
+    if (!document.execCommand("copy")) throw new Error("ui.copy.failed");
+  } finally {
+    area.remove();
+    if (active?.isConnected) {
+      active.focus({preventScroll:true});
+    }
+    if (selection) { selection.removeAllRanges();for(const range of ranges)selection.addRange(range); }
+    if (inputSelection && active?.isConnected) active.setSelectionRange(...inputSelection);
+  }
+}
 function copyButton(content,label=t("copy")) {
   const button = node("button","copy copy-button"); button.type="button";
   button.dataset.copy = label === t("copyCode") ? "copyCode" : "copy";
@@ -385,10 +407,14 @@ function copyButton(content,label=t("copy")) {
   button.addEventListener("click",async ()=> {
     const version=++feedback;
     try {
-      await navigator.clipboard.writeText(typeof content === "function" ? content() : content);
+      await copyText(typeof content === "function" ? content() : content);
       if (version !== feedback) return;
+      if (notice === "ui.could.not.copy.select.the.text.and.copy.it") { notice="";renderControls(); }
       showCopied(true); setTimeout(()=>{if(version===feedback)showCopied(false);},1500);
-    } catch { showCopied(false); notice="requestFailed"; renderControls(); }
+    } catch {
+      if (version !== feedback) return;
+      showCopied(false); notice="ui.could.not.copy.select.the.text.and.copy.it"; renderControls();
+    }
   }); return button;
 }
 function renderAppearance() {

@@ -322,6 +322,7 @@ class Worker:
 
     def native_item(self, item: dict, complete: bool):
         kind,identifier=item.get('type'),item.get('id')
+        if kind=='userMessage':return  # The prompt already belongs to the user turn.
         if not isinstance(identifier,str):return
         state='completed' if complete else 'running'
         if item.get('status') in ('failed','cancelled','canceled'):state='failed' if item['status']=='failed' else 'cancelled'

@@ -9,6 +9,7 @@ function createSteps({document, node, t, api, markdown, copyButton, imageNode, a
   setTimeout = (typeof globalThis !== 'undefined' ? globalThis : global).setTimeout,
   clearTimeout = (typeof globalThis !== 'undefined' ? globalThis : global).clearTimeout}) {
   function executionActivity(job, items) {
+    items = items.filter(item => item.type !== 'user_message');
     if (jobFinished(job)) return '';
     if ((job.questions || []).some(question => question.kind === 'approval' && ['pending', 'answered'].includes(question.state))) return t('ui.waiting.for.your.approval');
     if ((job.questions || []).some(question => question.blocking && question.state === 'pending')) return t('ui.waiting.for.your.choice');
@@ -363,6 +364,8 @@ function createSteps({document, node, t, api, markdown, copyButton, imageNode, a
     return details;
   }
   function appendSteps(message, steps, answer, toolNodes = null) {
+    // Previously saved user echoes belong to the user bubble, not the tool timeline.
+    steps = steps.filter(item => item.type !== 'user_message');
     // Filter before grouping: hidden summaries must not split adjacent commands.
     if (!showReasoning()) steps = steps.filter(item => item.type !== 'reasoning');
     const timeline = node('div', undefined, 'execution-timeline');
