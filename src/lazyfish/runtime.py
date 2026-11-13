@@ -16,6 +16,7 @@ from .codex import diagnose
 from .execution import Manager
 from .config import ConfigError, Settings, read_private, write_private
 from .logging_setup import setup
+from .network import access_hosts, request_host
 from .storage import record_start, record_stop
 from .web.server import Server
 
@@ -33,7 +34,7 @@ def request(settings: Settings, method: str = "GET", body: dict | None = None) -
             return None
         path = "/api/shutdown" if method == "POST" else "/api/status"
         payload = {"instance": metadata["instance"]} if method == "POST" else body
-        req = urllib.request.Request(f"http://127.0.0.1:{port}{path}", method=method,
+        req = urllib.request.Request(f"http://{request_host(settings.host)}:{port}{path}", method=method,
                                      data=json.dumps(payload).encode() if payload is not None else None,
                                      headers={"Authorization": "Bearer " + settings.token,
                                               "Content-Type": "application/json"})
@@ -88,9 +89,10 @@ def serve(settings: Settings) -> None:
             }))
             for signum in (signal.SIGINT, signal.SIGTERM):
                 previous_handlers[signum] = signal.signal(signum, lambda *_: server.stop_async())
-            print(f"Lazyfish: http://127.0.0.1:{server.server_port}", flush=True)
+            for host in access_hosts(settings.host):
+                print(f"Lazyfish: http://{host}:{server.server_port}", flush=True)
             print("Stage 3: local chat and conversation tools. Use `lazyfish token` to sign in.", flush=True)
-            logger.info("Listening on loopback port %s (local checks ready=%s)", server.server_port, report["ready"])
+            logger.info("Listening on %s port %s (local checks ready=%s)", settings.host, server.server_port, report["ready"])
             server.serve_forever(poll_interval=0.1)
         finally:
             for signum, handler in previous_handlers.items():

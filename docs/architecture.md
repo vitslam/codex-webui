@@ -11,10 +11,10 @@ flowchart LR
 ```
 
 All service-side components run as one OS user on one Linux machine. A remote
-browser uses an SSH tunnel. This is a single-owner installation. Runtime uses the
+browser uses an opt-in trusted LAN binding or an SSH tunnel. This is a single-owner installation. Runtime uses the
 Python standard library and packaged browser assets, without a frontend build step.
 
-服务端在同一台 Linux 机器、同一系统用户下运行。远程浏览器通过 SSH 隧道访问，面向
+服务端在同一台 Linux 机器、同一系统用户下运行。远程浏览器通过显式开启的可信局域网绑定或 SSH 隧道访问，面向
 单用户。运行时只有 Python 标准库及静态资源，无需前端构建。
 
 | Boundary / 边界 | Responsibility / 职责 |

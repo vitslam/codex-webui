@@ -13,6 +13,7 @@
 | CLI login changed but page unchanged | Use Installation → Check again; Web login/logout rechecks automatically / 在“本机安装”重新检测，网页登录或退出后会自动检查 |
 | Sending is blocked after restart | Check `lazyfish status` and [recovery](recovery.md); never force-delete leases / 查看恢复说明，不要强删锁 |
 | Model turn fails | Verify CLI/account model support, native login and network; a successful doctor is not an inference test / 检查模型权限、登录与网络 |
+| LAN page cannot be reached | Set `[server].host` to `"0.0.0.0"` in the local config, restart, use a printed private IPv4 URL, and check the firewall; never open it to the public internet / 修改本地绑定配置并重启，使用启动时打印的内网地址，检查防火墙，不要暴露公网 |
 | `stop` reports no instance | It will not signal a stale PID. Inspect that config/data directory and your own process supervisor / 不会误杀遗留 PID，请确认配置和进程管理器 |
 
 Look at `data_dir/logs/lazyfish.log` locally. Do not upload configuration, token,

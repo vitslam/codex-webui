@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add opt-in `0.0.0.0` or private IPv4 binding with startup LAN URLs; keep localhost as the default, require token authentication and reject public bind addresses.
+- 支持显式开启 `0.0.0.0` 或内网 IPv4 绑定，启动时打印局域网地址；默认仍仅本机访问，保留令牌认证并拒绝公网绑定地址。
+
 - Remember the first successfully used custom installation when no standard configuration exists; ordinary commands work from any directory without repeating `--config`.
 - Preserve explicit/environment overrides, existing configuration, tokens and history; never silently switch instances or replace missing/unsafe configuration.
 

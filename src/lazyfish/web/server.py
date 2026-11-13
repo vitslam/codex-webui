@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, urlsplit, quote
 
 from .. import __version__
 from ..config import Settings
+from ..network import local_ipv4s, private_ipv4
 from ..codex import diagnose
 from ..storage import ACTIVE, StoreError
 from .assets import assets
@@ -85,7 +86,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def _host_ok(self) -> bool:
         hosts = self.headers.get_all("Host", [])
-        return len(hosts) == 1 and bool(re.fullmatch(r"(?:127\.0\.0\.1|localhost)(?::[0-9]{1,5})?", hosts[0]))
+        if len(hosts) != 1:
+            return False
+        bind_host = self.server.settings.host
+        if bind_host == "0.0.0.0":
+            # Refresh on each request so interface changes need no restart.
+            allowed = {"127.0.0.1", "localhost"}
+            allowed.update(host for host in local_ipv4s() if private_ipv4(host))
+            names = [re.escape(host) for host in allowed]
+        else:
+            names = [re.escape(bind_host)]
+            if bind_host == "127.0.0.1":
+                names.append("localhost")
+        return bool(re.fullmatch(r"(?:%s)(?::[0-9]{1,5})?" % "|".join(names), hosts[0]))
 
     def _authorized(self) -> bool:
         authorization = self.headers.get("Authorization", "")

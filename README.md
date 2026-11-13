@@ -7,8 +7,8 @@
 [简体中文](README.zh-CN.md) · [Configuration](docs/configuration.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
 
 A lightweight, self-hosted web companion for an existing **Codex CLI** installation.
-The Web service and CLI run on the **same machine**. Use a browser locally, or an
-SSH tunnel from another device. No separate execution worker or second server is required.
+The Web service and CLI run on the **same machine**. Use a browser locally, on a
+trusted LAN (opt-in), or through an SSH tunnel from another device. No separate execution worker or second server is required.
 
 Manage conversations, follow task progress, work with files and images, and choose the models, themes and shortcuts that suit your workflow.
 
@@ -60,6 +60,8 @@ lazyfish serve
 Open **http://127.0.0.1:3210** and paste the **Web token** printed by `lazyfish token`.
 This token is separate from your Codex/OpenAI credentials. The installer generates
 it automatically and never prints it. The page supports English and Chinese.
+The default bind address is `127.0.0.1` (local access only). For another device,
+see [remote access](#remote-access) below; LAN access is opt-in and still requires the Web token.
 
 The installer creates `~/.local/bin/lazyfish`; its Python environment stays isolated
 internally. If that directory is missing from PATH, it updates your Bash/Zsh startup
@@ -96,15 +98,36 @@ If `python3` is too old, select an existing newer interpreter:
 PYTHON=/path/to/python3.14 bash scripts/install.sh
 ```
 
-For a remote machine, keep the service bound to loopback and forward its port:
+## Remote access
+
+**Trusted LAN:** in your local `~/.config/lazyfish/config.toml` (or your selected
+config), change `host` under `[server]` to `"0.0.0.0"`, then restart the service:
+
+```toml
+[server]
+host = "0.0.0.0"
+```
+
+Startup prints the localhost URL and detected private IPv4 URLs. Open a LAN URL
+from the other device and sign in with `lazyfish token`. Common container/bridge
+interfaces are omitted from the banner. To bind only one interface, set its private
+IPv4 instead (for example `192.168.1.10`). See [configuration](docs/configuration.md).
+
+`0.0.0.0` listens on **all IPv4 interfaces**, not just the LAN. Use only on a trusted
+network and restrict access with a firewall; HTTP does not encrypt tokens or traffic.
+Public bind addresses and non-local Host headers are rejected, but those checks are
+**not a firewall**. Do not expose the service to the public internet or forward its
+port on a router. Use SSH on untrusted networks.
+
+**SSH alternative:** leave the default `127.0.0.1` binding and forward its port:
 
 ```bash
 ssh -N -L 3210:127.0.0.1:3210 user@your-server
 ```
 
-Then open the same local URL. Direct public listening is deliberately unavailable
-in this preview. A workspace is an execution context, **not an OS
-sandbox**; use a dedicated OS user for files you intend to expose to an agent.
+Then open `http://127.0.0.1:3210` locally and sign in with the Web token.
+A workspace is an execution context, **not an OS sandbox**; use a dedicated OS
+user for files you intend to expose to an agent.
 
 ## Features
 

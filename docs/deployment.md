@@ -1,12 +1,12 @@
 # Deployment / 部署
 
-This preview supports a foreground Linux process, bound only to loopback. The installer
+This preview supports a foreground Linux process, bound to loopback by default. The installer
 creates a user command in `~/.local/bin` and, when needed, adds that directory
 to PATH in the Bash/Zsh startup file (other shells use `.profile`). It requires no root,
 installs no systemd units and starts no daemon. Install under the same dedicated OS user that owns the native Codex login.
 Allow private access to the chosen workspace and persistent data directory.
 
-当前预览版支持 Linux 前台进程，只监听本机。安装器会创建 `~/.local/bin/lazyfish`，
+当前预览版支持 Linux 前台进程，默认只监听本机。安装器会创建 `~/.local/bin/lazyfish`，
 并按需为 Bash/Zsh 配置 PATH（其他 Shell 使用 `.profile`），提示执行对应的 source 命令。
 不需要 root，不安装系统服务，也不会自动后台运行。
 建议使用独立系统用户，并让 Codex 与 Web 服务使用同一用户的登录环境。
@@ -30,6 +30,26 @@ primary client.
 初始化可用 `--data-dir` 选择持久数据位置。当前支持本机聊天，作为主力客户端前请先了解预览版限制。
 
 ## Remote access / 远程访问
+
+For a trusted LAN, edit `host` under `[server]` in your local
+`~/.config/lazyfish/config.toml` (or selected config) to `"0.0.0.0"` and restart.
+Startup prints localhost and detected private IPv4 URLs, omitting common
+container/bridge interfaces. Open a LAN URL and use `lazyfish token` to sign in.
+A specific private IPv4 (for example `192.168.1.10`) binds only that interface.
+Allow the configured TCP port through the host firewall only from trusted devices.
+
+`0.0.0.0` listens on all IPv4 interfaces. HTTP traffic and tokens are unencrypted;
+Host checks and rejection of public bind addresses do not replace a firewall.
+Do not expose the service to the public internet, including via router port forwarding.
+
+可信局域网可在本地 `~/.config/lazyfish/config.toml`（或选用的配置文件）的 `[server]` 下，
+将 `host` 改为 `"0.0.0.0"` 后重启。启动时打印本机及内网 IPv4 地址，省略常见容器和网桥接口。
+使用局域网地址访问，仍需 `lazyfish token` 显示的令牌。也可指定一个内网 IPv4，只绑定对应网卡。
+防火墙只应允许可信设备访问配置的 TCP 端口。`0.0.0.0` 监听所有 IPv4 网卡，HTTP 不加密内容和令牌；
+Host 检查及拒绝公网绑定地址不能替代防火墙。不要暴露公网，也不要在路由器上转发端口。
+
+Alternatively, keep `127.0.0.1` and use an encrypted SSH tunnel (recommended on
+untrusted networks). / 也可保留默认本机绑定，使用加密 SSH 隧道（不可信网络推荐）：
 
 ```bash
 ssh -N -L 3210:127.0.0.1:3210 user@your-server
@@ -69,7 +89,7 @@ Transfer the wheel to the server. Runtime installation needs no package download
 ```bash
 python3.11 -m venv .venv
 .venv/bin/python -m pip install --no-index /path/to/lazyfish_web-0.5.0a6-py3-none-any.whl
-lazyfish init --workspace /path/to/projects
+.venv/bin/lazyfish init --workspace /path/to/projects
 ```
 
 可以在构建机生成 wheel 后拷贝至服务器离线安装。Codex CLI 及其网络环境单独准备。

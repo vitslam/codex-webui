@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import replace
+from unittest.mock import patch
+from types import SimpleNamespace
+import unittest
+import threading
 import http.client
 from contextlib import closing
 import json
@@ -13,6 +18,7 @@ import time
 
 from lazyfish import runtime
 from lazyfish.config import write_private
+from lazyfish.web.server import Handler, Server
 from support import IsolatedTest
 
 
@@ -103,6 +109,9 @@ class ServiceTests(ServiceCase):
 
     def test_host_origin_auth_and_body_rejection(self):
         self.assertEqual(self.http(headers={"Host": "attacker.example"})[0], 403)
+        self.assertEqual(self.http(headers={"Host": "192.168.1.10"})[0], 403)
+        self.assertEqual(self.http(headers={"Host": f"127.0.0.1:{self.port}"})[0], 200)
+        self.assertEqual(self.http(headers={"Host": f"localhost:{self.port}"})[0], 200)
         for origin in ("https://attacker.example", "null", ""):
             headers = {"Origin": origin} if origin else {}
             self.assertEqual(self.http("/api/session", "POST", {"token": self.settings.token}, headers)[0], 403)
@@ -203,3 +212,99 @@ class CliTests(IsolatedTest):
             finally:
                 process.terminate()
                 process.wait(timeout=5)
+
+
+class WildcardServiceTests(IsolatedTest):
+    def test_wildcard_host_and_origin_checks(self):
+        settings = replace(self.settings, host="0.0.0.0", port=0)
+        server = Server(settings, {"ready": True}, "test-instance")
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with patch("lazyfish.web.server.local_ipv4s", return_value={"10.0.0.8", "8.8.8.8"}):
+                for host in ("127.0.0.1", "localhost", "10.0.0.8", "8.8.8.8", "192.168.1.10", "evil.com", "0.0.0.0"):
+                    with self.subTest(host=host):
+                        connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+                        connection.request("GET", "/", headers={"Host": f"{host}:{server.server_port}"})
+                        response = connection.getresponse()
+                        self.assertEqual(response.status, 200 if host in ("127.0.0.1", "localhost", "10.0.0.8") else 403)
+                        response.read()
+                        connection.close()
+                for origin, expected in (("http://10.0.0.8", 200), ("http://evil.com", 403)):
+                    connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+                    connection.request("POST", "/api/session", body=json.dumps({"token": settings.token}),
+                                       headers={"Host": "10.0.0.8", "Origin": origin, "Content-Type": "application/json"})
+                    response = connection.getresponse()
+                    self.assertEqual(response.status, expected)
+                    response.read()
+                    connection.close()
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+    def test_wildcard_lifecycle_and_banner(self):
+        self.config.write_text(self.config.read_text().replace('host = "127.0.0.1"', 'host = "0.0.0.0"'))
+        settings = replace(self.settings, host="0.0.0.0")
+        with subprocess.Popen([sys.executable, "-m", "lazyfish", "--config", str(self.config), "serve"],
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
+            try:
+                deadline = time.monotonic() + 10
+                while time.monotonic() < deadline:
+                    if runtime.request(settings):
+                        break
+                    if process.poll() is not None:
+                        self.fail("Wildcard service exited during startup")
+                    time.sleep(0.03)
+                else:
+                    self.fail("Wildcard service did not become available")
+                self.assertTrue(runtime.stop(settings))
+                stdout, stderr = process.communicate(timeout=5)
+                self.assertEqual(process.returncode, 0, stderr)
+                self.assertIn("Lazyfish: http://127.0.0.1:", stdout)
+                self.assertNotIn("Lazyfish: http://0.0.0.0:", stdout)
+            finally:
+                if process.poll() is None:
+                    process.terminate()
+                    process.wait(timeout=5)
+
+
+class HostPolicyTests(unittest.TestCase):
+    def handler(self, bind_host, hosts, origins=()):
+        handler = Handler.__new__(Handler)
+        handler.server = SimpleNamespace(settings=SimpleNamespace(host=bind_host))
+        handler.headers = http.client.HTTPMessage()
+        for host in hosts:
+            handler.headers.add_header("Host", host)
+        for origin in origins:
+            handler.headers.add_header("Origin", origin)
+        return handler
+
+    def test_specific_private_binding_only_accepts_configured_address(self):
+        for host in ("10.0.0.8", "10.0.0.8:3210"):
+            self.assertTrue(self.handler("10.0.0.8", [host])._host_ok())
+        for host in ("127.0.0.1", "localhost", "10.0.0.9", "8.8.8.8", "0.0.0.0"):
+            self.assertFalse(self.handler("10.0.0.8", [host])._host_ok())
+
+    def test_wildcard_host_rejects_missing_duplicate_and_malformed_headers(self):
+        with patch("lazyfish.web.server.local_ipv4s", return_value={"10.0.0.8"}):
+            for hosts in ([], ["10.0.0.8", "10.0.0.8"], ["10.0.0.8.evil.com"],
+                          ["10.0.0.8:3210@evil.com"], ["10.0.0.8:abc"], ["10.0.0.8:123456"]):
+                with self.subTest(hosts=hosts):
+                    self.assertFalse(self.handler("0.0.0.0", hosts)._host_ok())
+
+    def test_wildcard_host_refreshes_interfaces_and_fails_closed(self):
+        handler = self.handler("0.0.0.0", ["10.0.0.8"])
+        with patch("lazyfish.web.server.local_ipv4s", side_effect=[{"10.0.0.8"}, set()]):
+            self.assertTrue(handler._host_ok())
+            self.assertFalse(handler._host_ok())
+        with patch("lazyfish.web.server.local_ipv4s", return_value=set()):
+            self.assertTrue(self.handler("0.0.0.0", ["127.0.0.1"])._host_ok())
+
+    def test_lan_origin_must_match_scheme_host_and_port_exactly(self):
+        host = "10.0.0.8:3210"
+        for origins, expected in ((["http://" + host], True), ([], False),
+                                  (["http://10.0.0.8"], False), (["https://" + host], False),
+                                  (["null"], False), (["http://" + host] * 2, False)):
+            with self.subTest(origins=origins):
+                self.assertEqual(self.handler("0.0.0.0", [host], origins)._origin_ok(), expected)
