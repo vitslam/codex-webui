@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 from http.cookies import SimpleCookie
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 import json
 import base64
 import binascii
@@ -18,13 +18,13 @@ from urllib.parse import parse_qs, urlsplit, quote
 
 from .. import __version__
 from ..config import Settings
-from ..network import local_ipv4s
+from ..network import IPv4HTTPServer, local_ipv4s
 from ..codex import diagnose
 from ..storage import ACTIVE, StoreError
 from .assets import assets
 
 
-class Server(ThreadingHTTPServer):
+class Server(IPv4HTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 

@@ -1,10 +1,46 @@
 import ctypes
+from dataclasses import replace
+import http.client
 import socket
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from lazyfish import network
 from lazyfish.network import access_hosts, bindable_ipv4, local_ipv4s, private_ipv4, request_host
+from lazyfish.telemetry import Timings
+from lazyfish.web.server import Server
+from support import IsolatedTest
+
+
+class HTTPBindingTests(IsolatedTest):
+    def test_web_listener_binds_numeric_addresses_without_reverse_dns(self):
+        # HTTPServer normally resolves its name between bind() and listen().
+        # A stalled resolver must not delay either loopback or wildcard startup.
+        with patch("socket.getfqdn", side_effect=AssertionError("Unexpected reverse DNS")):
+            for host in ("127.0.0.1", "0.0.0.0"):
+                with self.subTest(host=host), Server(replace(self.settings, host=host),
+                                                   {"ready": True}, "fixture") as server:
+                    self.assertEqual(server.server_name, host)
+                    self.assertEqual(server.server_port, server.server_address[1])
+                    self.assertGreater(server.server_port, 0)
+                    with socket.create_connection(("127.0.0.1", server.server_port), timeout=1):
+                        pass  # The socket must already be listening, not only bound.
+
+    def test_timing_listener_starts_and_serves_without_reverse_dns(self):
+        with patch("socket.getfqdn", side_effect=AssertionError("Unexpected reverse DNS")):
+            timings = Timings(SimpleNamespace())
+            try:
+                connection = http.client.HTTPConnection("127.0.0.1", timings.server.server_port, timeout=2)
+                try:
+                    connection.request("POST", timings.route, b'{"resourceSpans":[]}')
+                    response = connection.getresponse()
+                    self.assertEqual(response.status, 200)
+                    self.assertEqual(response.read(), b"{}")
+                finally:
+                    connection.close()
+            finally:
+                timings.close()
 
 
 class NetworkTests(unittest.TestCase):

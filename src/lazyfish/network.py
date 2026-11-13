@@ -3,9 +3,21 @@
 from __future__ import annotations
 
 import ctypes
+from http.server import ThreadingHTTPServer
 import ipaddress
 import socket
+from socketserver import TCPServer
 import sys
+
+
+class IPv4HTTPServer(ThreadingHTTPServer):
+    """Serve validated numeric IPv4 binds without a reverse-DNS startup lookup."""
+
+    def server_bind(self) -> None:
+        # HTTPServer's reverse lookup can stall before listen() on macOS runners.
+        # Neither local listener needs a resolved hostname; keep the bound IP.
+        TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
 
 
 # Display only: keep VPN/physical interfaces, hide bridges and wireless direct.

@@ -1,8 +1,9 @@
 """Loopback-only native sampling timings. Never retain prompts or span attributes."""
-from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 import json
 import secrets
 import threading
+from .network import IPv4HTTPServer
 
 
 class Timings:
@@ -21,7 +22,7 @@ class Timings:
                     collector.record(json.loads(self.rfile.read(size)))
                 except Exception:return self.send_error(400)
                 self.send_response(200);self.send_header('Content-Length','2');self.end_headers();self.wfile.write(b'{}')
-        self.server=ThreadingHTTPServer(('127.0.0.1',0),Handler);self.server.daemon_threads=True
+        self.server=IPv4HTTPServer(('127.0.0.1',0),Handler);self.server.daemon_threads=True
         self.thread=threading.Thread(target=self.server.serve_forever,kwargs={'poll_interval':.1},name='native-timings',daemon=True);self.thread.start()
 
     @property
