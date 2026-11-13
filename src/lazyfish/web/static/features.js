@@ -2,10 +2,13 @@
 // Original Lazyfish account and composer components, wired to local native APIs.
 window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,panels,report,onChange,onCompact,getBusy,preferences,refreshStatus}) {
   const $=s=>document.querySelector(s), drafts=new Map();
-  let epoch=0, pending=0, desiredWorkspace="", basics=0,visiblePage=null,authSession=null,authTimer=0,authStarting=false,authPolling=null,authRevision=0;
+  let epoch=0, pending=0, contextRevision=0,contextId=null, basics=0,visiblePage=null,authSession=null,authTimer=0,authStarting=false,authPolling=null,authRevision=0;
   const current=()=>getConversation()?.id || "new";
   function draft(id=current()) { if(!drafts.has(id))drafts.set(id,{images:[],skills:[]});return drafts.get(id); }
-  function path(section,refresh=false) {return `/api/native/${section}?${getConversation() ? "conversation="+getConversation().id+"&" : ""}${refresh ? "refresh=1" : ""}`;}
+  const workspace=()=>getConversation()?.workspace || drafts.get('new')?.workspace || preferences.settings().workspace || getStatus()?.workspace || '';
+  const skillContext=()=>getConversation() ? {conversation:getConversation().id} : workspace() ? {workspace:workspace()} : {};
+  const skillQuery=()=>new URLSearchParams(skillContext()).toString();
+  function path(section,refresh=false) {return `/api/native/${section}?${section==='skills' ? skillQuery()+'&' : getConversation() ? 'conversation='+getConversation().id+'&' : ''}${refresh ? "refresh=1" : ""}`;}
   const calendar=window.LazyfishActivity({node:(tag,text,cls)=>node(tag,cls,text),t});
   const note=text=>node("p","account-note",text);
   function button(label,action) {const b=node("button","account-button",label);b.type="button";b.addEventListener("click",action);return b;}
@@ -25,7 +28,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
   }
   // Only sanitized quota/activity snapshots persist in this browser, scoped to the native installation/account epoch.
   const snapshots=new Map(),metadataRequests=new Map();let snapshotScope='',cacheGeneration=0;
-  const metadataKey=section=>section==='skills'?section+':'+(getConversation()?.workspace||getStatus()?.workspace):section;
+  const metadataKey=section=>section==='skills'?section+':'+workspace():section;
   function scopeSnapshots(scope=getStatus()?.metadata_scope){
     if(!scope||scope===snapshotScope)return;
     snapshotScope=scope;snapshots.clear();
@@ -36,10 +39,10 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
       }catch{}
     }
   }
-  function saveSnapshot(section,value){
+  function saveSnapshot(section,value,key=metadataKey(section)){
     scopeSnapshots(value.cache_scope);
     if(getStatus())getStatus().metadata_scope=value.cache_scope;
-    snapshots.set(metadataKey(section),value);
+    snapshots.set(key,value);
     if(['usage','activity'].includes(section))try{localStorage.setItem('lazyfish.metadata.v1:'+snapshotScope+':'+section,JSON.stringify(value));}catch{}
   }
   function readMetadata(section,force,onUpdate,alive=()=>true){
@@ -52,7 +55,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
         let value=await api(requestPath);
         for(let attempt=0;;attempt++){
           if(generation!==cacheGeneration||!getStatus()||metadataRequests.get(key)!==entry)return;
-          saveSnapshot(section,value);
+          saveSnapshot(section,value,key);
           for(const listener of entry.listeners)if(listener.alive())listener.update(value);
           if(!value.refreshing||attempt>=40)return value;
           await new Promise(resolve=>setTimeout(resolve,750));
@@ -83,7 +86,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
     activity.setAttribute('aria-busy',String(Boolean(data.refreshing)));
   }
   function drawPage(page,data){
-    const target=$("#native-page"),cwd=getConversation()?.workspace||getStatus()?.workspace;
+    const target=$("#native-page"),cwd=workspace();
     target.replaceChildren();
       if(page==="account") {
         const value=identity(data),card=node("div","account-identity"),avatar=node("span","avatar",(value.account.email||"LF").slice(0,2).toUpperCase());card.append(avatar,heading(value.name,value.account.planType || "Codex CLI"));target.append(card,row(t("authentication"),value.account.type || t("accountUnknown")),row(t("workspace"),cwd),note(t("accountHelp")));loginControls(target);
@@ -106,7 +109,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
           card.append(node("h4","",skill.name),note(skill.description || ""),note(skill.path));
           actions.append(button(skill.editable ? t("edit") : t("view"),()=>readSkill(skill)),button(t("useSkill"),()=>{addSkill(skill);$("#account-dialog").close();$("#prompt").focus();}));
           actions.lastChild.disabled=skill.enabled===false;
-          const toggle=button(t(skill.enabled===false ? "enableSkill" : "disableSkill"),async()=>{toggle.disabled=true;try{await api("/api/skills/enabled",{conversation:getConversation()?.id,path:skill.path,enabled:skill.enabled===false});forgetSection('skills');window.dispatchEvent(new Event("skillschanged"));await showPage("skills",true);}catch(error){report(error);toggle.disabled=false;}});
+          const toggle=button(t(skill.enabled===false ? "enableSkill" : "disableSkill"),async()=>{toggle.disabled=true;try{await api("/api/skills/enabled",{...skillContext(),path:skill.path,enabled:skill.enabled===false});forgetSection('skills');window.dispatchEvent(new Event("skillschanged"));await showPage("skills",true);}catch(error){report(error);toggle.disabled=false;}});
           actions.append(toggle);card.append(actions);target.append(card);
         }
         if(data.truncated)target.append(note(t('ui.showing.the.first.300.skills')));
@@ -253,7 +256,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
   }
   async function readSkill(skill) {
     const request=++epoch,target=$("#native-page");target.replaceChildren(note(t("ui.loading")));
-    try {const data=await api(`/api/skills/document?path=${encodeURIComponent(skill.path)}&${getConversation() ? "conversation="+getConversation().id : ""}`);
+    try {const data=await api(`/api/skills/document?path=${encodeURIComponent(skill.path)}&${skillQuery()}`);
       if(request!==epoch)return;
       if(data.editable)editor(data);else target.replaceChildren(heading(data.name,data.description),node("pre","skill-source",data.content),button(t("back"),()=>showPage("skills")));
     }catch(error){if(request===epoch)target.replaceChildren(note(t("skill_unavailable")),button(t("back"),()=>showPage("skills")));}
@@ -266,7 +269,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
       const save=button(t('save'),()=>{});save.type='submit';save.id='save-skill';const back=button(t('back'),()=>showPage('skills'));
       form.append(heading(t('editSkill'),t('skills.edit.hint')),note(skill.path),source,feedback,back,save);target.replaceChildren(form);source.focus({preventScroll:true});
       form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=back.disabled=true;
-        try{await api('/api/skills/source',{conversation:getConversation()?.id,path:skill.path,hash:skill.hash,content:source.value});forgetSection('skills');window.dispatchEvent(new Event('skillschanged'));await showPage('skills',true);}
+        try{await api('/api/skills/source',{...skillContext(),path:skill.path,hash:skill.hash,content:source.value});forgetSection('skills');window.dispatchEvent(new Event('skillschanged'));await showPage('skills',true);}
         catch(error){feedback.textContent=t(error.message);save.disabled=back.disabled=false;}
       });return;
     }
@@ -286,7 +289,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
     const save=button(t("save"),()=>{});save.id="save-skill";save.type="submit";
     actions.append(button(t("cancel"),()=>showPage("skills")),save);form.append(feedback,actions);
     form.addEventListener("submit",async event=>{event.preventDefault();save.disabled=true;
-      try {await api("/api/skills",{conversation:getConversation()?.id,name:fields.name.value,description:fields.description.value,body:fields.body.value,replace:Boolean(skill),scope:scope.value});forgetSection('skills');window.dispatchEvent(new Event("skillschanged"));await showPage("skills",true);}
+      try {await api("/api/skills",{...skillContext(),name:fields.name.value,description:fields.description.value,body:fields.body.value,replace:Boolean(skill),scope:scope.value});forgetSection('skills');window.dispatchEvent(new Event("skillschanged"));await showPage("skills",true);}
       catch(error){feedback.textContent=t(error.message);save.disabled=false;}
     });target.replaceChildren(form);fields[skill ? "body" : "name"].focus();
   }
@@ -339,29 +342,35 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
       panel.style.left=(Math.max(12,Math.min(innerWidth-width-12,anchor.right-width))-anchor.left)+"px";panel.style.right="auto";
     }
   }
-  const picker=window.LazyfishUI.skills({document,window,node:(tag,text,cls)=>node(tag,cls,text),t,request:async()=>{try{return await api(path("skills"));}catch(error){throw new Error(t(error.message));}},getWorkspace:()=>getConversation()?.workspace || getStatus()?.workspace,
+  const picker=window.LazyfishUI.skills({document,window,node:(tag,text,cls)=>node(tag,cls,text),t,request:async()=>{try{return await api(path("skills"));}catch(error){throw new Error(t(error.message));}},getWorkspace:workspace,
     getSelected:()=>draft().skills,setSelected:value=>{draft().skills=value;},onChange:()=>{$("#attachment-settings").open=false;onChange();},onManage:()=>panels.open("skills")});picker.bind();
   $("#add-image").addEventListener("click",()=>{$("#attachment-settings").open=false;$("#image-input").click();});
   $("#image-input").addEventListener("change",event=>{upload([...event.target.files]);event.target.value="";});
   $("#prompt").addEventListener("paste",event=>{const files=[...event.clipboardData.files].filter(f=>f.type.startsWith("image/"));if(files.length){event.preventDefault();upload(files);}});
-  const directory=$("#workdir-dialog");let directoryConversation=null;
+  const directory=$("#workdir-dialog");let directoryEdit=null;
   $("#edit-workdir").addEventListener("click",()=>{
-    directoryConversation=current();$("#workdir-input").value=$("#workdir").value;$("#workdir-error").hidden=true;
+    directoryEdit={id:current(),revision:contextRevision,saving:false};$("#workdir-input").value=$("#workdir").value;$("#workdir-error").hidden=true;$("#workdir-save").disabled=false;
     $("#attachment-settings").open=false;directory.showModal();$("#workdir-input").focus();
   });
   $("#workdir-cancel").addEventListener("click",()=>directory.close());
   directory.addEventListener("click",event=>{const r=directory.getBoundingClientRect();if(event.target===directory&&(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom))directory.close();});
-  directory.addEventListener("close",()=>$("#attachment-settings summary").focus({preventScroll:true}));
+  directory.addEventListener("close",()=>{if(directory.open)return;const edit=directoryEdit;directoryEdit=null;if(edit?.revision===contextRevision)$("#attachment-settings summary").focus({preventScroll:true});});
   $("#workdir-form").addEventListener("submit",async event=>{
-    event.preventDefault();const value=$("#workdir-input").value.trim()||getStatus()?.workspace;
-    $("#workdir-save").disabled=true;
+    event.preventDefault();const edit=directoryEdit,chat=getConversation(),before=workspace();
+    if(!edit||edit.saving||edit.revision!==contextRevision||edit.id!==current())return;
+    const value=$("#workdir-input").value.trim()||getStatus()?.workspace;
+    edit.saving=true;$("#workdir-save").disabled=true;
     try {
-      if(directoryConversation!==current())throw new Error("requestFailed");
-      if(getConversation()){const result=await api(`/api/conversations/${getConversation().id}/settings`,{workspace:value});getConversation().workspace=result.workspace;}
-      else {await api("/api/workspace/validate",{workspace:value});desiredWorkspace=value;}
+      const result=chat ? await api(`/api/conversations/${chat.id}/settings`,{workspace:value}) : await api("/api/workspace/validate",{workspace:value});
+      if(chat)chat.workspace=result.workspace;
+      const changed=before!==result.workspace,state=drafts.get(edit.id),hadSkills=changed&&Boolean(state?.skills.length);
+      if(chat&&hadSkills)state.skills=[];
+      if(directoryEdit!==edit||edit.revision!==contextRevision||edit.id!==current())return;
+      if(!chat){draft('new').workspace=result.workspace;if(hadSkills)state.skills=[];}
       picker.close();directory.close();render();
-    }catch(error){$("#workdir-error").textContent=t(error.message);$("#workdir-error").hidden=false;}
-    finally{$("#workdir-save").disabled=false;}
+      if(hadSkills)report(new Error('skills.workspace.changed'));
+    }catch(error){if(directoryEdit===edit&&edit.revision===contextRevision){$("#workdir-error").textContent=t(error.message);$("#workdir-error").hidden=false;}}
+    finally{if(directoryEdit===edit)$("#workdir-save").disabled=false;}
   });
   $("#compact-context").addEventListener("click",()=>{$("#context-settings").open=false;onCompact();});
   $("#plan-toggle").addEventListener("click",()=>{preferences.togglePlan();render();});
@@ -379,7 +388,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
   }
   function render() {
     picker.drawSelection();renderImages();renderContext();
-    if(document.activeElement!==$("#workdir"))$("#workdir").value=getConversation()?.workspace || desiredWorkspace || preferences.settings().workspace || getStatus()?.workspace || "";
+    if(document.activeElement!==$("#workdir"))$("#workdir").value=workspace();
     $("#workdir-preview").textContent=$("#workdir").value.split("/").filter(Boolean).pop()||"/";$("#workdir-preview").title=$("#workdir").value;
     $("#edit-workdir").disabled=getBusy();
     const settings=preferences.settings();$("#plan-toggle").hidden=!settings.showPlan;$("#plan-toggle").setAttribute("aria-pressed",String(settings.plan));$("#plan-toggle").title=t(settings.plan ? "ui.switch.to.default.mode" : "ui.switch.to.plan.mode");
@@ -387,8 +396,8 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
     for(const button of document.querySelectorAll("[data-permission]")) {button.setAttribute("aria-pressed",String(button.dataset.permission===(settings.permission||(getStatus()?.execution.sandbox==="danger-full-access"&&getStatus()?.execution.approval_policy==="never"?"full_access":getStatus()?.execution.sandbox==="read-only"?"read_only":getStatus()?.execution.sandbox==="workspace-write"&&getStatus()?.execution.approval_policy==="on-request"?"ask":null))));button.disabled=getBusy();}
 
   }
-  return {render,renderContext,updateBusy,refreshBasics,imageNode,nativeImageNode:images.imageNode,preview,workspace:()=>desiredWorkspace || preferences.settings().workspace || getStatus()?.workspace,inputs:()=>({images:draft().images.map(i=>i.id),skills:draft().skills,...preferences.inputs()}),selectedImages:()=>draft().images.slice(),hasImages:()=>draft().images.length,hasInputs:()=>draft().images.length||draft().skills.length,busy:()=>pending>0,
-    clear:()=>{cacheGeneration++;snapshots.clear();metadataRequests.clear();snapshotScope="";clearTimeout(authTimer);authSession=null;++authRevision;++epoch;++basics;drafts.clear();picker.close();desiredWorkspace="";$("#account-name").textContent=t("account");$("#account-plan").textContent="Codex CLI";$("#usage-remaining").textContent="";},
+  return {render,renderContext,updateBusy,refreshBasics,imageNode,nativeImageNode:images.imageNode,preview,workspace,inputs:()=>({images:draft().images.map(i=>i.id),skills:draft().skills,...preferences.inputs()}),selectedImages:()=>draft().images.slice(),hasImages:()=>draft().images.length,hasInputs:()=>draft().images.length||draft().skills.length,busy:()=>pending>0,
+    clear:()=>{cacheGeneration++;snapshots.clear();metadataRequests.clear();snapshotScope="";clearTimeout(authTimer);authSession=null;++authRevision;++epoch;++basics;++contextRevision;contextId=null;directoryEdit=null;drafts.clear();picker.close();$("#account-name").textContent=t("account");$("#account-plan").textContent="Codex CLI";$("#usage-remaining").textContent="";},
     sent:id=>{drafts.delete(id);picker.close();render();},
-    move:(from,to)=>{if(drafts.has(from)){drafts.set(to,drafts.get(from));drafts.delete(from);}picker.close();},switch:()=>{picker.close();render();}};
+    move:(from,to)=>{if(drafts.has(from)){drafts.set(to,drafts.get(from));drafts.delete(from);}picker.close();},switch:()=>{if(contextId!==current()){contextId=current();++contextRevision;++epoch;directoryEdit=null;if(directory.open)directory.close();}picker.close();render();}};
 };

@@ -78,7 +78,7 @@ window.LazyfishRunSettings = function({node,icon,t,getStatus,getConversation,onM
   $("#fast-toggle").addEventListener("click",()=>{fast=!fast;changed();});
   $("#model-options").addEventListener("toggle",()=>{if(!$("#model-options").open){finishDrag(true);track.removeAttribute("data-thumb-hover");resetPicker();}});
   window.addEventListener("blur",()=>finishDrag(true));
-  return {render,defaults:()=>({models:[...models.values()],fallback,model:current(),effort:effort(),fast}),
+  return {render,defaults:()=>({models:[...models.values()],fallback,model:getStatus()?.execution.model||defaults.model||'',effort:getStatus()?.execution.effort||defaults.effort||'medium',fast:false}),
     restoreConversation:value=>{finishDrag(true);$('#model').value=value.model||'';$('#effort').value=value.effort||'';fast=value.fast_mode===true;normalize();render();},
     applyDefaults:value=>{finishDrag(true);$("#model").value=value.model || "";$("#effort").value=value.effort || "";fast=value.fast===true;normalize();changed();},settings:()=>({fast_mode:fast}),restore:()=>{try{const saved=JSON.parse(localStorage.getItem("lazyfish.run.v1"));if(saved&&typeof saved.model==="string"&&/^[a-zA-Z0-9._:/-]{0,120}$/.test(saved.model)&&validEfforts.has(saved.effort)){$("#model").value=saved.model;$("#effort").value=saved.effort;fast=saved.fast===true;}}catch{ /* optional browser preferences */ }render();},
     catalog:value=>{finishDrag(true);defaults=value.defaults || {};for(const item of value.models || [])if(item.id)models.set(item.id,item);normalize();onModel();window.dispatchEvent(new Event("lazyfish-models"));}};

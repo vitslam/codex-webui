@@ -14,6 +14,30 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_workspace_skill_context_and_new_chat_defaults(self):
+        self._interaction_browser('workspace')
+
+    def test_question_addenda_and_ephemeral_drafts(self):
+        self._interaction_browser('questions')
+
+    def _interaction_browser(self, mode):
+        store=Store(self.settings.data_dir/'lazyfish.db');projects=[];chats=[]
+        for index in range(2):
+            project=self.workspace/('project-'+str(index));projects.append(str(project))
+            skill=project/'.agents/skills'/('skill-'+str(index))/'SKILL.md';skill.parent.mkdir(parents=True)
+            skill.write_text(f'---\nname: skill-{index}\ndescription: Project fixture\n---\nFixture instructions.\n')
+            values={'model':'compact-model','effort':'high','fast_mode':True,'permission_mode':'read_only','collaboration_mode':'plan'} if not index else {}
+            chat=store.create_conversation(str(project),'Project '+str(index),values);chats.append(chat['id'])
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question',None,None)
+            store.item(job['id'],'reply','assistant','Saved answer','completed');store.finish(job['id'],'completed')
+            if values:store.save_run_settings(chat['id'],values)
+        fixture=self.root/'interaction-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,chats=chats,projects=projects,workspace=str(self.workspace),mode=mode)))
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('interaction_browser.cjs'))],
+                              env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=120)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn(mode+' checks passed',result.stdout)
+
     def test_unsent_new_chat_inputs_survive_other_conversation_sends(self):
         self._composer_browser('drafts')
 

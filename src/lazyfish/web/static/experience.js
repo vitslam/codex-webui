@@ -77,6 +77,7 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
       const implement=node('button','implement-plan',t('ui.start.implementation'));implement.type='button';implement.disabled=getBusy();implement.addEventListener('click',async()=>{implement.disabled=true;try{await onImplement(job);}catch(error){report(error);implement.disabled=false;}});actions.append(implement);
     }
     for(const question of job.questions||[]){
+      if(question.state!=='pending')questionDrafts.delete(job.id+':'+question.id);
       const button=node('button','question-reopen',t(question.state==='pending'?'ui.codex.has.a.question':question.state==='answered'?'ui.answered':'question_expired'));button.type='button';button.dataset.questionId=question.id;button.addEventListener('click',()=>ask(job,question));actions.append(button);
       if(question.state==='pending'&&!seen(question.id)&&!document.querySelector('dialog[open]')){remember(question.id);queueMicrotask(()=>{if(question.state==='pending')ask(job,question);});}
     }
@@ -101,10 +102,21 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
       $('#question-submit').disabled=true;$('#question-status').textContent=t(selected.question.state==='answered'?'ui.answered':'question_expired');for(const field of fields)if(field.input.type==='password')field.input.value='';
     }
   }
-  const shown=new Set();let selected=null,fields=[];
+  const shown=new Set(),questionDrafts=new Map();let selected=null,fields=[];
+  const questionKey=value=>value.job.id+':'+value.question.id;
+  function saveQuestionDraft(){
+    if(!selected||selected.kind==='approval'||selected.question.state!=='pending')return;
+    const key=questionKey(selected),draft={};
+    for(const field of fields)if(!field.secret)draft[field.id]={text:field.input.value,choice:field.choices.find(input=>input.checked)?.value||''};
+    questionDrafts.delete(key);questionDrafts.set(key,draft);
+    if(questionDrafts.size>100)questionDrafts.delete(questionDrafts.keys().next().value);
+  }
+  function clearFields(){for(const field of fields)field.input.value='';fields=[];selected=null;}
+  function dismiss(){saveQuestionDraft();clearFields();$('#question-dialog').close();}
   function seen(id){if(shown.has(id))return true;try{return sessionStorage.getItem('question-seen:'+id)==='1';}catch{return false;}}
   function remember(id){shown.add(id);try{sessionStorage.setItem('question-seen:'+id,'1');}catch{}}
   function askApproval(job,approval){
+    saveQuestionDraft();
     selected={job,question:approval,kind:'approval'};fields=[];remember(approval.id);
     $('#question-dialog').dataset.kind='approval';$('#question-heading').textContent=t('ui.codex.needs.your.approval');$('#question-submit').textContent=t('ui.confirm.choice');$('#question-hint').textContent=t('ui.this.operation.is.waiting.for.your.decision.closing.this');
     const target=$('#question-fields');target.replaceChildren(node('pre','approval-detail',approval.description));
@@ -115,17 +127,20 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
     $('#question-status').textContent='';$('#question-submit').disabled=approval.state!=='pending';if(!$('#question-dialog').open)$('#question-dialog').showModal();
   }
   function ask(job,question){
+    saveQuestionDraft();
     selected={job,question};fields=[];remember(question.id);const target=$('#question-fields');target.replaceChildren();
+    const draft=question.state==='pending'?questionDrafts.get(questionKey(selected))||{}:{};
     $('#question-dialog').dataset.kind='question';$('#question-heading').textContent=t('ui.codex.has.a.question');$('#question-submit').textContent=t('ui.submit.answer');$('#question-hint').textContent=t(question.blocking?'ui.codex.is.waiting.for.your.answer.you.can.close':'ui.codex.will.keep.working.while.you.consider.your.answer');
     for(const questionItem of question.questions||[]){
       const group=node('fieldset');group.append(node('legend','',questionItem.question));const name='question-'+questionItem.id;
+      const saved=questionItem.isSecret?{}:draft[questionItem.id]||{};
       const choices=[];
       for(const option of questionItem.options||[]){
-        const label=node('label','question-option'),radio=node('input');radio.type='radio';radio.name=name;radio.value=option.label;radio.disabled=question.state!=='pending';
+        const label=node('label','question-option'),radio=node('input');radio.type='radio';radio.name=name;radio.value=option.label;radio.checked=saved.choice===option.label;radio.disabled=question.state!=='pending';
         const copy=node('span','',option.label);if(option.description)copy.append(node('small','account-note',option.description));label.append(radio,copy);group.append(label);choices.push(radio);
       }
       const input=node(questionItem.isSecret?'input':'textarea');if(questionItem.isSecret)input.type='password';input.maxLength=8000;input.setAttribute('aria-label',questionItem.question);input.disabled=question.state!=='pending';input.autocomplete='off';
-      group.append(input);target.append(group);fields.push({id:questionItem.id,choices,input});
+      input.value=saved.text||'';group.append(input);target.append(group);fields.push({id:questionItem.id,choices,input,secret:questionItem.isSecret===true});
     }
     $('#question-status').textContent=question.state==='pending'?'':t('question_expired');$('#question-submit').disabled=question.state!=='pending';
     if(!$('#question-dialog').open)$('#question-dialog').showModal();
@@ -138,12 +153,13 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
       try{await api('/api/jobs/'+selected.job.id+'/approvals',{id:selected.question.id,decision:Number(choice.value)});selected.question.state='answered';$('#question-dialog').close();}
       catch(error){$('#question-status').textContent=t(error.message);$('#question-submit').disabled=false;}return;
     }
-    const answers={};for(const field of fields){const value=field.input.value.trim()||field.choices.find(input=>input.checked)?.value;if(!value){$('#question-status').textContent=t('invalid_answers');return;}answers[field.id]={answers:[value]};}
+    const submitted=selected,answers={};for(const field of fields){const choice=field.choices.find(input=>input.checked)?.value,text=field.input.value.trim();const value=[choice,text].filter(Boolean).join('\n'+t('question.addendum'));if(!value){$('#question-status').textContent=t('invalid_answers');return;}answers[field.id]={answers:[value]};}
     $('#question-submit').disabled=true;
-    try{await api(`/api/jobs/${selected.job.id}/questions`,{id:selected.question.id,answers});$('#question-dialog').close();}
-    catch(error){$('#question-status').textContent=t(error.message);$('#question-submit').disabled=false;}
+    try{await api(`/api/jobs/${submitted.job.id}/questions`,{id:submitted.question.id,answers});questionDrafts.delete(questionKey(submitted));if(selected===submitted){submitted.question.state='answered';dismiss();}}
+    catch(error){if(selected===submitted){$('#question-status').textContent=t(error.message);$('#question-submit').disabled=false;}}
   });
-  for(const id of ['#question-close','#question-later'])$(id).addEventListener('click',()=>$('#question-dialog').close());
-  $('#question-dialog').addEventListener('close',()=>{for(const field of fields)field.input.value='';fields=[];selected=null;});
-  return {render,userContent,userActions,close:()=>$('#question-dialog').close()};
+  for(const id of ['#question-close','#question-later'])$(id).addEventListener('click',dismiss);
+  $('#question-dialog').addEventListener('cancel',event=>{event.preventDefault();dismiss();});
+  $('#question-dialog').addEventListener('close',()=>{if(!$('#question-dialog').open){saveQuestionDraft();clearFields();}});
+  return {render,userContent,userActions,close:()=>{dismiss();questionDrafts.clear();}};
 };

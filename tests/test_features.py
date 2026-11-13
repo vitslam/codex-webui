@@ -12,6 +12,27 @@ PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a2
 
 
 class FeatureTests(ServiceCase):
+    def test_new_chat_skill_operations_use_validated_workspace(self):
+        a,b=self.workspace/'project-a',self.workspace/'project-b'
+        a.mkdir();b.mkdir()
+        skill=self.call('/api/skills',{'workspace':str(b),'name':'scoped','description':'Fixture','body':'Original','scope':'project'})
+        self.assertTrue(Path(skill['path']).is_relative_to(b))
+        query='workspace='+quote(str(b))+'&path='+quote(skill['path'])
+        source=self.call('/api/skills/document?'+query)
+        changed=self.call('/api/skills/source',{'workspace':str(b),'path':skill['path'],'hash':source['hash'],'content':source['content'].replace('Original','Updated')})
+        self.assertNotEqual(changed['hash'],source['hash'])
+        self.call('/api/skills/enabled',{'workspace':str(b),'path':skill['path'],'enabled':False})
+        self.call('/api/skills/document?workspace='+quote(str(a))+'&path='+quote(skill['path']),expected=409)
+        self.call('/api/native/skills?workspace='+quote(str(self.root)),expected=409)
+        self.call('/api/skills',{'workspace':str(self.root),'name':'outside','description':'Fixture','body':'Do not write'},expected=409)
+        deadline=time.monotonic()+8
+        while time.monotonic()<deadline:
+            result=self.call('/api/native/skills?workspace='+quote(str(b)))
+            if not result.get('refreshing'):break
+            time.sleep(.03)
+        self.assertEqual([s['name'] for s in result['skills']],['scoped'])
+        self.assertFalse(result['skills'][0]['enabled'])
+
     def test_missing_workspace_is_explicit_and_global_metadata_still_loads(self):
         missing=self.workspace/'removed-project';missing.mkdir()
         conversation=self.call('/api/conversations',{'workspace':str(missing)},201)['id']

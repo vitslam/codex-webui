@@ -136,11 +136,11 @@ class Handler(BaseHTTPRequestHandler):
         except (OSError,sqlite3.Error):
             self._send(503,{"error":"storage_unavailable"})
 
-    def _cwd(self, identifier=None):
+    def _cwd(self, identifier=None, workspace=None):
         if identifier:
             if not isinstance(identifier,str) or not re.fullmatch(r"[a-f0-9]{32}",identifier): raise StoreError("not_found")
             return self.server.manager.store.conversation(identifier)["workspace"]
-        return str(self.server.settings.workspace)
+        return self._workspace(workspace) if workspace is not None else str(self.server.settings.workspace)
 
     def _workspace(self, value):
         if not isinstance(value,str) or len(value)>4096 or "\x00" in value: raise StoreError("invalid_workspace")
@@ -218,10 +218,10 @@ class Handler(BaseHTTPRequestHandler):
                 artifact=item['detail'].get('image_artifact')
                 return self._send(200,{'state':'ready',**artifact} if artifact else {'state':'unavailable'})
             if match := re.fullmatch(r"/api/native/(account|usage|activity|skills|connections|models)",parsed.path):
-                cwd = self._cwd(query.get("conversation",[None])[0])
+                cwd = self._cwd(query.get("conversation",[None])[0],query.get('workspace',[None])[0])
                 return self._send(200,self.server.manager.capabilities.snapshot(match[1],cwd,query.get("refresh")==["1"]))
             if parsed.path == "/api/skills/document":
-                return self._send(200,self.server.manager.capabilities.skill_document(self._cwd(query.get("conversation",[None])[0]),query.get("path",[""])[0]))
+                return self._send(200,self.server.manager.capabilities.skill_document(self._cwd(query.get("conversation",[None])[0],query.get('workspace',[None])[0]),query.get("path",[""])[0]))
             if match := re.fullmatch(r"/api/attachments/([a-f0-9]{32})",parsed.path):
                 attachment = store.attachment(match[1],True)
                 return self._send(200,attachment["content"],attachment["mime"])
@@ -407,7 +407,7 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(receipts,dict) or len(receipts)>500 or any(not isinstance(k,str) or not isinstance(v,str) or not re.fullmatch(r'[a-f0-9]{32}',k) or not re.fullmatch(r'[a-f0-9]{32}',v) for k,v in receipts.items()):raise StoreError('invalid_receipts')
             return self._send(200,manager.store.mark_read(receipts))
         if self.path=='/api/skills/source':
-            return self._send(200,manager.capabilities.save_skill_source(self._cwd(body.get('conversation')),body.get('path'),body.get('hash'),body.get('content')))
+            return self._send(200,manager.capabilities.save_skill_source(self._cwd(body.get('conversation'),body.get('workspace')),body.get('path'),body.get('hash'),body.get('content')))
         if self.path == '/api/native/login':
             kind=body.get('type')
             if kind not in ('chatgpt','chatgptDeviceCode','apiKey','logout'):return self._send(400,{'error':'invalid_login'})
@@ -451,9 +451,9 @@ class Handler(BaseHTTPRequestHandler):
             if not 0<len(content)<=10*1024*1024 or not valid[mime]: return self._send(400,{"error":"invalid_image"})
             return self._send(201,manager.store.add_attachment(Path(name).name,mime,content))
         if self.path == "/api/skills/enabled":
-            return self._send(200,manager.capabilities.set_skill_enabled(self._cwd(body.get("conversation")),body.get("path"),body.get("enabled")))
+            return self._send(200,manager.capabilities.set_skill_enabled(self._cwd(body.get("conversation"),body.get('workspace')),body.get("path"),body.get("enabled")))
         if self.path == "/api/skills":
-            return self._send(200,manager.capabilities.save_skill(self._cwd(body.get("conversation")),body.get("name"),body.get("description"),body.get("body"),body.get("replace") is True,body.get("scope","project")))
+            return self._send(200,manager.capabilities.save_skill(self._cwd(body.get("conversation"),body.get('workspace')),body.get("name"),body.get("description"),body.get("body"),body.get("replace") is True,body.get("scope","project")))
         if self.path == "/api/workspace/validate":
             return self._send(200,{"workspace":self._workspace(body.get("workspace"))})
         if self.path == "/api/conversations":

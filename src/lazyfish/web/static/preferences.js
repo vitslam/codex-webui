@@ -65,5 +65,5 @@ window.LazyfishPreferences=function({node,t,panels,shortcuts,getConversation,onC
   return {render,key:()=>key,keydown,settings:()=>({...value}),togglePlan:()=>update({plan:!value.plan}),permission:permission=>update({permission}),
     restoreConversation:settings=>{value.permission=settings.permission_mode||null;value.plan=settings.collaboration_mode==='plan';onChange();},
     inputs:()=>({...value.permission?{permission_mode:value.permission}:{},...value.showPlan?{collaboration_mode:value.plan?"plan":"default"}:{}}),
-    applyDefaults:()=>{if(value.defaults){panels.applyDefaults(value.defaults);update({permission:value.defaults.permission||null,workspace:value.defaults.workspace||"",plan:false});}}};
+    applyDefaults:()=>{const defaults=value.defaults||panels.runDefaults();panels.applyDefaults(defaults);update({permission:defaults.permission||null,workspace:defaults.workspace||"",plan:false});}};
 };

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep skill discovery and selection aligned with the chosen directory, isolate delayed directory saves to their conversation, preserve question choices and ordinary answer drafts, and restore new-chat defaults instead of inheriting the previous conversation's run settings.
+- 技能发现和选择跟随当前目录；目录保存的慢响应不再影响其他会话；提问保留所选选项与普通回答草稿；新对话恢复默认参数，不再继承上一会话的临时设置。
+
 - Preserve unsent new-chat images and skills when sending in another conversation; support text copying on HTTP pages with a selection-based fallback and specific failure feedback.
 - 在其他会话发送消息时保留尚未发送的新对话图片和技能；HTTP 页面复制文本增加兼容方式，并提供明确的复制失败提示。
 
