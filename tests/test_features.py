@@ -12,6 +12,18 @@ PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a2
 
 
 class FeatureTests(ServiceCase):
+    def test_missing_workspace_is_explicit_and_global_metadata_still_loads(self):
+        missing=self.workspace/'removed-project';missing.mkdir()
+        conversation=self.call('/api/conversations',{'workspace':str(missing)},201)['id']
+        self.assertIn('skills',self.call('/api/native/skills?conversation='+conversation))
+        missing.rmdir()
+        failed=self.call('/api/native/skills?conversation='+conversation,expected=409)
+        self.assertEqual(failed,{'error':'workspace_missing'})
+        account=self.call('/api/native/account?conversation='+conversation+'&refresh=1')
+        self.assertIn('account',account)
+        self.call('/api/conversations/'+conversation+'/turns',{'text':'Do not run','client_request_id':uuid.uuid4().hex},409)
+        self.assertEqual(self.call('/api/conversations/'+conversation)['jobs'],[])
+
     def call(self,path,body=None,expected=200):
         code,_,data=self.http(path,'POST' if body is not None else 'GET',body,{'Authorization':'Bearer '+self.settings.token})
         result=json.loads(data);self.assertEqual(code,expected,result);return result

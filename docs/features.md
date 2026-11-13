@@ -178,6 +178,14 @@ slot cards and timing chart, adapted to local owned executors and configurable q
 
 ## Recent display parity / 最近显示更新
 
+HTTP LAN access does not require the browser's secure-context randomUUID API for
+sending or editing messages. Missing saved conversation directories are reported
+explicitly in Skills, with a shortcut to choose a new directory; history paths are
+never changed automatically.
+
+通过内网 HTTP 地址访问时，发送和编辑消息不依赖浏览器安全上下文专属的 randomUUID。
+历史会话的工作目录失效时，技能页明确提示并提供目录选择入口，不自动修改历史路径。
+
 The sidebar archives chats with a box-shaped action. Settings → Data management
 lists archived chats by workspace, with search, workspace filtering and pagination.
 Unarchive returns a chat to the sidebar with its history, native thread, settings

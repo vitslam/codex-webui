@@ -14,6 +14,17 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_http_request_ids_and_missing_workspace_recovery(self):
+        missing=self.workspace/'removed-project';missing.mkdir()
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        chat=store.create_conversation(str(missing),'Missing workspace')
+        missing.rmdir()
+        fixture=self.root/'http-request-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,missing=chat['id'],workspace=str(self.workspace))))
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('http_request_browser.cjs'))],env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=90)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('HTTP request IDs and workspace recovery passed',result.stdout)
+
     def test_conversation_archive_and_restore(self):
         store=Store(self.settings.data_dir/'lazyfish.db')
         workspaces=[self.workspace/'lazyfish',self.workspace/'example-project']

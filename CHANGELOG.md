@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Use cryptographic request IDs on HTTP LAN origins where randomUUID is unavailable; explain missing conversation directories in the Skills panel and keep global metadata available.
+- 修复内网 HTTP 地址缺少 randomUUID 导致消息无法发送的问题；技能页明确提示失效的会话目录，全局元数据仍可加载。
+
 - Replace the sidebar delete action with reversible chat archiving; add searchable, workspace-grouped archive management and restoration in Settings.
 - 侧栏删除改为可恢复的聊天归档；设置新增支持搜索、工作目录分组和恢复的数据管理页面。
 

@@ -105,6 +105,7 @@ class Capabilities:
             return done
 
     def read(self, section, cwd, refresh=False):
+        if section=='skills' and not Path(cwd).is_dir():raise StoreError('workspace_missing')
         key=self.key(section,cwd);cached=self.cached(key);self.tick()
         if cached and not refresh and time.time()-cached[0]<self.ttls.get(section,60):return cached[1]
         done=self.request(section,cwd,refresh)
@@ -116,6 +117,7 @@ class Capabilities:
 
     def snapshot(self, section, cwd, refresh=False):
         """Return saved sanitized values immediately; refresh without blanking the UI."""
+        if section=='skills' and not Path(cwd).is_dir():raise StoreError('workspace_missing')
         key=self.key(section,cwd)
         for _ in range(3):
             with self.state:
@@ -154,6 +156,7 @@ class Capabilities:
         for thread in threads:thread.join(max(0,deadline-time.monotonic()))
 
     def query(self, section, cwd, options=None):
+        if section!='skills' and not Path(cwd).is_dir():cwd=str(self.manager.settings.workspace)
         identifier = "inspect-"+uuid.uuid4().hex
         fd = self.manager.lease(identifier)
         client = None

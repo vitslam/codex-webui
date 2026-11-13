@@ -141,8 +141,11 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
     scopeSnapshots();const cached=snapshots.get(metadataKey(page));
     if(cached)drawPage(page,cached);else target.replaceChildren(note(t("ui.loading")));
     const alive=()=>request===epoch&&$("#account-dialog").open;
-    const tasks=[restoreLogin(page),readMetadata(page,refresh,data=>drawPage(page,data),alive).catch(()=>{
+    const tasks=[restoreLogin(page),readMetadata(page,refresh,data=>drawPage(page,data),alive).catch(error=>{
       if(!alive())return;
+      if(error.message==='workspace_missing'){
+        target.replaceChildren(note(t('workspace_missing')),button(t('ui.working.directory'),()=>{$('#account-dialog').close();$('#edit-workdir').click();}));return;
+      }
       if(snapshots.has(metadataKey(page)))target.append(note(t('ui.update.failed.showing.saved.data')));
       else target.replaceChildren(note(t("native_metadata_unavailable")),button(t("retry"),()=>showPage(page,true)));
     })];

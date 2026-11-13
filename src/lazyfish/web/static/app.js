@@ -26,7 +26,7 @@ const translations = {
     error:"Could not connect. Check the service and token, then try again.", expired:"Sign in to continue.", requestFailed:"Request failed. Your draft was kept; retry or refresh to check the saved conversation.",
     recoveryBlocked:"An old execution could not be confirmed stopped. Sending is paused; see the recovery guide.", conversation_busy:"This conversation is already running. Refresh to view the current turn.",
     capacity_reached:"The task queue is full. Wait for a task to finish.", service_stopping:"The service is shutting down.", approval_expired:"This approval is no longer pending.",
-    workspace_missing:"This conversation's workspace no longer exists.", request_key_conflict:"This request ID was already used for a different message. Reload before sending.",
+    workspace_missing:"This conversation's working directory no longer exists. Choose an existing directory from the composer.", request_key_conflict:"This request ID was already used for a different message. Reload before sending.",
     nativeError:"Codex could not complete this turn. Check the CLI login, network and model settings.", service_restarted:"The previous execution was stopped after a service restart. It was not automatically rerun.",
     native_thread_busy:"The native conversation is still active. No new message was started.", output_limit_reached:"The output limit was reached; execution was stopped.",
     recovery_blocked:"An old execution could not be confirmed stopped. See the recovery guide.",
@@ -49,7 +49,7 @@ const translations = {
     error:"连接失败，请检查服务和令牌后重试。", expired:"请重新登录后继续。", requestFailed:"请求失败，已保留草稿。可以重试，或刷新确认消息是否已保存。",
     recoveryBlocked:"无法确认某个旧执行已停止，暂时禁止发送。请查看异常恢复说明。", conversation_busy:"这个对话已有任务在运行，请刷新查看当前回复。",
     capacity_reached:"任务队列已满，请等待任务完成后再发送。", service_stopping:"服务正在退出。", approval_expired:"这条审批已不再等待处理。",
-    workspace_missing:"这个对话对应的工作目录已不存在。", request_key_conflict:"此请求编号已经用于另一条消息，请刷新后再发送。",
+    workspace_missing:"这个对话的工作目录已不存在，请从输入框的工作目录选择器中选择现有目录。", request_key_conflict:"此请求编号已经用于另一条消息，请刷新后再发送。",
     nativeError:"Codex 未能完成本轮执行，请检查 CLI 登录、网络或模型配置。", service_restarted:"服务重启后已确认旧执行停止，本轮未自动重跑。",
     native_thread_busy:"原生会话仍在执行，没有启动新消息。", output_limit_reached:"输出已达到上限，执行已停止。",
     recovery_blocked:"无法确认旧执行已停止，请查看异常恢复说明。",
@@ -416,7 +416,7 @@ function duration(seconds) {
 }
 async function forkJob(job) {
   const source=conversation.id,signature=`${source}:${job.id}`;
-  if(!branchKeys.has(signature))branchKeys.set(signature,crypto.randomUUID());
+  if(!branchKeys.has(signature))branchKeys.set(signature,LazyfishRequestId());
   const result=await api(`/api/conversations/${source}/branch`,{before_job_id:job.id,client_request_id:branchKeys.get(signature),title:`${t('branchTitle')} · ${conversation.title||t('emptyTitle')}`.slice(0,100)});
   await refreshList();await loadConversation(result.id);
 }
@@ -430,7 +430,7 @@ async function implementPlan(job){
   if(sending||activeJob())return;
   const source=conversation.id;sending=true;renderControls();
   try{
-    const next=await api(`/api/conversations/${source}/turns`,{text:t('plan.implement.prompt'),model:job.model,effort:job.effort,...panels.runSettings(),...preferences.inputs(),collaboration_mode:'default',images:[],skills:[],client_request_id:crypto.randomUUID()});
+    const next=await api(`/api/conversations/${source}/turns`,{text:t('plan.implement.prompt'),model:job.model,effort:job.effort,...panels.runSettings(),...preferences.inputs(),collaboration_mode:'default',images:[],skills:[],client_request_id:LazyfishRequestId()});
     if(conversation?.id!==source)return;conversation.jobs.push(next);renderJob(next);subscribe(next);scroll.bottom();await refreshList();
   }finally{sending=false;renderControls();}
 }
@@ -741,7 +741,7 @@ $('#composer').addEventListener('submit',event=>{
   event.preventDefault();const running=activeJob();
   if(sending||features.busy()||running&&(running.status!=='running'||!$('#prompt').value.trim())||(!$('#prompt').value.trim()&&!features.hasInputs()))return;
   if(running&&features.hasImages()){report(new Error('supplement_text_only'));return;}
-  const record={key:crypto.randomUUID(),epoch:generation,conversationId:conversation?.id||null,targetJob:running?.id,
+  const record={key:LazyfishRequestId(),epoch:generation,conversationId:conversation?.id||null,targetJob:running?.id,
     text:$('#prompt').value,inputs:{...features.inputs(),...panels.runSettings()},settings:runChoices(),workspace:features.workspace(),images:features.selectedImages(),state:'sending'};
   pendingSends.set(record.key,record);$('#prompt').value='';drafts.delete(conversation?.id||'new');features.sent(conversation?.id||'new');resizePrompt();dock.reset();sendPending(record);
 });
@@ -750,7 +750,7 @@ async function compactContext() {
   if(!conversation?.native_thread_id||sending||activeJob())return;
   const id=conversation.id;sending=true;renderControls();
   try {
-    const job=await api(`/api/conversations/${id}/compact`,{client_request_id:crypto.randomUUID()});
+    const job=await api(`/api/conversations/${id}/compact`,{client_request_id:LazyfishRequestId()});
     if(conversation?.id!==id)return;
     conversation.jobs.push(job);renderJob(job);subscribe(job);scroll.bottom();
   }finally{sending=false;renderControls();}

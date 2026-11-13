@@ -7,7 +7,7 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
   const steps=window.LazyfishUI.steps({document,node:sourceNode,t,api,markdown,copyButton,imageNode,artifactList,jobFinished:finished,getFollowBottom:()=>false,showReasoning});
   const changes=window.LazyfishUI.changes({document,node:sourceNode,icon,t,api,executionDetails:steps.executionDetails,jobFinished:finished});
   const users=window.LazyfishUI.messageView({document,node:sourceNode,icon,t,i18n:{get locale(){return document.documentElement.lang;},number:v=>v.toLocaleString(document.documentElement.lang)},markdown,copyButton,imageNode,artifactList,executionDetails:steps.executionDetails,jobFinished:finished,
-    onFork:message=>onFork(getConversation().jobs.find(j=>j.id===message.id)),onEdit:(message,text,key)=>onEdit(message.id,text,key),canEdit:id=>!getBusy()&&getConversation()?.jobs.some(j=>j.id===id),newRequestId:()=>crypto.randomUUID(),onEditStart,onUserContentToggle});
+    onFork:message=>onFork(getConversation().jobs.find(j=>j.id===message.id)),onEdit:(message,text,key)=>onEdit(message.id,text,key),canEdit:id=>!getBusy()&&getConversation()?.jobs.some(j=>j.id===id),newRequestId:()=>LazyfishRequestId(),onEditStart,onUserContentToggle});
   users.bindUserActions();
   function userContent(card,message){const content=users.appendUserContent(card,message);content.classList.add('user-message');return content;}
   function userActions(card,job){users.appendUserActions(card,{id:job.id,content:job.prompt,images:job.inputs?.images});}
