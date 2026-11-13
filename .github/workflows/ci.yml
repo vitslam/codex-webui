@@ -10,8 +10,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # Linux covers all supported Pythons; macOS covers the oldest and newest.
+        os: [ubuntu-latest]
         python: ['3.11', '3.12', '3.13', '3.14']
+        include:
+          - os: macos-latest
+            python: '3.11'
+          - os: macos-latest
+            python: '3.14'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
