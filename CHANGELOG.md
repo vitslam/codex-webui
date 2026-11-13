@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fold user-message text after 20 rendered lines, keeping attachments visible and preserving full-text copy/edit; show localized, bounded skill-loading diagnostics and catalog truncation notices.
+- 用户消息超过 20 个显示行时折叠正文，附件保持可见，复制和编辑使用全文；技能页新增本地化、有数量上限的加载诊断及列表截断提示。
+
 - Add opt-in `lazyfish serve --no-token` to disable Web sign-in for one run, with a startup warning; retain Host/origin checks and authenticated status/stop.
 - 新增显式的 `lazyfish serve --no-token`，仅本次运行免 Web 登录并在启动时警告；保留 Host/同源校验及状态查询、停服的认证。
 

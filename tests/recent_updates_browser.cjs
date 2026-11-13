@@ -49,7 +49,10 @@ const {chromium}=require(process.env.LAZYFISH_BROWSER_MODULE),f=JSON.parse(fs.re
    for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
      await page.setViewportSize(viewport);await page.goto(f.url+'/?conversation='+f.chats[0]);await page.locator('.assistant-text').waitFor();await page.evaluate(()=>document.body.classList.add('sidebar-hidden'));
      await form.evaluate(el=>{const animate=el.animate;el.animate=function(...args){window.switchAnimations=(window.switchAnimations||0)+1;return animate.apply(this,args);};});
-     await wake();await prompt.fill('Alpha draft\nsecond line\nthird line');await prompt.blur();await thread.evaluate(el=>el.scrollTop=900);await form.waitFor({state:'hidden'});const saved=await top();
+     await wake();await prompt.fill('Alpha draft\nsecond line\nthird line');await prompt.blur();
+     // A real reading gesture takes over from scroll restoration, unlike a racing scrollTop assignment.
+     await page.evaluate(async()=>{scroll.bottom();await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});
+     await thread.hover();await page.mouse.wheel(0,-600);await form.waitFor({state:'hidden'});const saved=await top();
      await page.evaluate(id=>loadConversation(id),f.chats[1]);assert.equal(await form.isHidden(),false,'Uncached chat starts expanded');await prompt.fill('Beta draft');await prompt.blur();
      await switchTo(f.chats[0],true);assert.ok(Math.abs(await top()-saved)<=2,'Collapsed restoration retains reading position');assert.equal(await prompt.inputValue(),'Alpha draft\nsecond line\nthird line');
      await switchTo(f.chats[1],false);assert.equal(await prompt.inputValue(),'Beta draft');await switchTo(f.chats[0],true);await wake();

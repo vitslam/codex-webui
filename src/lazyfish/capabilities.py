@@ -20,6 +20,25 @@ from .protocol import Client, ProtocolError
 from .storage import StoreError
 
 
+def skill_discovery_error(error):
+    """Expose a file and a known reason, never raw native/YAML contents."""
+    message = str(error.get('message', ''))[:4096].casefold()
+    if re.search(r'(missing|required|empty).*\bname\b|\bname\b.*(missing|required|empty)', message):
+        reason = 'missing_name'
+    elif re.search(r'(missing|required|empty).*\bdescription\b|\bdescription\b.*(missing|required|empty)', message):
+        reason = 'missing_description'
+    elif any(word in message for word in ('yaml', 'frontmatter', 'metadata', 'parse')):
+        reason = 'invalid_metadata'
+    elif any(word in message for word in ('permission', 'not found', 'read', 'utf-8')):
+        reason = 'read_failed'
+    else:
+        reason = 'load_failed'
+    path = error.get('path', '')
+    if not isinstance(path, str) or len(path) > 4096 or any(ord(c) < 32 for c in path):
+        path = ''
+    return {'path': path, 'reason': reason}
+
+
 class Capabilities:
     def __init__(self, manager):
         self.manager = manager
@@ -172,11 +191,20 @@ class Capabilities:
                 return {"daily":daily,"summary":summary}
             if section == "skills":
                 value = call("skills/list", {"cwds":[cwd],"forceReload":True})
-                skills = []
+                skills, errors = [], []
+                truncated = errors_truncated = False
                 for group in value.get("data",[]):
+                    for error in group.get('errors', []):
+                        if not isinstance(error, dict): continue
+                        if len(errors) >= 20:
+                            errors_truncated = True
+                        else:
+                            errors.append(skill_discovery_error(error))
                     for skill in group.get("skills",[]):
-                        if len(skills)>=300: break
                         if not isinstance(skill.get("path"),str) or not isinstance(skill.get("name"),str): continue
+                        if len(skills)>=300:
+                            truncated = True
+                            continue
                         row = {k:skill.get(k) for k in ("name","description","path","enabled","scope")}
                         row["path"]=str(Path(row["path"]).expanduser().resolve())
                         row["editable"] = self.editable(cwd, row["path"])
@@ -184,7 +212,8 @@ class Capabilities:
                             personal=Path(self.manager.settings.secret_env.get('CODEX_HOME',str(Path.home()/'.codex'))).expanduser().resolve()/'skills'
                             row['scope']='user' if Path(row['path']).resolve().is_relative_to(personal) else 'project'
                         skills.append(row)
-                return {"skills":skills}
+                return {"skills":skills, "errors":errors, "truncated":truncated,
+                        "errors_truncated":errors_truncated}
             if section == "connections":
                 servers, cursor = [], None
                 for _ in range(3):

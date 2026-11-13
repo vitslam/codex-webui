@@ -5,11 +5,55 @@
   else (root.LazyfishUI || (root.LazyfishUI = {})).messageView = create;
 })(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global,
 function createMessageView({document, node, icon, t, i18n, markdown, copyButton, imageNode, artifactList = () => null, executionDetails, appendDeferredSteps,
-  appendChangePanel, jobFinished, executionActivity, questionLabel, onQuestion, onStop, onImplement, onEdit, onFork, onEditStart = () => {}, canEdit = () => false, newRequestId}) {
+  appendChangePanel, jobFinished, executionActivity, questionLabel, onQuestion, onStop, onImplement, onEdit, onFork, onEditStart = () => {}, onUserContentToggle = () => {}, canEdit = () => false, newRequestId}) {
   let selectedActions = null, actionsBound = false;
+  const expandedUserMessages = new Map();
+  let refreshFrame = 0;
+  function refreshUserMessages() {
+    cancelAnimationFrame(refreshFrame);
+    refreshFrame = requestAnimationFrame(() => {
+      for (const card of document.querySelectorAll('.message.user')) card.refreshUserContent?.();
+    });
+  }
+  function appendUserContent(card, message) {
+    const content = node('div', undefined, 'user-content');
+    const text = node('div', message.content || '', 'user-text');
+    text.id = 'user-text-' + message.id;
+    const toggle = node('button', undefined, 'user-content-toggle'); toggle.type = 'button'; toggle.hidden = true;
+    toggle.setAttribute('aria-controls', text.id);
+    const saved = expandedUserMessages.get(message.id);
+    let expanded = !!(saved && saved.text === message.content && saved.expanded);
+    function update() {
+      text.classList.toggle('is-expanded', !!expanded);
+      toggle.textContent = t(expanded ? 'message.collapse' : 'message.expand');
+      toggle.setAttribute('aria-expanded', String(!!expanded));
+    }
+    card.refreshUserContent = () => {
+      if (!text.getClientRects().length || card.classList.contains('is-editing')) return;
+      toggle.hidden = text.scrollHeight <= parseFloat(document.defaultView.getComputedStyle(text).lineHeight) * 20 + 1;
+      update();
+    };
+    toggle.addEventListener('click', () => {
+      onUserContentToggle(); expanded = !expanded;
+      expandedUserMessages.delete(message.id);
+      expandedUserMessages.set(message.id, {text:message.content, expanded});
+      if (expandedUserMessages.size > 200) expandedUserMessages.delete(expandedUserMessages.keys().next().value);
+      update();
+      const viewport = document.getElementById('messages');
+      if (!expanded && viewport && card.getBoundingClientRect().bottom < viewport.getBoundingClientRect().top) {
+        card.scrollIntoView({block:'start'}); onUserContentToggle();
+      }
+    });
+    update(); content.append(text, toggle); card.append(content); refreshUserMessages();
+    return content;
+  }
   function bindUserActions() {
     if (actionsBound) return;
     actionsBound = true;
+    const transcript = document.getElementById('transcript');
+    if (transcript) new document.defaultView.ResizeObserver(refreshUserMessages).observe(transcript);
+    document.defaultView.addEventListener('resize', refreshUserMessages);
+    document.fonts?.ready.then(refreshUserMessages);
     document.addEventListener('click', event => {
       const card = event.target.closest('.message.user');
       if (selectedActions && selectedActions !== card) { selectedActions.classList.remove('actions-open'); selectedActions = null; }
@@ -25,6 +69,7 @@ function createMessageView({document, node, icon, t, i18n, markdown, copyButton,
     });
   }
   function updateUserActions() {
+    refreshUserMessages();
     if (selectedActions && !selectedActions.isConnected) selectedActions = null;
     for (const button of document.querySelectorAll('.user-edit-button')) {
       button.disabled = !canEdit(button.dataset.messageId);
@@ -243,7 +288,7 @@ function createMessageView({document, node, icon, t, i18n, markdown, copyButton,
     if (message.role === 'assistant' && message.job_id) card.dataset.jobId = message.job_id;
     card.append(node('div', message.role === 'user' ? t('ui.you') : 'Codex', 'message-role'));
     if (message.role === 'assistant') appendAssistant(card, message, job, instructions);
-    else card.append(node('div', message.content || '', 'user-content'));
+    else appendUserContent(card, message);
     if (message.role === 'user' && message.skills && message.skills.length) {
       const skills = node('div', undefined, 'message-skills'); skills.setAttribute('aria-label', t('ui.skills'));
       for (const skill of message.skills) {
@@ -294,6 +339,6 @@ function createMessageView({document, node, icon, t, i18n, markdown, copyButton,
     return true;
   }
 
-  return {appendUserActions,validTokenUsage, appendTokenUsage, elapsedTime, executionLabel, updateExecutionTimers,
+  return {appendUserContent,appendUserActions,validTokenUsage, appendTokenUsage, elapsedTime, executionLabel, updateExecutionTimers,
     appendJobStatus, appendAssistant, messageCard, applyLiveMessage, updateUserActions, resizeEditors, bindUserActions};
 });

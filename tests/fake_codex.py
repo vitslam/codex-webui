@@ -90,6 +90,10 @@ def main():
                 values[params['path']]=params['enabled'];state.write_text(json.dumps(values))
                 send({"id":message["id"],"result":{}})
             elif method == "skills/list":
+                fixture = root/'skills-result.json'
+                if fixture.exists():
+                    send({'id':message['id'],'result':json.loads(fixture.read_text())})
+                    continue
                 skills=[]
                 for cwd in params["cwds"]:
                     for path in [*(Path(cwd)/".agents"/"skills").glob("*/SKILL.md"),*(Path(os.environ["CODEX_HOME"])/"skills").glob("*/SKILL.md")]:

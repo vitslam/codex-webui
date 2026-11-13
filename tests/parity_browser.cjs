@@ -22,7 +22,7 @@ const {chromium}=require(process.env.LAZYFISH_BROWSER_MODULE),f=JSON.parse(fs.re
   await page.reload();await page.locator('.assistant-text').waitFor();assert.equal(await page.locator('#effort').inputValue(),'low');
   assert.equal(await page.locator('#conversation-list .conversation[data-id="'+f.alpha+'"] .dot.completed').count(),0,'Viewed completion markers clear');
   const external=await post('/api/conversations/'+f.alpha+'/turns',{text:'Created in a different browser page',client_request_id:'parity-external-message'});await done(external);
-  assert.ok((await page.locator('.user-message').allTextContents()).includes('Created in a different browser page'),'Idle conversation receives a new external turn');
+  assert.ok((await page.locator('.user-message .user-text').allTextContents()).includes('Created in a different browser page'),'Idle conversation receives a new external turn');
   // Pending requests paint immediately; retries keep the original request key and the next draft.
   let release,seen;const gate=new Promise(r=>release=r),arrived=new Promise(r=>seen=r);let firstKey;
   await page.route('**/api/conversations/'+f.alpha+'/turns',async route=>{firstKey=route.request().postDataJSON().client_request_id;seen();await gate;await route.fulfill({status:503,contentType:'application/json',body:'{"error":"unavailable"}'});});

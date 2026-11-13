@@ -96,6 +96,44 @@ class FeatureTests(ServiceCase):
         self.assertEqual(result,{'error':'native_metadata_unavailable'})
         self.assertEqual(list((self.settings.runtime_dir/'jobs').glob('inspect-*')),[])
 
+    def test_skill_discovery_reports_bounded_errors_without_native_contents(self):
+        skills=[{'name':'skill-'+str(i),'path':str(self.workspace/('skill-'+str(i))/'SKILL.md')}
+                for i in range(301)]
+        errors=[{'path':str(self.workspace/'broken'/'SKILL.md'),
+                 'message':message,'secret':'native-private-value'} for message in (
+                     'missing required field name: native-private-value',
+                     'description is required: native-private-value',
+                     'invalid YAML frontmatter: native-private-value',
+                     'permission denied while reading native-private-value',
+                     'native-private-value')]
+        errors += [{'path':'invalid\npath','message':'native-private-value'}]*16
+        fixture=self.settings.runtime_dir/'tmp/skills-result.json'
+        def refresh():
+            result=self.call('/api/native/skills?refresh=1')
+            deadline=time.monotonic()+5
+            while result.get('refreshing') and time.monotonic()<deadline:
+                time.sleep(.03);result=self.call('/api/native/skills')
+            self.assertFalse(result.get('refreshing'))
+            return result
+        fixture.write_text(json.dumps({'data':[{'skills':skills,'errors':[]},
+                                              {'skills':[],'errors':errors}]}))
+        result=refresh()
+        self.assertEqual(len(result['skills']),300);self.assertTrue(result['truncated'])
+        self.assertEqual(len(result['errors']),20);self.assertTrue(result['errors_truncated'])
+        self.assertEqual([e['reason'] for e in result['errors'][:5]],
+                         ['missing_name','missing_description','invalid_metadata','read_failed','load_failed'])
+        self.assertEqual(result['errors'][5]['path'],'')
+        self.assertNotIn('native-private-value',json.dumps(result))
+        self.assertTrue(all(set(e)=={'path','reason'} for e in result['errors']))
+        # Exactly the limit is complete, not truncated; clean refresh clears errors.
+        fixture.write_text(json.dumps({'data':[{'skills':skills[:300],'errors':[]}]}))
+        clean=refresh()
+        self.assertFalse(clean['truncated']);self.assertFalse(clean['errors_truncated'])
+        self.assertEqual(clean['errors'],[])
+        fixture.write_text(json.dumps({'data':[{'skills':[],'errors':errors[:1]}]}))
+        failed=refresh()
+        self.assertEqual(failed['skills'],[]);self.assertEqual(len(failed['errors']),1)
+
     def test_shutdown_reaps_an_in_progress_metadata_process(self):
         import threading
         from lazyfish.processes import identity

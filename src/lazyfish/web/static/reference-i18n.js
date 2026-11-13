@@ -2,6 +2,17 @@
 // Reference UI labels; credentials and installation data never belong here.
 window.LazyfishReferenceI18n={
   "en": {
+    "skills.discovery.heading": "Skill loading issues",
+    "skills.discovery.none_loaded": "No skills could be loaded. See the issues below.",
+    "skills.discovery.missing_name": "Required skill name is missing or empty.",
+    "skills.discovery.missing_description": "Required skill description is missing or empty.",
+    "skills.discovery.invalid_metadata": "Invalid SKILL.md frontmatter or metadata.",
+    "skills.discovery.read_failed": "The skill file could not be read. Check its path, permissions and encoding.",
+    "skills.discovery.load_failed": "Codex could not load this skill. Check its SKILL.md file.",
+    "skills.discovery.errors_truncated": "Showing the first 20 loading issues.",
+
+    "message.expand": "Show more",
+    "message.collapse": "Show less",
     "error.response_read": "Could not read the response: {context}. The connection may have closed.",
     "error.response_json": "Invalid JSON response: {context}. Check the gateway or reverse proxy.",
     "error.response_empty": "Empty response: {context}. Check the gateway or reverse proxy.",
@@ -634,6 +645,17 @@ window.LazyfishReferenceI18n={
     "ui.answered": "Answered"
   },
   "zh": {
+    "skills.discovery.heading": "技能加载问题",
+    "skills.discovery.none_loaded": "未能加载任何技能，请查看下方问题。",
+    "skills.discovery.missing_name": "技能缺少必填的名称，或名称为空。",
+    "skills.discovery.missing_description": "技能缺少必填的描述，或描述为空。",
+    "skills.discovery.invalid_metadata": "SKILL.md 的 YAML 头部或元数据格式无效。",
+    "skills.discovery.read_failed": "无法读取技能文件，请检查路径、权限和编码。",
+    "skills.discovery.load_failed": "Codex 无法加载此技能，请检查其 SKILL.md 文件。",
+    "skills.discovery.errors_truncated": "仅展示前 20 项加载问题。",
+
+    "message.expand": "展开",
+    "message.collapse": "收起",
     "error.response_read": "读取接口响应失败：{context}，连接可能已中断。",
     "error.response_json": "接口返回了无效的 JSON：{context}，请检查网关或反向代理。",
     "error.response_empty": "接口返回了空响应：{context}，请检查网关或反向代理。",

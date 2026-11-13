@@ -14,6 +14,35 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_message_folding_and_skill_diagnostics(self):
+        import base64
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        chat=store.create_conversation(str(self.workspace),'Message folding')
+        other=store.create_conversation(str(self.workspace),'Other conversation')
+        image=store.add_attachment('tiny.png','image/png',base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a2ioAAAAASUVORK5CYII='))
+        prompts=['\n'.join('Line '+str(i+1) for i in range(count)) for count in (19,20,25)]
+        prompts.append('A wrapped line without newlines. '*250)
+        prompts.append('Width-sensitive wrapping. '*50)
+        jobs=[]
+        for prompt in prompts:
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,prompt,None,None,
+                                {'images':[image],'skills':[{'name':'example','path':str(self.workspace/'SKILL.md')}]})
+            if len(jobs)==2:
+                instruction,_=store.instruction(job['id'],uuid.uuid4().hex,prompts[2])
+                store.instruction_state(job['id'],instruction['id'],'delivered')
+            store.item(job['id'],'answer','assistant','Saved response.','completed')
+            store.finish(job['id'],'completed');jobs.append(job['id'])
+        fixture=self.root/'message-skill-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,
+                                          chat=chat['id'],other=other['id'],jobs=jobs,prompts=prompts,
+                                          skills_fixture=str(self.settings.runtime_dir/'tmp/skills-result.json'),
+                                          output=os.environ.get('LAZYFISH_BROWSER_OUTPUT',str(self.root)))))
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('message_skills_browser.cjs'))],
+                              env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=120)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('message folding and skill diagnostics passed',result.stdout)
+
     def test_compact_image_outputs(self):
         import hashlib
         import struct

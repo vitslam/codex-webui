@@ -178,6 +178,24 @@ slot cards and timing chart, adapted to local owned executors and configurable q
 
 ## Recent display parity / 最近显示更新
 
+User-message text keeps the first 20 rendered lines visible, with Show more / Show
+less for overflow, including wrapped lines. Images and skill labels remain visible.
+Copy and Edit always use the full text. Expansion survives cached conversation
+switches while this page stays open; a reload starts collapsed again.
+
+用户消息正文显示前 20 行，超出部分可展开、收起，自动换行也计入行数。
+图片和技能标签保持显示，复制和编辑始终使用全文。同一页面内切换缓存对话时保留
+展开状态，刷新页面后重新默认折叠。
+
+The Skills panel distinguishes an empty catalog from loading failures. It shows
+affected files and localized reasons without exposing raw native errors or skill
+contents. Lists are bounded to 300 skills and 20 loading issues, with explicit
+truncation notices. Refresh checks the catalog again and clears resolved issues.
+
+技能页区分“未发现技能”和“加载失败”，展示失败文件及本地化原因，不透传原生报错
+正文或技能内容。最多显示 300 个技能、20 项加载问题，超出时明确提示；刷新后重新
+检查，并清除已解决的问题。
+
 Settings → Conversation display → Show reasoning summaries is off by default. It
 only controls the execution timeline: hiding summaries before grouping lets adjacent
 commands form one group; actual progress messages remain in chronological order.

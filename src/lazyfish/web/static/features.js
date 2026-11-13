@@ -99,7 +99,8 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
         drawActivity(snapshots.get('activity'));
       } else if(page==="skills") {
         const toolbar=node("div","account-section-actions");toolbar.append(heading(t("skills"),t("skillsHelp")),button(t("createSkill"),()=>editor()));target.append(toolbar);
-        if(!data.skills.length)empty(target,t("noSkills"));
+        const errors=data.errors||[];
+        if(!data.skills.length)empty(target,t(errors.length?'skills.discovery.none_loaded':'noSkills'));
         for(const skill of data.skills) {
           const card=node("section","account-entry"),actions=node("div","skill-entry-actions");
           card.append(node("h4","",skill.name),note(skill.description || ""),note(skill.path));
@@ -107,6 +108,17 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
           actions.lastChild.disabled=skill.enabled===false;
           const toggle=button(t(skill.enabled===false ? "enableSkill" : "disableSkill"),async()=>{toggle.disabled=true;try{await api("/api/skills/enabled",{conversation:getConversation()?.id,path:skill.path,enabled:skill.enabled===false});forgetSection('skills');window.dispatchEvent(new Event("skillschanged"));await showPage("skills",true);}catch(error){report(error);toggle.disabled=false;}});
           actions.append(toggle);card.append(actions);target.append(card);
+        }
+        if(data.truncated)target.append(note(t('ui.showing.the.first.300.skills')));
+        if(errors.length){
+          const diagnostics=node('section','skill-discovery-errors');diagnostics.setAttribute('role','status');
+          diagnostics.append(heading(t('skills.discovery.heading')));
+          for(const error of errors){
+            const entry=node('div','account-entry');if(error.path)entry.append(node('p','account-path',error.path));
+            entry.append(note(t('skills.discovery.'+error.reason)));diagnostics.append(entry);
+          }
+          if(data.errors_truncated)diagnostics.append(note(t('skills.discovery.errors_truncated')));
+          target.append(diagnostics);
         }
       } else {
         target.append(heading(t("connections"),t("connectionsHelp")));

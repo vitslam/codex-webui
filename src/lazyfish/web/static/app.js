@@ -135,7 +135,7 @@ const features = LazyfishFeatures({node,icon,t,api,getStatus:()=>status,getConve
 const active = (job) => ["queued","running", "cancelling"].includes(job.status);
 const activeJob = () => conversation?.jobs.find(active) || (conversation?.active_job && active(conversation.active_job) ? conversation.active_job : null);
 
-const experience=LazyfishExperience({node,icon,t,api,markdown,copyButton,imageNode:features.nativeImageNode,getConversation:()=>conversation,getBusy:()=>sending||Boolean(activeJob()),showReasoning:()=>preferences.settings().showReasoning===true,onEdit:editJob,onFork:forkJob,onImplement:implementPlan,report,duration,onEditStart:()=>dock.reset()});
+const experience=LazyfishExperience({node,icon,t,api,markdown,copyButton,imageNode:features.nativeImageNode,getConversation:()=>conversation,getBusy:()=>sending||Boolean(activeJob()),showReasoning:()=>preferences.settings().showReasoning===true,onEdit:editJob,onFork:forkJob,onImplement:implementPlan,report,duration,onEditStart:()=>dock.reset(),onUserContentToggle:()=>scroll.pauseFollowing()});
 const dock=window.LazyfishUI.composerDock({document,onCollapse:()=>scroll.remember(),onExpand:resizePrompt,onWake:()=>$('#prompt').focus(),onBottom:()=>scroll.bottom(),isFollowing:scroll.following});dock.bind();
 const diagnostics=LazyfishDiagnostics({node,icon,t,api,selectConversation:loadConversation,connected:()=>syncConnected});
 const pinOrder=window.LazyfishUI.sidebarOrder({document,onStart:()=>shortcuts.clear(),onReorder:async ids=>{await api('/api/conversations/reorder',{ids});},onEnd:()=>refreshList().catch(report),report});pinOrder.bind();
@@ -229,7 +229,7 @@ function renderPending(){
     const accepted=conversation?.jobs.some(j=>j.client_request_id===key||j.id===record.jobId||(j.instructions||[]).some(i=>i.id===record.instructionId));
     if(accepted){pendingSends.delete(key);continue;}
     if(record.conversationId!==(conversation?.id||null))continue;
-    const card=node('article','pending-send message user'),bubble=node('div','user-message',record.text);
+    const card=node('article','pending-send message user'),bubble=experience.userContent(card,{id:key,content:record.text});
     for(const skill of record.inputs.skills||[])bubble.append(node('span','skill-chip',skill.name));
     const images=node('div','image-list');for(const image of record.images||[])images.append(features.imageNode(image));bubble.append(images);card.append(bubble);
     const state=node('div','instruction-delivery',record.state==='failed'?t('send.failed',{error:t(record.error)}):t('ui.sending'));
@@ -478,7 +478,7 @@ function renderJobContent(job) {
     meta.append(copy,node("span","reply-separator","·"),node("span","reply-model"));
     taskStatus.append(node("span","task-status status"),node("span","completed-at")); footer.append(meta,taskStatus);
     const items = node("div","assistant-items"), approvals = node("div","approvals"), error = node("p","job-error");
-    const user = node("div","user-turn message user"), bubble = node("div","user-message",job.prompt);
+    const user = node("div","user-turn message user"), bubble = experience.userContent(user,{id:job.id,content:job.prompt});
     bubble.dataset.anchor = "user";
     for(const skill of job.inputs?.skills || [])bubble.append(node("span","skill-chip",skill.name));
     const images=node("div","image-list");for(const image of job.inputs?.images || []) {const box=node("div","image-preview");if(image.width&&image.height){box.style.width=Math.min(220,200*image.width/image.height)+'px';box.style.aspectRatio=image.width+' / '+image.height;}box.append(features.imageNode(image));images.append(box);}bubble.append(images);

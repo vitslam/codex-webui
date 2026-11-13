@@ -5,7 +5,7 @@ const fixture=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'u
 (async()=>{
   const browser=await chromium.launch({executablePath:process.env.LAZYFISH_BROWSER_EXECUTABLE,headless:true,args:['--no-sandbox']});
   try{
-    const context=await browser.newContext(),page=await context.newPage(),errors=[];
+    const context=await browser.newContext({locale:'en-US'}),page=await context.newPage(),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
     await page.goto(fixture.url);
     await page.locator('#login-screen:not([hidden])').waitFor();

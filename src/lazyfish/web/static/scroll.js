@@ -53,6 +53,7 @@ window.LazyfishScroll = function(container, content, {onRestore = () => {}} = {}
   window.addEventListener("beforeunload",remember);
   return {
     read, remember,following:()=>current?.bottom===true,
+    pauseFollowing() { if (id) { clearTimeout(timer); current = capture(); current.bottom = false; applying = false; } },
     suspend() { clearTimeout(timer); id = null; current = null; },
     activate(cid,value) { id = cid; current = value || {bottom:true,job:"",anchor:"",offset:0}; apply(); persist(); },
     mutate(callback) { clearTimeout(timer); if (id && !applying) current = capture(); callback(); apply(); },
