@@ -23,6 +23,8 @@ class Runtimes:
         self.manager=manager;self.slots=[]
         # Linux PDEATHSIG follows the creating thread. A per-turn thread exits
         # after completion, so warm processes must be spawned by a lasting owner.
+        # macOS uses a detached kqueue guardian that watches the service process,
+        # not its creating thread; keeping this spawner is safe on both systems.
         self.spawner=ThreadPoolExecutor(max_workers=1,thread_name_prefix='native-spawn')
 
     def available(self,thread_id):

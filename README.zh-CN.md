@@ -35,7 +35,7 @@ Lazyfish 优化的是网页加载、交互和访问方式；模型生成速度�
 
 ## 环境要求
 
-- 支持 `/proc` 的 Linux、Python **3.11–3.14**、`venv` 和 `pip`。运行时没有额外 Python 依赖。
+- Linux 或 macOS、Python **3.11–3.14**、`venv` 和 `pip`。运行时没有额外 Python 依赖。
 - 同一系统用户下可运行支持 `app-server` 的 Codex CLI；需自行安装和登录，项目直接复用已有安装。
 - 聊天前完成原生 CLI 登录，也可在网页账户面板发起登录。
   参考 [Codex 登录说明](https://learn.chatgpt.com/docs/auth)。

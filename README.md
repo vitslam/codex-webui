@@ -35,7 +35,7 @@ These optimizations improve page loading, interaction and access. Model generati
 
 ## Requirements
 
-- Linux with `/proc`, Python **3.11–3.14**, `venv` and `pip`. No runtime Python dependencies.
+- Linux or macOS, Python **3.11–3.14**, `venv` and `pip`. No runtime Python dependencies.
 - A Codex CLI with `app-server` support, available to the same OS user. The
   CLI is installed and authenticated separately; existing installations are reused.
 - Authenticate with your chosen native Codex login method, or use the Web account panel before chatting.

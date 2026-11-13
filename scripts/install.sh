@@ -39,7 +39,8 @@ if [[ -L "$cache_root" || ! -O "$cache_root" ]]; then
   printf '%s\n' 'Installer cache must be owned by the current user and not be a symlink.' >&2
   exit 1
 fi
-chmod 700 -- "$cache_root"
+# macOS chmod treats "--" as a file name, so do not pass it.
+chmod 700 "$cache_root"
 install_tmp="$(mktemp -d "$cache_root/install.XXXXXXXX")"
 trap 'rm -rf -- "$install_tmp"' EXIT
 export TMPDIR="$install_tmp" TEMP="$install_tmp" TMP="$install_tmp"
@@ -55,11 +56,11 @@ mkdir -p -- "$command_dir"
   printf '%s\n' '#!/usr/bin/env bash' "$command_marker" 'set -eu'
   printf 'exec %q "$@"\n' "$venv_dir/bin/lazyfish"
 } > "$install_tmp/lazyfish"
-chmod 700 -- "$install_tmp/lazyfish"
+chmod 700 "$install_tmp/lazyfish"
 # Move atomically so reinstalling never exposes a partially written launcher.
 command_tmp="$(mktemp "$command_dir/.lazyfish.XXXXXXXX")"
 cp -- "$install_tmp/lazyfish" "$command_tmp"
-chmod 700 -- "$command_tmp"
+chmod 700 "$command_tmp"
 mv -f -- "$command_tmp" "$command_path"
 
 case ":$PATH:" in

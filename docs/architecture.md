@@ -10,11 +10,11 @@ flowchart LR
   CLI -->|thread ID| Native[Existing native session store]
 ```
 
-All service-side components run as one OS user on one Linux machine. A remote
+All service-side components run as one OS user on one Linux or macOS machine. A remote
 browser uses an opt-in trusted LAN binding or an SSH tunnel. This is a single-owner installation. Runtime uses the
 Python standard library and packaged browser assets, without a frontend build step.
 
-服务端在同一台 Linux 机器、同一系统用户下运行。远程浏览器通过显式开启的可信局域网绑定或 SSH 隧道访问，面向
+服务端在同一台 Linux 或 macOS 机器、同一系统用户下运行。远程浏览器通过显式开启的可信局域网绑定或 SSH 隧道访问，面向
 单用户。运行时只有 Python 标准库及静态资源，无需前端构建。
 
 | Boundary / 边界 | Responsibility / 职责 |
@@ -24,7 +24,7 @@ Python standard library and packaged browser assets, without a frontend build st
 | `execution.py`, `runtimes.py` | Native thread mapping, queued tasks, owned warm slots, cancellation and recovery |
 | `approvals.py`, `run_settings.py` | Offered native decisions and validated conversation choices |
 | `telemetry.py` | Loopback-only bounded sampling timings; no prompt persistence |
-| `exec_guard.py`, `processes.py` | Ownership journal, lease inheritance, Linux session identity/cleanup |
+| `exec_guard.py`, `processes.py` | Ownership journal, lease inheritance, Linux/macOS session identity/cleanup |
 | `storage.py` | Versioned SQLite, conversation/task snapshots and transactional events |
 | `web/` | Authenticated APIs, read-only SSE replay and bilingual chat UI |
 | `web/themes.json`, `web/themes.py` | Validated reusable palettes and generated browser theme assets |
@@ -66,6 +66,35 @@ work finishes; increasing it permits queued work without replaying old tasks.
 原生进程由持续存活的专用线程创建，避免 Linux 父线程退出信号在每轮线程结束时误杀
 可复用进程。执行前先写归属日志，轮次 RPC 前再建立任务别名，执行槽及任务分别持有租约。
 缩容让忙碌槽完成后退出，扩容只调度当前排队任务，不重跑旧任务。
+
+### Native process safety on Linux and macOS / 跨平台进程安全
+
+Linux retains `/proc` start ticks, boot ID and machine-ID hashing, with
+`PR_SET_PDEATHSIG` on the lasting spawn thread. macOS uses libproc's
+`proc_bsdinfo` start time (epoch microseconds in the unchanged `start_ticks`
+field), `getsid`, same-UID `proc_listpids`, `kern.bootsessionuuid`, and a hashed
+`gethostuuid` value plus hostname. Identity is checked again across the separate
+session lookup to reject PID reuse. Journal fields and cleanup rules are shared;
+records are machine/boot-local, not portable between hosts. The boot UUID stays
+fixed across wall-clock adjustments; an unavailable identity fails closed.
+
+macOS arms a small forked kqueue guardian before exec. It watches the service and
+worker exits, closes inherited descriptors (including the execution lease), and
+enters a separate session so worker-session cleanup cannot kill it. Service death
+triggers verified session TERM/KILL cleanup, including separate tool process
+groups. Normal worker exit ends the guardian. Registration failure prevents exec.
+Both platforms discover IPv4 interfaces through `getifaddrs`; container bridges
+and Apple wireless-direct interfaces are hidden only in the banner, not Host checks.
+VPN interfaces remain visible. Windows is not supported.
+
+Linux 保留 `/proc`、启动 tick、机器标识哈希和专用创建线程上的父线程退出信号。
+macOS 使用 libproc 的进程启动时间（`start_ticks` 保存 epoch 微秒）、会话 ID、
+同用户进程列表、启动会话 UUID 及硬件 UUID 哈希；读取会话前后再次核验身份，避免 PID 复用。
+归属日志字段和清理策略保持一致，不跨机器或跨启动复用日志。
+macOS 在执行前启动独立会话的 kqueue 守护进程，关闭继承描述符与租约；服务退出时
+按归属日志清理整个执行会话，执行器正常退出时守护进程自行结束，注册失败则不执行。
+网卡发现统一使用 `getifaddrs`，仅在显示时隐藏容器网桥及 Apple 无线直连接口，保留 VPN。
+不支持 Windows。
 
 ## Streaming and persistence / 流式与持久化
 

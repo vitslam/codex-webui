@@ -25,7 +25,7 @@ keep their runtime lease until idle expiry, retirement or shutdown.
 1. Acquire the data directory's exclusive service lock.
 2. Reconcile verified warm-runtime journals, then read persisted `queued`/`running`/`cancelling` tasks, without scheduling any new turns.
 3. Validate each journal against the task/owner, machine identity, boot identity
-   and Linux process start time. Never infer ownership from a PID alone.
+   and platform-native process start time. Never infer ownership from a PID alone.
 4. Stop only the verified owned process session and verify no live members remain.
    A free execution lease is also required before closing a recovered task.
 5. Mark it `interrupted` with `service_restarted`, expire pending approvals, preserve
@@ -36,11 +36,11 @@ keep their runtime lease until idle expiry, retirement or shutdown.
 
 The launcher writes ownership **before exec**, so native code cannot start before
 its journal exists. This addresses the crash between process spawn and saving its
-PID in a database. A parent-death signal, inherited lease and process-session checks
+PID in a database. A parent-death guard, inherited lease and process-session checks
 provide additional layers; they do not authorize killing unrelated processes.
 
 启动器在执行原生程序之前先持久化归属记录，避免“进程已启动、PID 尚未存入数据库”的
-崩溃窗口。父进程退出信号、继承租约及进程会话检查共同用于安全收尾，不授权误杀其他进程。
+崩溃窗口。父进程退出保护、继承租约及进程会话检查共同用于安全收尾，不授权误杀其他进程。
 
 ## Blocked recovery / 恢复被阻塞
 

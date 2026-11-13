@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Support Linux and macOS with native process identity, ownership-safe session cleanup and parent-death protection; preserve Linux journal compatibility without adding runtime dependencies.
+- Use portable `getifaddrs` interface discovery, retain VPN addresses and hide macOS wireless-direct interfaces only in the startup banner; update requirements and deployment documentation for both platforms.
+- 支持 Linux 与 macOS 的原生进程身份、会话安全清理和父进程退出保护，保留 Linux 归属日志兼容性，不增加运行时依赖。
+- 使用跨平台 `getifaddrs` 发现网卡，保留 VPN 地址，仅在启动提示中隐藏 macOS 无线直连接口；同步双平台安装要求和部署文档。
+
+- Make the installer portable to macOS `chmod`, which rejects `--` and otherwise aborts with `chmod: --: No such file or directory`.
+- 修复安装脚本在 macOS 上因 `chmod --` 无法识别而失败的问题。
+
 - Add opt-in `0.0.0.0` or private IPv4 binding with startup LAN URLs; keep localhost as the default, require token authentication and reject public bind addresses.
 - 支持显式开启 `0.0.0.0` 或内网 IPv4 绑定，启动时打印局域网地址；默认仍仅本机访问，保留令牌认证并拒绝公网绑定地址。
 

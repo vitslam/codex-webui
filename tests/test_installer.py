@@ -29,9 +29,26 @@ class InstallerTests(unittest.TestCase):
         cli = self.venv / 'bin/lazyfish'
         cli.write_text('#!/bin/sh\nprintf "<%s>\\n" "$@"\n')
         cli.chmod(0o700)
+        # macOS /bin/chmod rejects "--"; keep a stub first on PATH so Linux
+        # CI catches a regression of that installer bug.
+        chmod_dir = self.root / 'cmds'
+        chmod_dir.mkdir()
+        chmod = chmod_dir / 'chmod'
+        chmod.write_text(
+            '#!/bin/sh\n'
+            'for arg in "$@"; do\n'
+            '  if [ "$arg" = "--" ]; then\n'
+            '    echo "chmod: --: No such file or directory" >&2\n'
+            '    exit 1\n'
+            '  fi\n'
+            'done\n'
+            'exec /bin/chmod "$@"\n'
+        )
+        chmod.chmod(0o700)
         self.env = dict(os.environ, HOME=str(self.home), SHELL='/bin/bash',
                         PYTHON=str(self.python), VENV_DIR=str(self.venv),
-                        PATH='/usr/bin:/bin', XDG_CACHE_HOME=str(self.root/'cache'))
+                        PATH=str(chmod_dir) + ':/usr/bin:/bin',
+                        XDG_CACHE_HOME=str(self.root/'cache'))
         self.env.pop('ZDOTDIR', None)
 
     def install(self, success=True):

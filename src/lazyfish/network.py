@@ -1,21 +1,36 @@
-"""Linux interface discovery and explicit RFC1918 address policy (stdlib only)."""
+"""Native interface discovery and explicit RFC1918 address policy (stdlib only)."""
 
 from __future__ import annotations
 
-import array
-import fcntl
+import ctypes
 import ipaddress
 import socket
-import struct
+import sys
 
 
-# Common Linux container/bridge names; VPN and physical interfaces remain visible.
+# Display only: keep VPN/physical interfaces, hide bridges and wireless direct.
 _CONTAINER_PREFIXES = (
-    b"docker", b"br-", b"virbr", b"veth", b"cni", b"flannel", b"podman", b"cali", b"kube-ipvs",
+    b"docker", b"br-", b"virbr", b"veth", b"cni", b"flannel", b"podman",
+    b"cali", b"kube-ipvs", b"bridge", b"awdl", b"llw",
 )
-_SIOCGIFCONF = 0x8912
-_SIOCGIFFLAGS = 0x8913
 _IFF_UP = 0x1
+
+
+class _Ifaddrs(ctypes.Structure):
+    pass
+
+
+_Ifaddrs._fields_ = [
+    ("next", ctypes.POINTER(_Ifaddrs)), ("name", ctypes.c_char_p),
+    ("flags", ctypes.c_uint), ("addr", ctypes.c_void_p),
+    ("netmask", ctypes.c_void_p), ("destination", ctypes.c_void_p),
+    ("data", ctypes.c_void_p),
+]
+_libc = ctypes.CDLL(None, use_errno=True)
+_libc.getifaddrs.argtypes = [ctypes.POINTER(ctypes.POINTER(_Ifaddrs))]
+_libc.freeifaddrs.argtypes = [ctypes.POINTER(_Ifaddrs)]
+
+
 _PRIVATE_NETWORKS = tuple(
     ipaddress.IPv4Network(value) for value in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
 )
@@ -30,46 +45,36 @@ def private_ipv4(value: str) -> bool:
 
 
 def local_ipv4s(*, for_display: bool = False) -> set[str]:
-    """Read all IPv4 interface records, including aliases; fail closed on errors.
+    """Read UP IPv4 interfaces, including aliases, without DNS or subprocesses.
 
-    SIOCGIFCONF returns Linux struct ifreq records (40 bytes on 64-bit, 32 on
-    32-bit). Grow the buffer until there is room for at least one more record.
-    Only interfaces marked UP are included. For the startup banner, omit common
-    container/bridge interface names; this is a display heuristic, not an access
-    control rule. Host validation still includes their addresses.
-    No DNS lookup, external command, or outbound connection is needed.
+    sockaddr starts with sa_len/sa_family on Darwin, sa_family_t on Linux;
+    sockaddr_in's address occupies bytes 4..7 on both. Discovery failures
+    fail closed. Display filtering never changes the Host allow-list.
     """
-    stride = 40 if struct.calcsize("P") == 8 else 32
-    size = stride * 32
+    head = ctypes.POINTER(_Ifaddrs)()
     try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            while True:
-                buffer = array.array("B", bytes(size))
-                result = fcntl.ioctl(sock.fileno(), _SIOCGIFCONF,
-                                     struct.pack("iP", size, buffer.buffer_info()[0]))
-                length = struct.unpack("iP", result)[0]
-                if length < 0 or length > size:
-                    return set()
-                if size - length >= stride:
-                    break
-                size *= 2
-                if size > 1024 * 1024:
-                    return set()
-            records = buffer.tobytes()
-            addresses = set()
-            for offset in range(0, length - stride + 1, stride):
-                if struct.unpack_from("H", records, offset + 16)[0] != socket.AF_INET:
-                    continue
-                name = records[offset:offset + 16].split(b"\0", 1)[0]
-                flags = fcntl.ioctl(sock.fileno(), _SIOCGIFFLAGS, struct.pack("16sH14x", name, 0))
-                if not struct.unpack_from("H", flags, 16)[0] & _IFF_UP:
-                    continue
-                if for_display and name.startswith(_CONTAINER_PREFIXES):
-                    continue
-                addresses.add(socket.inet_ntoa(records[offset + 20:offset + 24]))
-            return addresses
+        if _libc.getifaddrs(ctypes.byref(head)) != 0:
+            return set()
+        addresses = set()
+        current = head
+        while current:
+            item = current.contents
+            current = item.next
+            if not item.addr or not item.flags & _IFF_UP:
+                continue
+            header = ctypes.string_at(item.addr, 2)
+            family = header[1] if sys.platform == "darwin" else int.from_bytes(header, sys.byteorder)
+            if family != socket.AF_INET:
+                continue
+            if for_display and (item.name or b"").startswith(_CONTAINER_PREFIXES):
+                continue
+            addresses.add(socket.inet_ntoa(ctypes.string_at(item.addr + 4, 4)))
+        return addresses
     except OSError:
         return set()
+    finally:
+        if head:
+            _libc.freeifaddrs(head)
 
 
 def request_host(bind_host: str) -> str:

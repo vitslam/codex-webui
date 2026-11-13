@@ -50,7 +50,7 @@ There is currently no security support SLA; only the latest pre-alpha is maintai
 ## Task lifetime / 任务生命周期
 
 A browser disconnect does not cancel a task. Native process ownership is journaled
-before exec, with a lease, machine/boot identity and Linux process start time.
+before exec, with a lease, machine/boot identity and platform-native process start time (Linux ticks or macOS epoch microseconds).
 Shutdown/recovery acts on verified owned process sessions, not arbitrary stale
 PIDs. Interrupted tasks are never automatically replayed. Sessions that cannot be
 confirmed stopped remain blocked. Code that intentionally detaches into another

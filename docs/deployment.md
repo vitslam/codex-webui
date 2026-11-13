@@ -1,12 +1,12 @@
 # Deployment / 部署
 
-This preview supports a foreground Linux process, bound to loopback by default. The installer
+This preview supports a foreground Linux or macOS process, bound to loopback by default. The installer
 creates a user command in `~/.local/bin` and, when needed, adds that directory
 to PATH in the Bash/Zsh startup file (other shells use `.profile`). It requires no root,
 installs no systemd units and starts no daemon. Install under the same dedicated OS user that owns the native Codex login.
 Allow private access to the chosen workspace and persistent data directory.
 
-当前预览版支持 Linux 前台进程，默认只监听本机。安装器会创建 `~/.local/bin/lazyfish`，
+当前预览版支持 Linux 或 macOS 前台进程，默认只监听本机。安装器会创建 `~/.local/bin/lazyfish`，
 并按需为 Bash/Zsh 配置 PATH（其他 Shell 使用 `.profile`），提示执行对应的 source 命令。
 不需要 root，不安装系统服务，也不会自动后台运行。
 建议使用独立系统用户，并让 Codex 与 Web 服务使用同一用户的登录环境。

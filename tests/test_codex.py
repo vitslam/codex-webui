@@ -28,7 +28,9 @@ class CodexTests(IsolatedTest):
         self.binary.write_text(f"#!{os.sys.executable}\nimport os,time\nfrom pathlib import Path\n"
                                f"Path({str(pid_path)!r}).write_text(str(os.getpid()))\ntime.sleep(30)\n")
         started = time.monotonic()
-        self.assertFalse(probe(str(self.binary), self.settings, timeout=0.2))
+        # Allow script-interpreter startup on macOS; still verify a bounded probe
+        # and a reaped child rather than timing out before the fixture runs.
+        self.assertFalse(probe(str(self.binary), self.settings, timeout=1))
         self.assertLess(time.monotonic() - started, 4)
         pid = int(pid_path.read_text())
         with self.assertRaises(ProcessLookupError):
