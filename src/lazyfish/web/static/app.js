@@ -479,6 +479,7 @@ function renderJobContent(job) {
   view.footer.querySelector(".reply-model").textContent=replyModel(job);
   view.footer.querySelector(".reply-footer").hidden=!job.items.some((item)=>item.kind === "assistant" && item.text);
   experience.render(view,job);
+  renderModelPreview();
   view.approvals.replaceChildren();
   view.error.textContent = job.stop_error?t('stop.retry.help'):job.error_code ? t(job.error_code) : "";
   view.footer.querySelector('.stop-retry')?.remove();

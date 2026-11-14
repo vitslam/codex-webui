@@ -129,7 +129,7 @@ window.LazyfishSideChat=function({node,icon,t,api,markdown,copyButton,getMain,on
       },'side-older');older.disabled=Boolean(s.paging);list.append(older);}
       if(!s.chat?.jobs.length&&!s.pending&&s.loading)list.append(node('p','side-empty',t('side.loading')));
       for(const job of s.chat?.jobs||[]){
-        const article=node('article','side-turn'),user=node('div','side-user message user');
+        const article=node('article','side-turn'),user=node('div','side-user message user');article.dataset.job=job.id;
         if(job.inputs?.quotes?.length)user.append(quoteBlock(job.inputs.quotes,'side-history:'+job.id));user.append(node('div','user-text',job.prompt));for(const skill of job.inputs?.skills||[])user.append(node('span','skill-chip',skill.name));if(job.inputs?.images?.length){const images=node('div','image-list');for(const image of job.inputs.images)images.append(imageNode(image));user.append(images);}if(job.inputs?.operation!=='compact')article.append(user);
         for(const instruction of job.instructions||[]){const card=node('div','side-user side-instruction');if(instruction.quotes?.length)card.append(quoteBlock(instruction.quotes,'side-instruction:'+instruction.id));card.append(node('div','user-text',instruction.text));for(const skill of instruction.skills||[])card.append(node('span','skill-chip',skill.name));card.append(node('p','instruction-delivery',t('instruction.'+instruction.state)));article.append(card);}
         const answer=node('div','side-answer');answer.append(replyLabel());

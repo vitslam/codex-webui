@@ -1,6 +1,7 @@
 "use strict";
 // Simplified Chinese interface strings.
 window.LazyfishReferenceI18n.zh = {
+  "model.changed": "模型已从 {from} 更改为 {to}。",
   "eyebrow": "你的本机 CODEX",
   "title": "你的机器，你的 Codex。",
   "intro": "在浏览器中与你的本机项目协作。",
