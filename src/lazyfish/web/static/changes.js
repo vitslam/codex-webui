@@ -55,7 +55,7 @@ function createChanges({document, node, icon, t, api, executionDetails, jobFinis
     body.append(files);
   }
   function appendChangePanel(card, message, job) {
-    if (!job || !job.id || !jobFinished(job) || !job.changes || !(job.changes.file_count > 0 || ['partial','unavailable'].includes(job.changes.state))) return;
+    if (!job || !job.id || !jobFinished(job) || !job.changes || !(job.changes.file_count > 0)) return;
     const summary = job.changes;
     const panel = executionDetails(message.id + ':changes', '', 'change-panel');
     const separator = node('span', '·'); separator.setAttribute('aria-hidden', 'true');
