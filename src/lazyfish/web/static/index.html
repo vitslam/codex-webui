@@ -30,7 +30,9 @@
   <script defer src="/sidebar-projects.js"></script>
   <script defer src="/sidebar-order.js"></script>
   <script defer src="/selection-quotes.js"></script>
+  <script defer src="/side-composer.js"></script>
   <script defer src="/side-chat.js"></script>
+  <script defer src="/sidebar-resize.js"></script>
   <script defer src="/experience.js"></script>
   <script defer src="/worker-monitor.js"></script>
   <script defer src="/diagnostics.js"></script>
@@ -107,6 +109,7 @@
       <button id="menu-toggle" class="icon-button sidebar-settings" type="button" data-label="settings" aria-expanded="false" aria-controls="workspace-menu"><svg class="icon" aria-hidden="true"><use href="#i-gear"/></svg></button>
     </div>
   </aside>
+  <div id="sidebar-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="sidebar" aria-valuemin="180" aria-valuemax="480" aria-valuenow="248" data-label="sidebar.resize" data-title="sidebar.resizeHelp"></div>
   <main id="chat" class="workspace is-empty">
     <header class="topbar"><div class="topbar-leading"><button id="sidebar-toggle" class="icon-button" type="button" data-label="sidebar" aria-controls="sidebar" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-panel"/></svg></button><span class="workspace-name">Codex</span><span class="topbar-separator" aria-hidden="true">/</span><h1 id="conversation-title" class="topbar-label"></h1></div><div class="topbar-trailing"><span id="connection-state" role="status"></span><button id="side-toggle" type="button" class="icon-button" data-label="side.title" data-title="side.title" aria-controls="side-chat" aria-expanded="false" hidden><svg class="icon" aria-hidden="true"><use href="#i-panel"/></svg></button></div></header>
     <div id="messages" class="thread-scroll" tabindex="0" data-label="messages"><div id="transcript" class="timeline"><button id="older" class="history-more" type="button" data-text="older" hidden>Earlier messages</button><div id="empty" class="welcome" hidden><h1 data-text="newTitle">What would you like to do?</h1><p class="welcome-description" data-text="emptyHelp">Write code, solve problems, or explore a new idea.</p></div><button id="newer" class="history-more" type="button" data-text="newer" hidden>Newer messages</button></div></div>
@@ -162,7 +165,7 @@
     <header class="side-header"><div><h2 id="side-title"></h2><button id="side-parent" type="button"></button></div><div class="side-header-actions"><button id="side-new" type="button"></button><button id="side-close" class="icon-button" type="button">×</button></div></header>
     <p id="side-source"></p>
     <div id="side-transcript" tabindex="0" data-label="side.messages"></div>
-    <form id="side-form"><div id="side-quotes" hidden></div><label class="sr-only" for="side-prompt" data-text="side.prompt"></label><textarea id="side-prompt" rows="1" maxlength="64000"></textarea><div class="side-toolbar"><span data-text="side.independent"></span><div><button id="side-stop" type="button" hidden></button><button id="side-send" type="submit" class="icon-button" data-label="send"><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div></div></form>
+    <div class="composer-dock side-composer-dock"><form id="side-form" class="composer"></form></div>
   </aside>
 </div>
 <div id="shortcut-hints" class="shortcut-hints-panel" role="region" data-label="switchConversation" hidden></div>

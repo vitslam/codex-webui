@@ -3,9 +3,10 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = create;
   else (root.LazyfishUI || (root.LazyfishUI = {})).skills = create;
 })(typeof globalThis !== 'undefined' ? globalThis : window,
-function createSkills({document, window, node, t, request, getWorkspace, getSelected, setSelected, onChange, onManage}) {
-  const prompt = document.getElementById('prompt'), panel = document.getElementById('skill-picker');
-  const chips = document.getElementById('selected-skills');
+function createSkills({document, window, node, t, request, getWorkspace, getSelected, setSelected, onChange, onManage, root=document, idPrefix=''}) {
+  const uid=id=>idPrefix+id;
+  const prompt = root.querySelector('#'+uid('prompt')), panel = root.querySelector('#'+uid('skill-picker'));
+  const chips = root.querySelector('#'+uid('selected-skills'));
   let epoch = 0, opened = false, match = null, rows = [], index = 0, catalog = [], catalogCwd = null;
   const scopeLabel = skill => t('skills.scope.' + (/repo|project/i.test(skill.scope || '') ? 'project' : /system|admin/i.test(skill.scope || '') ? 'system' : 'user'));
   function drawSelection() {
@@ -38,14 +39,14 @@ function createSkills({document, window, node, t, request, getWorkspace, getSele
     const heading = node('div', undefined, 'skill-picker-heading');
     const manage = node('button', t('skills.manage')); manage.type = 'button';
     manage.addEventListener('click', () => { close(); onManage(); });
-    heading.append(node('span', t('skills.for.message')), manage);
-    const list = node('div', undefined, 'skill-picker-list'); list.id = 'skill-options'; list.setAttribute('role', 'listbox'); list.setAttribute('aria-label', t('ui.skills'));
+    heading.append(node('span', t('skills.for.message')));if(onManage)heading.append(manage);
+    const list = node('div', undefined, 'skill-picker-list'); list.id = uid('skill-options'); list.setAttribute('role', 'listbox'); list.setAttribute('aria-label', t('ui.skills'));
     const needle = query.toLocaleLowerCase();
     rows = catalog.filter(s => s.enabled !== false && !getSelected().some(value => value.path === s.path)
       && [s.name, s.description].some(value => String(value || '').toLocaleLowerCase().includes(needle)));
     index = Math.min(index, Math.max(0, rows.length - 1));
     rows.forEach((skill, i) => {
-      const row = node('button', undefined, 'skill-option'); row.type = 'button'; row.id = 'skill-option-' + i;
+      const row = node('button', undefined, 'skill-option'); row.type = 'button'; row.id = uid('skill-option-' + i);
       row.setAttribute('role', 'option'); row.tabIndex = -1; row.title = skill.path;
       const name = node('span', undefined, 'skill-option-name'); name.append(node('strong', skill.name), node('small', scopeLabel(skill)));
       row.append(name, node('span', skill.description || skill.path, 'skill-option-description'));
@@ -83,7 +84,7 @@ function createSkills({document, window, node, t, request, getWorkspace, getSele
     index = 0; open(found[2], token);
   }
   function bind() {
-    prompt.setAttribute('aria-controls', 'skill-options'); prompt.setAttribute('aria-autocomplete', 'list');
+    prompt.setAttribute('aria-controls', uid('skill-options')); prompt.setAttribute('aria-autocomplete', 'list');
     prompt.addEventListener('input', event => { if (!event.isComposing) update(); });
     prompt.addEventListener('compositionend', update); prompt.addEventListener('click', update);
     prompt.addEventListener('keydown', event => {
@@ -95,8 +96,8 @@ function createSkills({document, window, node, t, request, getWorkspace, getSele
       else if (event.key === 'Enter') { if (rows[index]) choose(rows[index]); }
       else if (rows.length) { index = (index + (event.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length; highlight(); }
     }, true);
-    document.getElementById('add-skill').addEventListener('click', () => { onChange(); open('', null); prompt.focus({preventScroll:true}); });
-    document.addEventListener('pointerdown', event => { if (opened && !panel.contains(event.target) && event.target !== prompt && !event.target.closest('#add-skill')) close(); });
+    root.querySelector('#'+uid('add-skill')).addEventListener('click', () => { onChange(); open('', null); prompt.focus({preventScroll:true}); });
+    document.addEventListener('pointerdown', event => { if (opened && !panel.contains(event.target) && event.target !== prompt && !event.target.closest('#'+uid('add-skill'))) close(); });
     window.addEventListener('skillschanged', () => { catalogCwd = null; close(); });
     window.addEventListener('languagechange', () => { close(); drawSelection(); });
   }

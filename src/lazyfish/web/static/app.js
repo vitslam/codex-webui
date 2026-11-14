@@ -59,9 +59,10 @@ const diagnostics=LazyfishDiagnostics({node,icon,t,api,selectConversation:async 
 const pinOrder=window.LazyfishUI.sidebarOrder({document,onStart:()=>shortcuts.clear(),onReorder:async ids=>{await api('/api/conversations/reorder',{ids});},onEnd:()=>refreshList().catch(report),report});pinOrder.bind();
 
 const mainQuote=quote=>{if(!features.addQuote(quote))return false;dock.reset(false);$('#prompt').focus({preventScroll:true});resizePrompt();return true;};
-const sideChat=LazyfishSideChat({node,icon,t,api,markdown,copyButton,getMain:()=>status&&!initializing&&conversation&&!conversation.side_parent_id?{id:conversation.id,title:conversation.title}:null,onMainQuote:mainQuote});
+const sideChat=LazyfishSideChat({node,icon,t,api,markdown,copyButton,getMain:()=>status&&!initializing&&conversation&&!conversation.side_parent_id?{id:conversation.id,title:conversation.title}:null,onMainQuote:mainQuote,getStatus:()=>status,preferences,imageNode:features.imageNode,prepare:flushChoices});
 const textSelection=LazyfishTextSelection({node,t,getContext:source=>source?.closest('#side-chat')?sideChat.selectionContext():status&&!initializing?{id:conversation?.id||'new',epoch:generation}:null,
   onAdd:(quote,context)=>context.side?sideChat.addToMain(quote):mainQuote(quote),onSide:quote=>sideChat.open(quote)});
+const sidebarResize=LazyfishSidebarResize({onResize:()=>{sideChat.reflow();resizePrompt();}});
 
 function closeStream() { if (stream) stream.close(); stream = null; }
 function unauthenticated() {
@@ -295,6 +296,7 @@ function renderList() {
   showHints(hintsHeld,hintCandidate);
 }
 function syncSidebar() {
+  sidebarResize.refresh();
   const hidden = document.body.classList.contains("sidebar-hidden");
   $("#sidebar-toggle").setAttribute("aria-expanded",String(!hidden));
   $("#sidebar-backdrop").hidden = hidden || !matchMedia("(max-width:760px)").matches || !status;

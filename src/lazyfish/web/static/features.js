@@ -379,7 +379,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
   });
   $("#compact-context").addEventListener("click",()=>{$("#context-settings").open=false;onCompact();});
   $("#plan-toggle").addEventListener("click",()=>{preferences.togglePlan();render();});
-  for(const button of document.querySelectorAll("[data-permission]"))button.addEventListener("click",()=>{preferences.permission(button.dataset.permission);$("#permission-settings").open=false;render();});
+  for(const button of $("#composer").querySelectorAll("[data-permission]"))button.addEventListener("click",()=>{preferences.permission(button.dataset.permission);$("#permission-settings").open=false;render();});
   $("#composer").addEventListener("dragover",event=>{if(event.dataTransfer.types.includes("Files")){event.preventDefault();event.dataTransfer.dropEffect="copy";}});
   $("#composer").addEventListener("drop",event=>{const files=[...event.dataTransfer.files];if(files.length){event.preventDefault();upload(files);}});
   window.addEventListener("resize",renderContext);window.visualViewport?.addEventListener("resize",renderContext);
@@ -389,7 +389,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
   $("#account-dialog").addEventListener("close",()=>{++epoch;});
   function updateBusy(){
     $('#add-image').disabled=getBusy();$('#add-skill').disabled=false;$('#edit-workdir').disabled=getBusy();
-    for(const button of document.querySelectorAll('[data-permission]'))button.disabled=getBusy();
+    for(const button of $('#composer').querySelectorAll('[data-permission]'))button.disabled=getBusy();
   }
   function addQuote(quote){
     const quotes=draft().quotes,length=Array.from(quote.text).length;
@@ -406,7 +406,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
     $("#edit-workdir").disabled=getBusy();
     const settings=preferences.settings();$("#plan-toggle").hidden=!settings.showPlan;$("#plan-toggle").setAttribute("aria-pressed",String(settings.plan));$("#plan-toggle").title=t(settings.plan ? "ui.switch.to.default.mode" : "ui.switch.to.plan.mode");
     $("#context-settings").hidden=!settings.showContext;
-    for(const button of document.querySelectorAll("[data-permission]")) {button.setAttribute("aria-pressed",String(button.dataset.permission===(settings.permission||(getStatus()?.execution.sandbox==="danger-full-access"&&getStatus()?.execution.approval_policy==="never"?"full_access":getStatus()?.execution.sandbox==="read-only"?"read_only":getStatus()?.execution.sandbox==="workspace-write"&&getStatus()?.execution.approval_policy==="on-request"?"ask":null))));button.disabled=getBusy();}
+    for(const button of $("#composer").querySelectorAll("[data-permission]")) {button.setAttribute("aria-pressed",String(button.dataset.permission===(settings.permission||(getStatus()?.execution.sandbox==="danger-full-access"&&getStatus()?.execution.approval_policy==="never"?"full_access":getStatus()?.execution.sandbox==="read-only"?"read_only":getStatus()?.execution.sandbox==="workspace-write"&&getStatus()?.execution.approval_policy==="on-request"?"ask":null))));button.disabled=getBusy();}
 
   }
   return {render,renderContext,updateBusy,addQuote,hasQuotes:()=>draft().quotes.length,refreshBasics,imageNode,nativeImageNode:images.imageNode,preview,workspace,newWorkspace:()=>drafts.get('new')?.workspace,defaultWorkspaceChanged,inputs:()=>({images:draft().images.map(i=>i.id),skills:draft().skills,...(draft().quotes.length?{quotes:draft().quotes.map(quote=>({...quote}))}:{}),...preferences.inputs()}),selectedImages:()=>draft().images.slice(),hasImages:()=>draft().images.length,hasInputs:()=>draft().images.length||draft().skills.length||draft().quotes.length,busy:()=>pending>0,

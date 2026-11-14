@@ -981,3 +981,8 @@ Object.assign(window.LazyfishReferenceI18n.en,{
   "side.sendFailed": "Message not sent. Your question and references were kept.",
   "side.independent": "Independent discussion"
 });
+
+Object.assign(window.LazyfishReferenceI18n.en,{
+  "sidebar.resize": "Resize conversation sidebar",
+  "sidebar.resizeHelp": "Drag to resize. Double-click to reset."
+});

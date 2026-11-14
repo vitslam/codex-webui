@@ -899,3 +899,8 @@ Object.assign(window.LazyfishReferenceI18n.zh,{
   "side.sendFailed": "发送失败，问题和引用已保留。",
   "side.independent": "独立讨论"
 });
+
+Object.assign(window.LazyfishReferenceI18n.zh,{
+  "sidebar.resize": "调整左侧对话栏宽度",
+  "sidebar.resizeHelp": "左右拖动调整宽度，双击恢复默认。"
+});

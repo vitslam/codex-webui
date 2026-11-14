@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reuse the main composer in side chats, including independent model, reasoning effort, fast mode, permissions, images, skills, working directory, context compaction and keyboard preferences; preserve separate drafts and retry inputs.
+
+- Make the conversation sidebar resizable with a remembered browser width, keyboard controls, reset gesture and coordinated side-chat limits.
+
 - Add independent side discussions with saved parent transcript snapshots, selectable references, resizable desktop layout, narrow-screen return, persisted replies and separate queue/cancel controls.
 
 - Add selected transcript passages to the current chat as removable reference context; retain references through history, retries, editing, branching and supplementary instructions.
