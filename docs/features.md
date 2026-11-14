@@ -7,6 +7,9 @@ external authorization. Bounded native forks require Codex CLI 0.162.1 or newer.
 
 ## Conversations and execution
 
+- **Side discussion:** select transcript text and choose Ask in side chat, or open the panel from the main header. Each parent keeps one current side discussion. Desktop supports a resizable split; narrow screens use a separate panel with a return action. The side chat inherits the directory and run settings when created, then keeps its own transcript and native thread. Closing the panel does not cancel its task; reopening or refreshing restores saved replies. New side chat starts a fresh snapshot, and retained older side records remain stored. Side replies can be selected and added to the main composer without sending automatically.
+- **Side context:** capture recorded parent transcript text when the side chat is created, including already recorded partial replies. This is a plain-text snapshot, not a native fork or a copy of hidden model state. Later parent updates are not synchronized. Snapshots use up to 100 recent turns and 100 items per turn, with 16,000 characters per passage and a 96,000-character transcript budget; the panel indicates truncation. Side jobs use the normal concurrency queue, sandbox and approval policy. Chat separation does not isolate shared workspace files. Ordinary history/search/project/archive lists exclude side records; a parent cannot be archived while one of its side jobs is active.
+
 - **Edit:** hover a user bubble and choose Edit. Sending retires that message and
   its suffix from visible history and starts a replacement turn with the original
   inputs/model. Retained prefix context continues through a bounded native fork;

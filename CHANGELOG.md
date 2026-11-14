@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add independent side discussions with saved parent transcript snapshots, selectable references, resizable desktop layout, narrow-screen return, persisted replies and separate queue/cancel controls.
+
 - Add selected transcript passages to the current chat as removable reference context; retain references through history, retries, editing, branching and supplementary instructions.
 
 - Keep general repository text in English, isolate Chinese UI strings in locale resources, preserve Unicode regression fixtures and maintain compatibility with saved localized change reports.

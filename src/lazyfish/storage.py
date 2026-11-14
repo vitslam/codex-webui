@@ -37,7 +37,7 @@ def open_store(path: Path) -> sqlite3.Connection:
     path.chmod(0o600)
     try:
         version = connection.execute("PRAGMA user_version").fetchone()[0]
-        if version > 9:
+        if version > 10:
             raise ValueError("Database version is newer than this application; do not downgrade it.")
         if version == 0:
             with connection:
@@ -168,6 +168,13 @@ def open_store(path: Path) -> sqlite3.Connection:
             with connection:
                 connection.execute("ALTER TABLE instructions ADD COLUMN quotes TEXT NOT NULL DEFAULT '[]'")
                 connection.execute('PRAGMA user_version=9')
+        if version < 10:
+            with connection:
+                connection.execute('ALTER TABLE conversations ADD COLUMN side_parent_id TEXT REFERENCES conversations(id)')
+                connection.execute('ALTER TABLE conversations ADD COLUMN side_retired INTEGER NOT NULL DEFAULT 0')
+                connection.execute('ALTER TABLE conversations ADD COLUMN side_snapshot TEXT')
+                connection.execute('CREATE UNIQUE INDEX current_side_chat ON conversations(side_parent_id) WHERE side_parent_id IS NOT NULL AND side_retired=0')
+                connection.execute('PRAGMA user_version=10')
         return connection
     except Exception:
         connection.close()
@@ -206,7 +213,7 @@ class Store:
         with closing(self.connect()) as db:
             return [dict(row) for row in db.execute("""SELECT c.*,
                 (SELECT status FROM jobs WHERE retired=0 AND conversation_id=c.id ORDER BY rowid DESC LIMIT 1) AS status
-                FROM conversations c ORDER BY updated_at DESC, id DESC LIMIT 500""")]
+                FROM conversations c WHERE c.side_parent_id IS NULL ORDER BY updated_at DESC, id DESC LIMIT 500""")]
 
     def create_conversation(self, workspace: str, title: str = "", settings=None, key=None) -> dict:
         identifier, stamp = uuid.uuid4().hex, now()
@@ -232,6 +239,36 @@ class Store:
             context = db.execute("SELECT used,window,updated_at FROM conversation_context WHERE conversation_id=?",(identifier,)).fetchone()
             result["context"] = dict(context) if context else None
             return result
+
+    def side_chat(self, parent, create=False, key=None, fresh=False):
+        from .side_context import capture
+        with closing(self.connect()) as db, db:
+            db.execute('BEGIN IMMEDIATE' if create else 'BEGIN')
+            source=db.execute('SELECT * FROM conversations WHERE id=? AND archived=0 AND side_parent_id IS NULL',(parent,)).fetchone()
+            if not source:raise StoreError('not_found')
+            current=db.execute('SELECT id FROM conversations WHERE side_parent_id=? AND side_retired=0',(parent,)).fetchone()
+            if create and key:
+                prior=db.execute('SELECT id,side_parent_id FROM conversations WHERE creation_key=?',('side:'+key,)).fetchone()
+                if prior:
+                    if prior['side_parent_id']!=parent:raise StoreError('request_key_conflict')
+                    return self.history(prior['id'])
+            if current and not fresh:return self.history(current['id'])
+            if not create:return None
+            if current:
+                if db.execute("SELECT 1 FROM jobs WHERE conversation_id=? AND status IN ('queued','running','cancelling')",(current['id'],)).fetchone():raise StoreError('conversation_busy')
+                db.execute('UPDATE conversations SET side_retired=1 WHERE id=?',(current['id'],))
+            identifier,stamp=uuid.uuid4().hex,now()
+            snapshot=capture(db,parent,stamp)
+            db.execute('INSERT INTO conversations(id,title,workspace,created_at,updated_at,run_settings,creation_key,side_parent_id,side_snapshot) VALUES (?,?,?,?,?,?,?,?,?)',
+                (identifier,'',source['workspace'],stamp,stamp,source['run_settings'],'side:'+key,parent,json.dumps(snapshot)))
+        return self.history(identifier)
+
+    def side_input_context(self, conversation, job):
+        with closing(self.connect()) as db:
+            row=db.execute('SELECT side_snapshot FROM conversations WHERE id=?',(conversation,)).fetchone()
+            if not row or not row[0]:return None
+            if db.execute('SELECT 1 FROM jobs WHERE conversation_id=? AND id!=? AND retired=0 AND native_turn_id IS NOT NULL',(conversation,job)).fetchone():return None
+            return json.loads(row[0])['text']
 
     def metadata(self, section, scope):
         with closing(self.connect()) as db:
@@ -318,6 +355,9 @@ class Store:
             row=db.execute("SELECT * FROM conversations WHERE id=? AND archived=0",(conversation,)).fetchone()
             if not row:raise StoreError("not_found")
             result=dict(row)
+            snapshot=json.loads(result.pop('side_snapshot') or '{}')
+            if result.get('side_parent_id'):
+                result['side_context']={k:snapshot[k] for k in ('captured_at','truncated')}
             context=db.execute("SELECT used,window,updated_at FROM conversation_context WHERE conversation_id=?",(conversation,)).fetchone()
             result["context"]=dict(context) if context else None
             boundary = None
@@ -347,7 +387,7 @@ class Store:
         return result
 
     def conversation_page(self, limit: int = 50, cursor: str | None = None, query: str = "", workspace: str | None = None) -> dict:
-        where, values = "WHERE c.archived=0", []
+        where, values = "WHERE c.archived=0 AND c.side_parent_id IS NULL", []
         if cursor:
             try:
                 parts=json.loads(base64.urlsafe_b64decode(cursor.encode()+b"="*(-len(cursor)%4)))
@@ -382,17 +422,17 @@ class Store:
         if rows and more:
             last = rows[-1]
             cursor = base64.urlsafe_b64encode(json.dumps([last["pinned"],last["pin_order"],last["updated_at"],last["id"]]).encode()).decode().rstrip("=")
-        with closing(self.connect()) as db:removed=[row[0] for row in db.execute('SELECT id FROM conversations WHERE archived=1 ORDER BY rowid DESC LIMIT 1000')]
+        with closing(self.connect()) as db:removed=[row[0] for row in db.execute('SELECT id FROM conversations WHERE archived=1 AND side_parent_id IS NULL ORDER BY rowid DESC LIMIT 1000')]
         return {"conversations":rows,"next_cursor":cursor,"removed_ids":removed}
 
     def conversation_projects(self):
         with closing(self.connect()) as db:
             return [dict(row) for row in db.execute("""SELECT workspace,COUNT(*) AS count,
-                MAX(updated_at) AS updated_at FROM conversations WHERE archived=0
+                MAX(updated_at) AS updated_at FROM conversations WHERE archived=0 AND side_parent_id IS NULL
                 GROUP BY workspace ORDER BY updated_at DESC,workspace""")]
 
     def archived_page(self, limit=50, cursor=None, query='', workspace=None):
-        where, values = 'WHERE c.archived=1', []
+        where, values = 'WHERE c.archived=1 AND c.side_parent_id IS NULL', []
         boundary=None
         if cursor:
             try:
@@ -416,7 +456,7 @@ class Store:
                 where += ' AND (c.updated_at,c.id)<(?,?)';values.extend(boundary)
             rows=[dict(row) for row in db.execute(f'''SELECT c.id,c.title,c.workspace,c.updated_at
                 FROM conversations c {where} ORDER BY c.updated_at DESC,c.id DESC LIMIT ?''',[*values,limit+1])]
-            workspaces=[row[0] for row in db.execute('SELECT DISTINCT workspace FROM conversations WHERE archived=1 ORDER BY workspace')]
+            workspaces=[row[0] for row in db.execute('SELECT DISTINCT workspace FROM conversations WHERE archived=1 AND side_parent_id IS NULL ORDER BY workspace')]
         more=len(rows)>limit; rows=rows[:limit]
         next_cursor=base64.urlsafe_b64encode(json.dumps([rows[-1]['updated_at'],rows[-1]['id']]).encode()).decode().rstrip('=') if more else None
         return {'conversations':rows,'workspaces':workspaces,'counts':counts,'next_cursor':next_cursor}
@@ -647,7 +687,7 @@ class Store:
         with closing(self.connect()) as db,db:
             db.execute("BEGIN IMMEDIATE")
             if not db.execute("SELECT 1 FROM conversations WHERE id=?",(identifier,)).fetchone():raise StoreError("not_found")
-            if db.execute("SELECT 1 FROM jobs WHERE retired=0 AND conversation_id=? AND status IN ('queued','running','cancelling')",(identifier,)).fetchone():raise StoreError("conversation_busy")
+            if db.execute("SELECT 1 FROM jobs WHERE retired=0 AND (conversation_id=? OR conversation_id IN (SELECT id FROM conversations WHERE side_parent_id=?)) AND status IN ('queued','running','cancelling')",(identifier,identifier)).fetchone():raise StoreError("conversation_busy")
             db.execute("UPDATE conversations SET archived=1 WHERE id=?",(identifier,))
         return {"id":identifier,"archived":True}
 

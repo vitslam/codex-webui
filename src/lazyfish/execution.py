@@ -514,6 +514,8 @@ class Worker:
             resolved_model=self.job["model"] or result.get("model")
             inputs = self.job.get("inputs") or {}
             content = quoted_input(self.job['prompt'],inputs.get('quotes',[]))
+            side_context=self.store.side_input_context(self.conversation['id'],self.job['id']) if self.conversation.get('side_parent_id') else None
+            if side_context:content.insert(0,{'type':'text','text':side_context})
             for image in inputs.get("images",[]):
                 attachment = self.store.attachment(image["id"],True)
                 extension = {"image/png":".png","image/jpeg":".jpg","image/webp":".webp"}[attachment["mime"]]

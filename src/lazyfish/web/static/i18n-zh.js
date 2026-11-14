@@ -881,3 +881,21 @@ window.LazyfishLegacyChangeNotices = {
   "文件模式或换行发生变化。": "changes.mode",
   "二进制、大文件或未缓存的内容，仅记录文件变化。": "changes.binary"
 };
+
+Object.assign(window.LazyfishReferenceI18n.zh,{
+  "side.title": "侧边聊天",
+  "side.ask": "在侧边聊天中提问",
+  "side.addToMain": "添加到主对话",
+  "side.prompt": "围绕这段内容提问",
+  "side.close": "关闭侧边聊天",
+  "side.new": "新侧聊",
+  "side.resize": "调整侧聊宽度",
+  "side.messages": "侧边聊天消息",
+  "side.snapshot": "使用打开时的主对话快照，后续主对话消息不会自动加入。",
+  "side.truncated": "使用主对话近期内容的快照，更早或过长的内容已截断。",
+  "side.loading": "正在准备侧边聊天…",
+  "side.empty": "在这里深入讨论，不打断主对话。",
+  "side.activity": "执行详情",
+  "side.sendFailed": "发送失败，问题和引用已保留。",
+  "side.independent": "独立讨论"
+});

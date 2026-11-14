@@ -191,6 +191,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(503,{"error":"execution_unavailable"})
             store = self.server.manager.store
             parsed = urlsplit(self.path)
+            if match := re.fullmatch(r'/api/conversations/([a-f0-9]{32})/side-chat',parsed.path):
+                return self._send(200,{'conversation':store.side_chat(match[1])})
             if parsed.path=='/api/runtime':return self._send(200,self.server.manager.runtime_status())
             if parsed.path=='/api/performance':return self._send(200,store.timings())
             query = parse_qs(parsed.query)
@@ -417,6 +419,10 @@ class Handler(BaseHTTPRequestHandler):
         if (re.fullmatch(r'/api/conversations/[a-f0-9]{32}/(turns|compact)',self.path)
                 and not self.server.report['ready']):
             return self._send(409,{'error':'codex_unavailable'})
+        if match := re.fullmatch(r'/api/conversations/([a-f0-9]{32})/side-chat',self.path):
+            key=body.get('client_request_id');fresh=body.get('fresh',False)
+            if not isinstance(key,str) or not re.fullmatch(r'[a-zA-Z0-9_-]{16,80}',key) or type(fresh) is not bool:raise StoreError('invalid_request_key')
+            return self._send(200,{'conversation':manager.store.side_chat(match[1],True,key,fresh)})
         if self.path=='/api/runtime':
             return self._send(200,manager.resize(body.get('target_concurrency')))
         if self.path=='/api/conversations/read':

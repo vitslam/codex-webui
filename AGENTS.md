@@ -7,7 +7,7 @@ There is no automatic production deployment. Do not add a remote or publish
 without an explicit request.
 
 Stage 4 also adds native account/quota/MCP panels, image inputs, workspace skills
-and persisted context usage. Keep schema 3 → 4 → 5 → 6 → 7 → 8 → 9 migrations non-destructive.
+and persisted context usage. Keep schema 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 migrations non-destructive.
 Keep native Codex integration behind the adapter boundary. Never run a real model
 in normal tests. Use fake executables and isolated configuration/data directories.
 

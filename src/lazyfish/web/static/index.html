@@ -30,6 +30,7 @@
   <script defer src="/sidebar-projects.js"></script>
   <script defer src="/sidebar-order.js"></script>
   <script defer src="/selection-quotes.js"></script>
+  <script defer src="/side-chat.js"></script>
   <script defer src="/experience.js"></script>
   <script defer src="/worker-monitor.js"></script>
   <script defer src="/diagnostics.js"></script>
@@ -107,7 +108,7 @@
     </div>
   </aside>
   <main id="chat" class="workspace is-empty">
-    <header class="topbar"><div class="topbar-leading"><button id="sidebar-toggle" class="icon-button" type="button" data-label="sidebar" aria-controls="sidebar" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-panel"/></svg></button><span class="workspace-name">Codex</span><span class="topbar-separator" aria-hidden="true">/</span><h1 id="conversation-title" class="topbar-label"></h1></div><span id="connection-state" role="status"></span></header>
+    <header class="topbar"><div class="topbar-leading"><button id="sidebar-toggle" class="icon-button" type="button" data-label="sidebar" aria-controls="sidebar" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-panel"/></svg></button><span class="workspace-name">Codex</span><span class="topbar-separator" aria-hidden="true">/</span><h1 id="conversation-title" class="topbar-label"></h1></div><div class="topbar-trailing"><span id="connection-state" role="status"></span><button id="side-toggle" type="button" class="icon-button" data-label="side.title" data-title="side.title" aria-controls="side-chat" aria-expanded="false" hidden><svg class="icon" aria-hidden="true"><use href="#i-panel"/></svg></button></div></header>
     <div id="messages" class="thread-scroll" tabindex="0" data-label="messages"><div id="transcript" class="timeline"><button id="older" class="history-more" type="button" data-text="older" hidden>Earlier messages</button><div id="empty" class="welcome" hidden><h1 data-text="newTitle">What would you like to do?</h1><p class="welcome-description" data-text="emptyHelp">Write code, solve problems, or explore a new idea.</p></div><button id="newer" class="history-more" type="button" data-text="newer" hidden>Newer messages</button></div></div>
     <div class="composer-dock">
       <button id="latest" class="history-more latest" type="button" data-text="latest" hidden>Jump to latest ↓</button>
@@ -156,6 +157,13 @@
       </form>
     </div>
   </main>
+  <div id="side-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-valuemin="25" aria-valuemax="65" aria-valuenow="42" data-label="side.resize" hidden></div>
+  <aside id="side-chat" aria-labelledby="side-title" hidden>
+    <header class="side-header"><div><h2 id="side-title"></h2><button id="side-parent" type="button"></button></div><div class="side-header-actions"><button id="side-new" type="button"></button><button id="side-close" class="icon-button" type="button">×</button></div></header>
+    <p id="side-source"></p>
+    <div id="side-transcript" tabindex="0" data-label="side.messages"></div>
+    <form id="side-form"><div id="side-quotes" hidden></div><label class="sr-only" for="side-prompt" data-text="side.prompt"></label><textarea id="side-prompt" rows="1" maxlength="64000"></textarea><div class="side-toolbar"><span data-text="side.independent"></span><div><button id="side-stop" type="button" hidden></button><button id="side-send" type="submit" class="icon-button" data-label="send"><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div></div></form>
+  </aside>
 </div>
 <div id="shortcut-hints" class="shortcut-hints-panel" role="region" data-label="switchConversation" hidden></div>
 <dialog id="account-dialog" aria-labelledby="account-dialog-title"><div class="account-shell"><nav class="account-nav" data-label="settingsNavigation"><span class="account-nav-brand">lazyfish<span>.</span></span><button type="button" data-account-tab="account" data-text="account">Account</button><button type="button" data-account-tab="usage" data-text="usage">Weekly usage</button><button type="button" data-account-tab="settings" data-text="settings">Settings</button><button type="button" data-account-tab="dataManagement" data-text="dataManagement">Data management</button><button type="button" data-account-tab="skills" data-text="skills">Skills</button><button type="button" data-account-tab="connections" data-text="connections">Tools and connections</button><button type="button" data-account-tab="diagnostics" data-text="diagnostics">Installation checks</button><button type="button" data-account-tab="installation" data-text="installation">Installation</button></nav><section class="account-main"><header class="account-toolbar"><h2 id="account-dialog-title"></h2><div><button id="account-reload" class="icon-button" type="button" data-label="refresh"><svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg></button><button id="account-close" class="icon-button" type="button" data-label="close">×</button></div></header><div class="account-content"><section id="native-page" hidden aria-live="polite"></section>

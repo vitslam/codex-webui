@@ -92,10 +92,12 @@ class QuoteStorageTests(IsolatedTest):
         skills = [{'name': 'fixture', 'path': str(self.workspace/'SKILL.md')}]
         saved, _ = store.instruction(job['id'], uuid.uuid4().hex, 'Keep this instruction', skills)
         with closing(sqlite3.connect(path)) as db, db:
+            db.execute('DROP INDEX current_side_chat')
+            for column in ('side_snapshot','side_retired','side_parent_id'):db.execute('ALTER TABLE conversations DROP COLUMN '+column)
             db.execute('ALTER TABLE instructions DROP COLUMN quotes')
             db.execute('PRAGMA user_version=8')
         with closing(open_store(path)) as db:
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 9)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 10)
         restored = Store(path).job(job['id'])['instructions'][0]
         self.assertTrue(all(restored[key] == value for key, value in saved.items()))
         self.assertEqual(restored['quotes'], [])

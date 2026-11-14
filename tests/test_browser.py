@@ -14,6 +14,17 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_independent_side_chat(self):
+        store=Store(self.settings.data_dir/'lazyfish.db');ids=[]
+        for title in ('Side Alpha','Side Beta'):
+            chat=store.create_conversation(str(self.workspace),title);ids.append(chat['id'])
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question about the project',None,None)
+            store.item(job['id'],'reply','assistant','Working directories define where a task starts. File access is controlled by sandbox permissions and approvals.','completed');store.finish(job['id'],'completed')
+        fixture=self.root/'side-chat.json';fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,main=ids[0],other=ids[1],output=os.environ.get('LAZYFISH_BROWSER_OUTPUT',str(self.root)))))
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('side_chat_browser.cjs'))],env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=150)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('side chat browser checks passed',result.stdout)
+
     def test_selected_passages(self):
         chats=[]
         for title in ('Selection Alpha', 'Selection Beta'):

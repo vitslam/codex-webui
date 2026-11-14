@@ -144,7 +144,7 @@ it when intended. Native capabilities and OS permissions still apply.
 
 Existing conversations retain their workspace when the global default changes;
 the directory dialog can update it while idle. The data directory includes
-`lazyfish.db` (schema 9), attachments, replayable events and owned execution journals.
+`lazyfish.db` (schema 10), attachments, replayable events and owned execution journals.
 Schema 5 → 6 adds typed outputs/reports, item details, pin order, supplementary instructions, native questions and edit audit records; history/native IDs remain unchanged.
 Do not edit/remove running task rows, journals or lease files to unblock a session.
 

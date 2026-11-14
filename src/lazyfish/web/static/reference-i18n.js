@@ -963,3 +963,21 @@ window.LazyfishReferenceI18n = {
   "invalid_quotes": "Choose up to 8 passages, with at most 8,000 characters each and 24,000 characters in total."
 }
 };
+
+Object.assign(window.LazyfishReferenceI18n.en,{
+  "side.title": "Side chat",
+  "side.ask": "Ask in side chat",
+  "side.addToMain": "Add to main chat",
+  "side.prompt": "Ask about this passage",
+  "side.close": "Close side chat",
+  "side.new": "New side chat",
+  "side.resize": "Resize side chat",
+  "side.messages": "Side chat messages",
+  "side.snapshot": "Uses a saved snapshot of the parent chat. New parent messages are not added automatically.",
+  "side.truncated": "Uses a saved snapshot of recent parent messages; earlier or long content was truncated.",
+  "side.loading": "Preparing side chat\u2026",
+  "side.empty": "Ask a focused question without interrupting the main chat.",
+  "side.activity": "Execution details",
+  "side.sendFailed": "Message not sent. Your question and references were kept.",
+  "side.independent": "Independent discussion"
+});

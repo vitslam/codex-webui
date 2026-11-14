@@ -55,15 +55,17 @@ const activeJob = () => conversation?.jobs.find(active) || (conversation?.active
 
 const experience=LazyfishExperience({node,icon,t,api,markdown,copyButton,imageNode:features.nativeImageNode,getConversation:()=>conversation,getBusy:()=>sending||Boolean(activeJob()),showReasoning:()=>preferences.settings().showReasoning===true,onEdit:editJob,onFork:forkJob,onImplement:implementPlan,report,duration,onEditStart:()=>dock.reset(),onUserContentToggle:()=>scroll.pauseFollowing()});
 const dock=window.LazyfishUI.composerDock({document,onCollapse:()=>scroll.remember(),onExpand:resizePrompt,onWake:()=>$('#prompt').focus(),onBottom:()=>scroll.bottom(),isFollowing:scroll.following});dock.bind();
-const diagnostics=LazyfishDiagnostics({node,icon,t,api,selectConversation:loadConversation,connected:()=>syncConnected});
+const diagnostics=LazyfishDiagnostics({node,icon,t,api,selectConversation:async id=>{const chat=await api('/api/conversations/'+id);if(chat.side_parent_id){await loadConversation(chat.side_parent_id);sideChat.open();}else await loadConversation(id);},connected:()=>syncConnected});
 const pinOrder=window.LazyfishUI.sidebarOrder({document,onStart:()=>shortcuts.clear(),onReorder:async ids=>{await api('/api/conversations/reorder',{ids});},onEnd:()=>refreshList().catch(report),report});pinOrder.bind();
 
-const textSelection=LazyfishTextSelection({node,t,getContext:()=>status&&!initializing?{id:conversation?.id||'new',epoch:generation}:null,
-  onAdd:quote=>{if(!features.addQuote(quote))return false;dock.reset(false);$('#prompt').focus({preventScroll:true});resizePrompt();return true;}});
+const mainQuote=quote=>{if(!features.addQuote(quote))return false;dock.reset(false);$('#prompt').focus({preventScroll:true});resizePrompt();return true;};
+const sideChat=LazyfishSideChat({node,icon,t,api,markdown,copyButton,getMain:()=>status&&!initializing&&conversation&&!conversation.side_parent_id?{id:conversation.id,title:conversation.title}:null,onMainQuote:mainQuote});
+const textSelection=LazyfishTextSelection({node,t,getContext:source=>source?.closest('#side-chat')?sideChat.selectionContext():status&&!initializing?{id:conversation?.id||'new',epoch:generation}:null,
+  onAdd:(quote,context)=>context.side?sideChat.addToMain(quote):mainQuote(quote),onSide:quote=>sideChat.open(quote)});
 
 function closeStream() { if (stream) stream.close(); stream = null; }
 function unauthenticated() {
-  textSelection.hide();
+  textSelection.hide();sideChat.clear();
   restorationFailed=false;
   authenticationEpoch++;
   scroll.suspend(); shortcuts.clear(); ++generation; closeStream(); status = null; conversation = null; conversations = []; views.clear(); savedViews.clear(); drafts.clear(); retry = null;
@@ -200,7 +202,7 @@ function render() {
     button.setAttribute("aria-label",button.title);
   });
   document.querySelectorAll(".branch").forEach((button)=>{button.title=`${t("branch")} · ${t("branchHelp")}`;button.setAttribute("aria-label",t("branch"));});
-  panels.render();features.render();preferences.render();archives.render();
+  panels.render();features.render();preferences.render();archives.render();sideChat.update();
   renderControls();renderPending();
 }
 function renderDiagnostics() {
