@@ -58,6 +58,23 @@ class SideChatTests(ServiceCase):
         store.archive(pid);self.assertEqual(store.archived_page()['counts'],{str(self.workspace):1});store.restore(pid)
         self.assertEqual(self.side(pid)['id'],sid)
 
+    def test_long_snapshot_stream_finishes_and_preserves_all_context(self):
+        store,parent,original=self.seed()
+        context='Long reference paragraph. '*200
+        store.item(original['id'],'long-context','assistant',context,'completed')
+        sid=self.side(parent['id'])['id']
+        job=self.call('/api/conversations/'+sid+'/turns',dict(text='Use this reference',client_request_id=uuid.uuid4().hex),202)
+        done=self.finish(job)
+        self.assertEqual(done['status'],'completed')
+        answer=''.join(item['text'] for item in done['items'] if item['kind']=='assistant')
+        self.assertIn(context,answer)
+        code,_,data=self.http('/api/jobs/'+job['id']+'/events',headers={'Authorization':'Bearer '+self.settings.token})
+        self.assertEqual(code,200)
+        events=[json.loads(line[6:]) for line in data.decode().splitlines() if line.startswith('data: ')]
+        deltas=[event['text'] for event in events if event.get('type')=='delta']
+        self.assertGreater(len(deltas),1)
+        self.assertEqual(''.join(deltas),answer)
+
     def test_fresh_is_idempotent_nested_side_chats_are_rejected(self):
         store,parent,_=self.seed();pid=parent['id'];first=self.side(pid)
         payload=dict(client_request_id=uuid.uuid4().hex,fresh=True);route='/api/conversations/'+pid+'/side-chat'
