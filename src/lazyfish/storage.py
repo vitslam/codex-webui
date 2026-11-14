@@ -255,7 +255,7 @@ class Store:
             if current and not fresh:return self.history(current['id'])
             if not create:return None
             if current:
-                if db.execute("SELECT 1 FROM jobs WHERE conversation_id=? AND status IN ('queued','running','cancelling')",(current['id'],)).fetchone():raise StoreError('conversation_busy')
+                # This marker selects the default side chat; older threads remain usable.
                 db.execute('UPDATE conversations SET side_retired=1 WHERE id=?',(current['id'],))
             identifier,stamp=uuid.uuid4().hex,now()
             snapshot=capture(db,parent,stamp)

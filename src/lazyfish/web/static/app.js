@@ -46,7 +46,7 @@ const t = (key,values={}) => {
 const panels = LazyfishPanels({node,icon,t,api,getStatus:()=>status,getConversation:()=>conversation,getConversations:()=>conversations,
   selectConversation:(id)=>loadConversation(id),onModel:renderModelPreview,
   refreshStatus:()=>refreshStatus(true).catch(report),report,closeMenu});
-const preferences=LazyfishPreferences({node,t,panels,shortcuts,api,getStatus:()=>status,onDefaultWorkspace:applyDefaultWorkspace,getConversation:()=>conversation,onChange:()=>{features.render();renderControls();},onDisplayChange:()=>conversation?.jobs.forEach(renderJob),onReset:()=>{language=navigator.language.startsWith("zh")?"zh":"en";appearance.set("system");render();}});
+const preferences=LazyfishPreferences({node,t,panels,shortcuts,api,getStatus:()=>status,onDefaultWorkspace:applyDefaultWorkspace,getConversation:()=>conversation,onChange:()=>{features.render();renderControls();},onDisplayChange:()=>{conversation?.jobs.forEach(renderJob);sideChat.update();},onReset:()=>{language=navigator.language.startsWith("zh")?"zh":"en";appearance.set("system");render();}});
 const features = LazyfishFeatures({node,icon,t,api,getStatus:()=>status,getConversation:()=>conversation,panels,report,preferences,refreshStatus,onWorkspaceChange:()=>{if(status)refreshList().catch(report);},getBusy:()=>sending||Boolean(activeJob()),onCompact:()=>compactContext().catch(report),onChange:()=>{resizePrompt();renderControls();}});
 const sidebarProjects=LazyfishSidebarProjects({node,icon,t,api,row:conversationRow,getConversation:()=>conversation,redraw:()=>{listSignature="";renderList();}});
 const archives=LazyfishArchives({node,icon,t,api,onRestore:()=>refreshList()});
@@ -59,7 +59,7 @@ const diagnostics=LazyfishDiagnostics({node,icon,t,api,selectConversation:async 
 const pinOrder=window.LazyfishUI.sidebarOrder({document,onStart:()=>shortcuts.clear(),onReorder:async ids=>{await api('/api/conversations/reorder',{ids});},onEnd:()=>refreshList().catch(report),report});pinOrder.bind();
 
 const mainQuote=quote=>{if(!features.addQuote(quote))return false;dock.reset(false);$('#prompt').focus({preventScroll:true});resizePrompt();return true;};
-const sideChat=LazyfishSideChat({node,icon,t,api,markdown,copyButton,getMain:()=>status&&!initializing&&conversation&&!conversation.side_parent_id?{id:conversation.id,title:conversation.title}:null,onMainQuote:mainQuote,getStatus:()=>status,preferences,imageNode:features.imageNode,prepare:flushChoices});
+const sideChat=LazyfishSideChat({node,icon,t,api,markdown,copyButton,getMain:()=>status&&!initializing&&conversation&&!conversation.side_parent_id?{id:conversation.id,title:conversation.title}:null,onMainQuote:mainQuote,getStatus:()=>status,preferences,imageNode:features.imageNode,prepare:flushChoices,replyLabel,replyMeta,replyStatus,duration,executionDetails:experience.executionDetails});
 const textSelection=LazyfishTextSelection({node,t,getContext:source=>source?.closest('#side-chat')?sideChat.selectionContext():status&&!initializing?{id:conversation?.id||'new',epoch:generation}:null,
   onAdd:(quote,context)=>context.side?sideChat.addToMain(quote):mainQuote(quote),onSide:quote=>sideChat.open(quote)});
 const sidebarResize=LazyfishSidebarResize({onResize:()=>{sideChat.reflow();resizePrompt();}});
@@ -428,6 +428,26 @@ function renderControls() {
     $("#notice").append(document.createTextNode(" "),link);
   }
 }
+function replyModel(job) {
+  return [job.model||t('nativeDefaultShort'),job.effort?t('effort.'+job.effort):'',job.inputs?.fast_mode?t('fastMode'):''].filter(Boolean).join(' · ');
+}
+function replyMeta(job) {
+  const meta=node('div','meta reply-footer');
+  meta.append(copyButton(()=>job.items.filter(item=>item.kind==='assistant').map(item=>item.text).join('\n\n')),node('span','reply-separator','·'),node('span','reply-model',replyModel(job)));
+  experience.appendTokenUsage(meta,job.report?.token_usage);
+  meta.hidden=!job.items.some(item=>item.kind==='assistant'&&item.text);
+  return meta;
+}
+function replyStatus(job,host=node('div','message-status')) {
+  if(!host.children.length)host.append(node('span','task-status status'),node('span','completed-at'));
+  const state=host.querySelector('.task-status');state.textContent=t(job.status);state.dataset.state=job.status;
+  host.querySelector('.completed-at').textContent=job.finished_at?new Date(job.finished_at).toLocaleString(language==='zh'?'zh-CN':'en-US'):'';
+  return host;
+}
+function replyLabel() {
+  const label=node('div','assistant-label message-role'),avatar=node('span','assistant-avatar');
+  avatar.append(icon('terminal'));label.append(avatar,node('span','','Codex'));return label;
+}
 function renderJob(job) {
   if (!conversation?.jobs.some((entry)=>entry.id === job.id)) return;
   scroll.mutate(()=>renderJobContent(job));
@@ -438,12 +458,9 @@ function renderJobContent(job) {
   let view = views.get(job.id);
   if (!view) {
     const article = node("article","turn message assistant"); article.dataset.job = job.id;
-    const label = node("div","assistant-label message-role"), avatar=node("span","assistant-avatar"); avatar.append(icon("terminal"));
-    label.append(avatar,node("span","","Codex"));
-    const elapsed=node("div","elapsed"), footer=node("div","assistant-footer"), meta=node("div","meta reply-footer"), taskStatus=node("div","message-status");
-    const copy=copyButton(()=>job.items.filter((item)=>item.kind === "assistant").map((item)=>item.text).join("\n\n"));
-    meta.append(copy,node("span","reply-separator","·"),node("span","reply-model"));
-    taskStatus.append(node("span","task-status status"),node("span","completed-at")); footer.append(meta,taskStatus);
+    const label = replyLabel();
+    const elapsed=node("div","elapsed"), footer=node("div","assistant-footer"), meta=replyMeta(job), taskStatus=replyStatus(job);
+    footer.append(meta,taskStatus);
     const items = node("div","assistant-items"), approvals = node("div","approvals"), error = node("p","job-error");
     const user = node("div","user-turn message user"), bubble = experience.userContent(user,{id:job.id,content:job.prompt,quotes:job.inputs?.quotes});
     bubble.dataset.anchor = "user";
@@ -458,10 +475,8 @@ function renderJobContent(job) {
   if (!active(job) && !job.finished_at) job.observedFinishedAt=job.observedFinishedAt || Date.now();
   const end=active(job) ? Date.now() : (job.finished_at ? Date.parse(job.finished_at) : job.observedFinishedAt);
   view.elapsed.textContent=`${t(active(job) ? "elapsed" : "duration")} ${duration((end-Date.parse(job.created_at))/1000)}`;
-  view.footer.querySelector(".task-status").textContent=t(job.status);
-  view.footer.querySelector(".task-status").dataset.state=job.status;
-  view.footer.querySelector(".completed-at").textContent=job.finished_at ? new Date(job.finished_at).toLocaleString(language === "zh" ? "zh-CN" : "en-US") : "";
-  view.footer.querySelector(".reply-model").textContent=[job.model || t("nativeDefaultShort"),job.effort ? t(`effort.${job.effort}`) : "",job.inputs?.fast_mode ? t("fastMode") : ""].filter(Boolean).join(" · ");
+  replyStatus(job,view.footer.querySelector('.message-status'));
+  view.footer.querySelector(".reply-model").textContent=replyModel(job);
   view.footer.querySelector(".reply-footer").hidden=!job.items.some((item)=>item.kind === "assistant" && item.text);
   experience.render(view,job);
   view.approvals.replaceChildren();

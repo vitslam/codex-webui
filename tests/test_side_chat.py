@@ -78,12 +78,33 @@ class SideChatTests(ServiceCase):
             time.sleep(.03)
         side=self.call('/api/conversations/'+sid+'/turns',dict(text='An independent question',client_request_id=uuid.uuid4().hex),202)
         self.assertEqual(side['status'],'queued')
-        self.call('/api/conversations/'+pid+'/side-chat',dict(client_request_id=uuid.uuid4().hex,fresh=True),409)
+        fresh=self.call('/api/conversations/'+pid+'/side-chat',dict(client_request_id=uuid.uuid4().hex,fresh=True))['conversation']
+        self.assertNotEqual(fresh['id'],sid)
+        self.assertEqual(self.call('/api/jobs/'+side['id'])['status'],'queued')
         self.call('/api/conversations/'+pid+'/archive',{},409)
         self.call('/api/jobs/'+side['id']+'/cancel',{})
         self.assertEqual(self.finish(side)['status'],'cancelled')
         self.assertEqual(self.call('/api/jobs/'+running['id'])['status'],'running')
         self.call('/api/jobs/'+running['id']+'/cancel',{});self.finish(running)
+
+
+    def test_multiple_side_threads_keep_independent_native_context(self):
+        store,parent,_=self.seed();pid=parent['id'];first=self.side(pid)['id']
+        self.finish(self.call('/api/conversations/'+first+'/turns',dict(text='First side question',client_request_id=uuid.uuid4().hex),202))
+        busy=self.call('/api/conversations/'+first+'/turns',dict(text='[slow]',client_request_id=uuid.uuid4().hex),202)
+        deadline=time.monotonic()+8
+        while time.monotonic()<deadline:
+            if self.call('/api/jobs/'+busy['id'])['status']=='running':break
+            time.sleep(.03)
+        second=self.side(pid,fresh=True)['id']
+        self.finish(self.call('/api/conversations/'+second+'/turns',dict(text='Second side question',client_request_id=uuid.uuid4().hex),202))
+        self.assertEqual(self.call('/api/jobs/'+busy['id'])['status'],'running')
+        self.assertNotEqual(store.conversation(first)['native_thread_id'],store.conversation(second)['native_thread_id'])
+        self.assertEqual(store.history(first)['jobs'][0]['prompt'],'First side question')
+        self.assertEqual(store.history(second)['jobs'][0]['prompt'],'Second side question')
+        self.assertEqual(self.call('/api/conversations/'+pid+'/side-chat')['conversation']['id'],second)
+        self.assertEqual([c['id'] for c in store.conversations()],[pid])
+        self.call('/api/jobs/'+busy['id']+'/cancel',{});self.assertEqual(self.finish(busy)['status'],'cancelled')
 
 
 class SideStorageTests(IsolatedTest):

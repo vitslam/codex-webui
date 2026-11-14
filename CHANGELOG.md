@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add multiple side-chat tabs per parent, with independent drafts and run settings, remembered browser tabs, keyboard switching and non-cancelling tab closure. Creating a new side chat no longer blocks on another side task. Share main-chat reply headers, timing disclosures, model metadata, token usage and completion status; omit empty activity and honor reasoning visibility.
+
 - Reuse the main composer in side chats, including independent model, reasoning effort, fast mode, permissions, images, skills, working directory, context compaction and keyboard preferences; preserve separate drafts and retry inputs.
 
 - Make the conversation sidebar resizable with a remembered browser width, keyboard controls, reset gesture and coordinated side-chat limits.

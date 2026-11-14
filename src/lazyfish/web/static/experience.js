@@ -162,5 +162,5 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
   for(const id of ['#question-close','#question-later'])$(id).addEventListener('click',dismiss);
   $('#question-dialog').addEventListener('cancel',event=>{event.preventDefault();dismiss();});
   $('#question-dialog').addEventListener('close',()=>{if(!$('#question-dialog').open){saveQuestionDraft();clearFields();}});
-  return {render,userContent,userActions,close:()=>{dismiss();questionDrafts.clear();quoteUI.clear();}};
+  return {render,userContent,userActions,appendTokenUsage:users.appendTokenUsage,executionDetails:steps.executionDetails,close:()=>{dismiss();questionDrafts.clear();quoteUI.clear();}};
 };

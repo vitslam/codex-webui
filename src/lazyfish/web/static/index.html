@@ -161,10 +161,11 @@
     </div>
   </main>
   <div id="side-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-valuemin="25" aria-valuemax="65" aria-valuenow="42" data-label="side.resize" hidden></div>
-  <aside id="side-chat" aria-labelledby="side-title" hidden>
-    <header class="side-header"><div><h2 id="side-title"></h2><button id="side-parent" type="button"></button></div><div class="side-header-actions"><button id="side-new" type="button"></button><button id="side-close" class="icon-button" type="button">×</button></div></header>
-    <p id="side-source"></p>
-    <div id="side-transcript" tabindex="0" data-label="side.messages"></div>
+  <aside id="side-chat" aria-labelledby="side-title" aria-describedby="side-source" hidden>
+    <header class="side-tabbar"><h2 id="side-title" class="sr-only"></h2><div id="side-tabs" role="tablist"></div><button id="side-new" class="icon-button attach-button" type="button"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button><button id="side-close" class="icon-button" type="button"><svg class="icon" aria-hidden="true"><use href="#i-panel"/></svg></button></header>
+    <button id="side-parent" type="button" hidden></button>
+    <p id="side-source" class="sr-only"></p>
+    <div id="side-transcript" role="tabpanel" tabindex="0" data-label="side.messages"></div>
     <div class="composer-dock side-composer-dock"><form id="side-form" class="composer"></form></div>
   </aside>
 </div>
