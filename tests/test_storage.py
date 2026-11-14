@@ -14,7 +14,7 @@ class StorageTests(IsolatedTest):
         record_start(path, "new", "now")
         record_stop(path, "new", "later")
         with closing(open_store(path)) as connection:
-            self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], 8)
+            self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], 9)
             rows = [tuple(row) for row in connection.execute("SELECT id, outcome FROM service_runs ORDER BY id")]
         self.assertEqual(rows, [("new", "stopped"), ("old", "running")])
         self.assert_private(path, 0o600)
@@ -35,7 +35,7 @@ class StorageTests(IsolatedTest):
         store = Store(path)
         conversation = store.create_conversation(str(self.workspace))
         with closing(open_store(path)) as connection:
-            self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0],8)
+            self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0],9)
             self.assertEqual(connection.execute("SELECT id FROM service_runs").fetchone()[0],"original")
             self.assertEqual(connection.execute("SELECT id FROM conversations").fetchone()[0],conversation["id"])
 
@@ -57,7 +57,7 @@ class StorageTests(IsolatedTest):
         self.assertEqual(store.conversation("saved")["pinned"],0)
         with closing(open_store(path)) as connection:
             self.assertEqual(connection.execute("SELECT id FROM jobs").fetchone()[0],"job-kept")
-            self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0],8)
+            self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0],9)
 
     def test_version_five_migration_preserves_history_inputs_context_and_events(self):
         path=self.settings.data_dir/'version-five.db'

@@ -26,7 +26,7 @@ const {chromium}=require(process.env.LAZYFISH_BROWSER_MODULE),f=JSON.parse(fs.re
     await prompt.click();await page.screenshot({path:f.output+'/composer-'+theme+'-'+size.width+'.png'});
    }
   }
-  await settings();await page.locator('#language').selectOption('zh');await page.locator('#account-close').click();await page.evaluate(()=>document.body.classList.add('sidebar-hidden'));assert.equal(await prompt.getAttribute('placeholder'),'与 Codex 协作');assert.equal(await page.locator('.composer-hint').count(),0);
+  await settings();await page.locator('#language').selectOption('zh');await page.locator('#account-close').click();await page.evaluate(()=>document.body.classList.add('sidebar-hidden'));assert.equal(await prompt.getAttribute('placeholder'),'\u4e0e Codex \u534f\u4f5c');assert.equal(await page.locator('.composer-hint').count(),0);
   // The shared image dialog keeps the reference footprint and both dismissal paths.
   const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+kxZkAAAAASUVORK5CYII=','base64');
   await page.locator('#image-input').setInputFiles({name:'tiny.png',mimeType:'image/png',buffer:png});const image=page.locator('#image-previews img');await image.waitFor();await image.click();const viewer=page.locator('.image-viewer');await viewer.waitFor();assert.ok((await viewer.boundingBox()).width<390-32+1);assert.ok((await viewer.boundingBox()).height<844-32+1);await page.mouse.click(4,4);await viewer.waitFor({state:'detached'});await image.click();await page.keyboard.press('Escape');await viewer.waitFor({state:'detached'});

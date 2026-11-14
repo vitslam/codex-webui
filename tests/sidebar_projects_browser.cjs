@@ -16,7 +16,7 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
     const order=await page.locator('#conversation-list').evaluate(el=>[...el.children].map(e=>e.id));assert.ok(order.indexOf('pinned-conversations')<order.indexOf('sidebar-projects'));assert.ok(order.indexOf('sidebar-projects')<order.indexOf('sidebar-recent'));
     let fail=true;
     await page.route('**/api/conversations?*',route=>{if(fail&&new URL(route.request().url()).searchParams.get('workspace')===f.paths[1]){fail=false;return route.fulfill({status:503,contentType:'application/json',body:'{"error":"storage_unavailable"}'});}return route.continue();});
-    await toggle(f.paths[1]).click();await group(f.paths[1]).getByText('加载对话失败。 重试',{exact:true}).click();await group(f.paths[1]).locator('.conversation-row').first().waitFor();await toggle(f.paths[1]).click();await page.unrouteAll({behavior:'wait'});
+    await toggle(f.paths[1]).click();await group(f.paths[1]).getByText('\u52a0\u8f7d\u5bf9\u8bdd\u5931\u8d25\u3002 \u91cd\u8bd5',{exact:true}).click();await group(f.paths[1]).locator('.conversation-row').first().waitFor();await toggle(f.paths[1]).click();await page.unrouteAll({behavior:'wait'});
     assert.equal(await page.locator('.sidebar-project').count(),3);assert.equal(await page.locator('.sidebar-project-path').count(),2,'Same folder names expose their different full paths');
     assert.equal(await page.evaluate(id=>conversations.some(c=>c.id===id),f.chats.at(-1)),false,'Old project is beyond the recent page');
     await expanded(f.paths[2]);await row(f.paths[2],f.chats.at(-1)).locator('.conversation').click();await page.waitForFunction(id=>conversation?.id===id,f.chats.at(-1));
@@ -25,6 +25,7 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
     // Rename and pin through the project view; archiving updates both membership and counts.
     await row(f.paths[0],f.chats[0]).locator('.conversation').dblclick();await row(f.paths[0],f.chats[0]).locator('input').fill('Renamed project chat');await row(f.paths[0],f.chats[0]).locator('input').press('Enter');await row(f.paths[0],f.chats[0]).getByText('Renamed project chat',{exact:true}).waitFor();
     await row(f.paths[0],f.chats[0]).hover();await row(f.paths[0],f.chats[0]).locator('.conversation-pin').click();await page.locator('#pinned-conversations .conversation-row[data-id="'+f.chats[0]+'"]').waitFor();
+    await page.waitForFunction(({path,id})=>[...document.querySelectorAll('.sidebar-project')].find(el=>el.dataset.workspace===path)?.querySelector('.conversation-row[data-id="'+id+'"] .conversation-pin')?.getAttribute('aria-pressed')==='true',{path:f.paths[0],id:f.chats[0]});
     const pinRows=page.locator('#pinned-conversations .conversation-row'),before=await pinRows.evaluateAll(rows=>rows.map(r=>r.dataset.id));
     const first=await pinRows.first().locator('.conversation').boundingBox(),second=await pinRows.nth(1).locator('.conversation').boundingBox();
     await page.mouse.move(first.x+40,first.y+first.height/2);await page.mouse.down();await page.mouse.move(first.x+40,second.y+second.height*.8,{steps:12});await page.mouse.up();

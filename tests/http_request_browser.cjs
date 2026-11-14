@@ -26,13 +26,13 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
     await page.locator('.message-edit-send').click();assert.match((await edited).postDataJSON().client_request_id,/^[0-9a-f-]{36}$/);
     await page.waitForFunction(()=>document.querySelector('.task-status')?.dataset.state==='completed'&&!document.querySelector('.message-editor'));
     await page.evaluate(id=>loadConversation(id),f.missing);await skills();
-    await page.getByText('这个对话的工作目录已不存在，请从输入框的工作目录选择器中选择现有目录。',{exact:true}).waitFor();
-    assert.equal(await page.getByText('当前 CLI 版本、账户或连接无法提供此数据，可刷新重试。',{exact:true}).count(),0);
-    await page.locator('#native-page').getByRole('button',{name:'工作目录',exact:true}).click();
+    await page.getByText('\u8fd9\u4e2a\u5bf9\u8bdd\u7684\u5de5\u4f5c\u76ee\u5f55\u5df2\u4e0d\u5b58\u5728\uff0c\u8bf7\u4ece\u8f93\u5165\u6846\u7684\u5de5\u4f5c\u76ee\u5f55\u9009\u62e9\u5668\u4e2d\u9009\u62e9\u73b0\u6709\u76ee\u5f55\u3002',{exact:true}).waitFor();
+    assert.equal(await page.getByText('\u5f53\u524d CLI \u7248\u672c\u3001\u8d26\u6237\u6216\u8fde\u63a5\u65e0\u6cd5\u63d0\u4f9b\u6b64\u6570\u636e\uff0c\u53ef\u5237\u65b0\u91cd\u8bd5\u3002',{exact:true}).count(),0);
+    await page.locator('#native-page').getByRole('button',{name:'\u5de5\u4f5c\u76ee\u5f55',exact:true}).click();
     await page.locator('#workdir-dialog').waitFor({state:'visible'});
     await page.locator('#workdir-input').fill(f.workspace);await page.locator('#workdir-save').click();
     await page.locator('#workdir-dialog').waitFor({state:'hidden'});await skills();
-    await page.getByText('此工作目录下暂无技能。',{exact:true}).waitFor();
+    await page.getByText('\u6b64\u5de5\u4f5c\u76ee\u5f55\u4e0b\u6682\u65e0\u6280\u80fd\u3002',{exact:true}).waitFor();
     assert.deepEqual(errors,[]);console.log('HTTP request IDs and workspace recovery passed');
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

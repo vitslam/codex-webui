@@ -21,6 +21,7 @@ from ..config import Settings
 from ..network import IPv4HTTPServer, local_ipv4s
 from ..codex import diagnose
 from ..storage import ACTIVE, StoreError
+from ..quotes import validate as validate_quotes
 from .assets import assets
 
 
@@ -449,10 +450,11 @@ class Handler(BaseHTTPRequestHandler):
         if match := re.fullmatch(r'/api/jobs/([a-f0-9]{32})/(instructions|questions)',self.path):
             if match[2]=='questions':return self._send(200,manager.answer(match[1],body.get('id'),body.get('answers')))
             key,text=body.get('client_request_id'),body.get('text')
-            if not isinstance(key,str) or not re.fullmatch(r'[a-zA-Z0-9_-]{16,80}',key) or not isinstance(text,str) or not text.strip() or len(text)>64000:return self._send(400,{'error':'invalid_text'})
+            quotes=validate_quotes(body.get('quotes',[]))
+            if not isinstance(key,str) or not re.fullmatch(r'[a-zA-Z0-9_-]{16,80}',key) or not isinstance(text,str) or (not text.strip() and not quotes) or len(text)>64000:return self._send(400,{'error':'invalid_text'})
             skills=body.get('skills',[])
             if not isinstance(skills,list) or len(skills)>12 or any(not isinstance(s,dict) or not isinstance(s.get('name'),str) or not isinstance(s.get('path'),str) for s in skills):raise StoreError('invalid_inputs')
-            return self._send(202,manager.steer(match[1],key,text,skills))
+            return self._send(202,manager.steer(match[1],key,text,skills,quotes))
         if match := re.fullmatch(r'/api/conversations/([a-f0-9]{32})/edit',self.path):
             before,key,text=body.get('before_job_id'),body.get('client_request_id'),body.get('text')
             if not isinstance(before,str) or not re.fullmatch(r'[a-f0-9]{32}',before) or not isinstance(key,str) or not re.fullmatch(r'[a-zA-Z0-9_-]{16,80}',key) or not isinstance(text,str) or not text.strip() or len(text)>64000:return self._send(400,{'error':'invalid_text'})
@@ -514,9 +516,11 @@ class Handler(BaseHTTPRequestHandler):
             effort = body.get("effort",saved.get('effort',self.server.settings.effort)) or None
             body={**{k:v for k,v in saved.items() if v is not None},**body}
             images, skills = body.get("images",[]),body.get("skills",[])
+            quotes=validate_quotes(body.get('quotes',[]))
             if not isinstance(images,list) or len(images)>8 or not all(isinstance(i,str) and re.fullmatch(r"[a-f0-9]{32}",i) for i in images) or not isinstance(skills,list) or len(skills)>12 or not all(isinstance(i,dict) and isinstance(i.get("name"),str) and isinstance(i.get("path"),str) for i in skills):
                 return self._send(400,{"error":"invalid_inputs"})
             inputs = {"images":[manager.store.attachment(i) for i in dict.fromkeys(images)],"skills":[{"name":s["name"],"path":s["path"]} for s in skills]}
+            if quotes:inputs['quotes']=quotes
             if "fast_mode" in body:
                 if type(body["fast_mode"]) is not bool: return self._send(400,{"error":"invalid_fast_mode"})
                 inputs["fast_mode"] = body["fast_mode"]
@@ -527,7 +531,7 @@ class Handler(BaseHTTPRequestHandler):
             if skills:
                 available = manager.capabilities.read("skills",self._cwd(match[1]))["skills"]
                 if any(not any(s["name"]==skill["name"] and s["path"]==skill["path"] and s.get("enabled") is not False for s in available) for skill in skills): raise StoreError("skill_unavailable")
-            if not isinstance(prompt,str) or (not prompt.strip() and not images and not skills) or len(prompt)>64000 or "\x00" in prompt:
+            if not isinstance(prompt,str) or (not prompt.strip() and not images and not skills and not quotes) or len(prompt)>64000 or "\x00" in prompt:
                 return self._send(400,{"error":"invalid_text"})
             if not isinstance(key,str) or not re.fullmatch(r"[a-zA-Z0-9_-]{16,80}",key):
                 return self._send(400,{"error":"invalid_request_key"})

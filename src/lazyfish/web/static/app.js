@@ -7,91 +7,12 @@ document.addEventListener("keydown", event => {
   if (!event.metaKey && !event.ctrlKey && !event.altKey &&
       ["Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", " "].includes(event.key)) setInputMethod("keyboard");
 }, true);
-const translations = {
-  en: {
-    eyebrow:"YOUR LOCAL CODEX", title:"Your machine. Your Codex.", intro:"Work with your local projects, from a browser.", signIn:"Connect to this installation",
-    tokenHelp:"Run lazyfish token on the server, then paste the Web token into this field. This is separate from your OpenAI credentials.",
-    token:"Web sign-in token", connect:"Connect", diagnostics:"Installation checks", refresh:"Refresh", logout:"Disconnect", sidebar:"Toggle conversations", close:"Close",
-    scope:"These are local CLI checks. Model access is verified when you send a message.", local:"Runs on your machine · No third-party analytics",
-    workspace:"Workspace", data_dir:"Data", version:"Lazyfish", codexVersion:"Codex CLI", codex:"CLI executable", authentication:"Stored authentication", app_server:"App-server command",
-    ready:"Checks passed", degraded:"Needs attention", ok:"OK", fail:"Check needed", unknown:"Unknown", newChat:"New chat", conversations:"Conversations", newTitle:"What would you like to do?",
-    emptyTitle:"A fresh conversation.", emptyHelp:"Write code, solve problems, or explore a new idea.", message:"Message", messages:"Conversation messages", prompt:"Collaborate with Codex",
-    modelOptions:"Model options", model:"Model", nativeDefault:"Native CLI default", effort:"Reasoning", send:"Send message", stop:"Stop",
-    running:"Running", cancelling:"Stopping", completed:"Completed", failed:"Failed", cancelled:"Cancelled", interrupted:"Interrupted", assistant:"Codex", commentary:"Update", reasoning:"Reasoning summary", command:"Run command", file:"File changes", tool:"Tool",
-    approvalCommand:"Approve this command?", approvalFile:"Approve these file changes?", accept:"Allow once", decline:"Decline", reconnecting:"Reconnecting…", elapsed:"Elapsed",
-    invalid_token:"Incorrect Web token for this Lazyfish instance. Retrieve it on this server and try again.",
-    invalid_origin_or_host:"The server rejected this page address. Check the reverse proxy Host and Origin configuration.",
-    try_later:"Too many unsuccessful sign-in attempts. Wait one minute and try again.",
-    sessionMissing:"The token was accepted, but the browser session could not be restored. Check this site's cookie settings.",
-    error:"Could not connect. Check the service and token, then try again.", expired:"Sign in to continue.", requestFailed:"Request failed. Your draft was kept; retry or refresh to check the saved conversation.",
-    recoveryBlocked:"An old execution could not be confirmed stopped. Sending is paused; see the recovery guide.", conversation_busy:"This conversation is already running. Refresh to view the current turn.",
-    capacity_reached:"The task queue is full. Wait for a task to finish.", service_stopping:"The service is shutting down.", approval_expired:"This approval is no longer pending.",
-    workspace_missing:"This conversation's working directory no longer exists. Choose an existing directory from the composer.", request_key_conflict:"This request ID was already used for a different message. Reload before sending.",
-    nativeError:"Codex could not complete this turn. Check the CLI login, network and model settings.", service_restarted:"The previous execution was stopped after a service restart. It was not automatically rerun.",
-    native_thread_busy:"The native conversation is still active. No new message was started.", output_limit_reached:"The output limit was reached; execution was stopped.",
-    recovery_blocked:"An old execution could not be confirmed stopped. See the recovery guide.",
-  },
-  zh: {
-    eyebrow:"你的本机 CODEX", title:"你的机器，你的 Codex。", intro:"在浏览器中与你的本机项目协作。", signIn:"连接当前服务",
-    tokenHelp:"在服务端运行 lazyfish token，将 Web 登录令牌粘贴到输入框。它与 OpenAI 账号凭据相互独立。",
-    token:"Web 登录令牌", connect:"连接", diagnostics:"环境检查", refresh:"刷新", logout:"退出", sidebar:"展开或收起对话列表", close:"关闭",
-    scope:"这里只检查本机 CLI 环境，模型是否可用会在发送消息时验证。", local:"运行于你的机器 · 无第三方统计",
-    workspace:"工作目录", data_dir:"数据目录", version:"Lazyfish", codexVersion:"Codex CLI", codex:"CLI 可执行文件", authentication:"已保存的登录状态", app_server:"App-server 命令",
-    ready:"检查通过", degraded:"需要检查", ok:"正常", fail:"待检查", unknown:"未知", newChat:"新对话", conversations:"对话", newTitle:"今天，想做点什么？",
-    emptyTitle:"从一个新想法开始。", emptyHelp:"写代码、解难题，或是一起探索新的想法。", message:"消息", messages:"对话消息", prompt:"与 Codex 协作",
-    modelOptions:"模型选项", model:"模型", nativeDefault:"沿用原生 CLI 默认值", effort:"推理强度", send:"发送消息", stop:"停止",
-    running:"运行中", cancelling:"正在停止", completed:"已完成", failed:"运行失败", cancelled:"已取消", interrupted:"已中断", assistant:"Codex", commentary:"进展", reasoning:"思考摘要", command:"运行命令", file:"修改文件", tool:"工具操作",
-    approvalCommand:"允许执行此命令？", approvalFile:"允许修改这些文件？", accept:"允许本次", decline:"拒绝", reconnecting:"正在重连…", elapsed:"已用时",
-    invalid_token:"此 Lazyfish 实例的 Web 令牌不正确，请在对应服务器获取令牌后重试。",
-    invalid_origin_or_host:"服务拒绝了当前页面地址，请检查反向代理的 Host 和 Origin 配置。",
-    try_later:"登录失败次数过多，请等待一分钟后重试。",
-    sessionMissing:"令牌验证已通过，但浏览器会话未能恢复，请检查本站 Cookie 设置。",
-    error:"连接失败，请检查服务和令牌后重试。", expired:"请重新登录后继续。", requestFailed:"请求失败，已保留草稿。可以重试，或刷新确认消息是否已保存。",
-    recoveryBlocked:"无法确认某个旧执行已停止，暂时禁止发送。请查看异常恢复说明。", conversation_busy:"这个对话已有任务在运行，请刷新查看当前回复。",
-    capacity_reached:"任务队列已满，请等待任务完成后再发送。", service_stopping:"服务正在退出。", approval_expired:"这条审批已不再等待处理。",
-    workspace_missing:"这个对话的工作目录已不存在，请从输入框的工作目录选择器中选择现有目录。", request_key_conflict:"此请求编号已经用于另一条消息，请刷新后再发送。",
-    nativeError:"Codex 未能完成本轮执行，请检查 CLI 登录、网络或模型配置。", service_restarted:"服务重启后已确认旧执行停止，本轮未自动重跑。",
-    native_thread_busy:"原生会话仍在执行，没有启动新消息。", output_limit_reached:"输出已达到上限，执行已停止。",
-    recovery_blocked:"无法确认旧执行已停止，请查看异常恢复说明。",
-  },
-};
-Object.assign(translations.en, {
-  invalid_fast_mode:"Choose a valid speed mode.",fastMode:"Fast mode",standardSpeed:"Standard speed",fastOn:"Fast mode: on",fastOff:"Fast mode: off","effort.none":"None","effort.minimal":"Minimal",defaultEffort:"Default effort",preferences:"Preferences",preferencesHelp:"Make this workspace your own.",keyboardShortcuts:"Keyboard shortcuts",settingsNavigation:"Settings navigation",installation:"Installation",installationDetails:"View installation details",aboutLazyfish:"About Lazyfish",nonAffiliation:"Lazyfish is an independently developed third-party project. It is not affiliated with, sponsored by, or endorsed by OpenAI. OpenAI, Codex, ChatGPT, and other referenced trademarks belong to their respective owners.",installationHelp:"The workspace and execution policy are configured for this installation.",permissions:"Permissions",permissionHelp:"This policy is set by the installation configuration.",chooseModel:"Choose model",chooseEffort:"Choose reasoning effort",resetEffort:"Reset reasoning effort",customModel:"Custom model ID",modelId:"Model ID",applyModel:"Use model",invalidModel:"Enter a valid model ID.",searchConversations:"Search conversations",searchByTitle:"Search conversation titles",searching:"Searching…",noConversations:"No matching conversations",searchLimit:"Showing the first 50 matches. Refine your search for more.",
-  "sandbox.workspace-write":"Workspace write", "sandbox.read-only":"Read only", "sandbox.danger-full-access":"Full access", "approval.on-request":"Ask when needed", "approval.never":"No approval prompts", "approval.untrusted":"Ask for untrusted commands",
-  welcomeBack:"Welcome back.",skipToComposer:"Skip to message",language:"Language",toggleTheme:"Toggle light / dark appearance",closeSidebar:"Close sidebar",executionPolicy:"Execution policy and installation checks",appearance:"Appearance",appearanceHelp:"Choose a palette, or follow your system.",duration:"Duration",nativeDefaultShort:"Codex defaults",
-  "theme.system":"System", "theme.light":"Light", "theme.dark":"Dark", "theme.warm":"Warm", "theme.warm-dark":"Warm dark", "theme.black":"Black", "theme.midnight":"Midnight", "theme.nord":"Nord", "theme.sepia":"Sepia",
-  "effort.low":"Low", "effort.medium":"Medium", "effort.high":"High", "effort.xhigh":"Extra high", "effort.max":"Max", "effort.ultra":"Ultra",
-  copy:"Copy",copied:"Copied",copyCode:"Copy code",scrollTable:"Scroll table horizontally",branch:"Branch to new chat",branchTitle:"Branch",branchedFrom:"Branched from an earlier conversation",branchHelp:"Keeps the messages before this one. Files in the workspace are shared.",
-  pinned:"Pinned",recent:"Recent",pin:"Pin",unpin:"Unpin",loadMore:"Load more",older:"Earlier messages",newer:"Newer messages",latest:"Jump to latest ↓",settings:"Settings",disabled:"Disabled",switchConversation:"Switch conversation",shortcutPrefix:"Conversation shortcut prefix",
-  shortcutHelp:"Hold the prefix, press 1–9 to select, then release the prefix to switch. Prefix + Tab returns to a previously opened chat; prefix + B toggles the sidebar. Browser or system shortcuts may take priority. Arrow keys keep their usual behavior.",
-  branch_history_unavailable:"The native history needed for this branch is unavailable.",invalid_cursor:"This history position is unavailable. Reload the conversation.",
-  unsupported_native_fork:"This branch needs a stable Codex CLI version 0.162.1 or newer. Upgrade the CLI before retrying.",
-});
-Object.assign(translations.zh, {
-  invalid_fast_mode:"请选择有效的速度模式。",fastMode:"快速模式",standardSpeed:"标准速度",fastOn:"快速模式：开启",fastOff:"快速模式：关闭","effort.none":"无","effort.minimal":"最低",defaultEffort:"默认强度",preferences:"偏好设置",preferencesHelp:"让工作空间更合你的习惯。",keyboardShortcuts:"快捷键",settingsNavigation:"设置导航",installation:"本机安装",installationDetails:"查看安装信息",aboutLazyfish:"关于 Lazyfish",nonAffiliation:"Lazyfish 是独立开发的第三方项目，与 OpenAI 无隶属、赞助或认可关系。OpenAI、Codex、ChatGPT 等名称及相关商标归各自权利人所有。",installationHelp:"工作目录和执行权限由当前安装的配置决定。",permissions:"权限模式",permissionHelp:"当前权限来自服务配置。",chooseModel:"选择模型",chooseEffort:"选择推理强度",resetEffort:"恢复默认推理强度",customModel:"自定义模型 ID",modelId:"模型 ID",applyModel:"使用此模型",invalidModel:"请输入有效的模型 ID。",searchConversations:"搜索对话",searchByTitle:"搜索对话名称",searching:"正在搜索…",noConversations:"没有找到匹配的对话",searchLimit:"显示前 50 条结果，可缩小搜索范围。",
-  "sandbox.workspace-write":"工作目录可写", "sandbox.read-only":"只读", "sandbox.danger-full-access":"完全访问", "approval.on-request":"按需请求审批", "approval.never":"不请求审批", "approval.untrusted":"不可信命令需审批",
-  welcomeBack:"欢迎回来。",skipToComposer:"跳到输入框",language:"语言",toggleTheme:"切换明暗外观",closeSidebar:"收起侧边栏",executionPolicy:"执行权限与环境检查",appearance:"外观",appearanceHelp:"选择喜欢的配色，或跟随系统。",duration:"用时",nativeDefaultShort:"Codex 默认",
-  "theme.system":"跟随系统", "theme.light":"浅色", "theme.dark":"深色", "theme.warm":"暖白", "theme.warm-dark":"暖灰", "theme.black":"纯黑", "theme.midnight":"午夜蓝", "theme.nord":"北境", "theme.sepia":"羊皮纸",
-  "effort.low":"低", "effort.medium":"中", "effort.high":"高", "effort.xhigh":"极高", "effort.max":"Max", "effort.ultra":"Ultra",
-  copy:"复制",copied:"已复制",copyCode:"复制代码",scrollTable:"横向滚动表格",branch:"分支到新聊天",branchTitle:"分支",branchedFrom:"分支自此前的对话",branchHelp:"保留此消息之前的记录，工作目录中的文件仍然共用。",
-  pinned:"置顶",recent:"最近对话",pin:"置顶",unpin:"取消置顶",loadMore:"加载更多",older:"更早的消息",newer:"更新的消息",latest:"回到最新消息 ↓",settings:"设置",disabled:"禁用",switchConversation:"切换对话",shortcutPrefix:"切换对话快捷键前缀",
-  shortcutHelp:"按住前缀，按 1–9 预选，松开前缀后切换。前缀 + Tab 返回此前打开的对话，前缀 + B 展开或收起侧边栏。浏览器或系统可能优先占用部分组合；方向键保持原有用途。",
-  branch_history_unavailable:"分支所需的原生历史记录已不可用。",invalid_cursor:"此历史位置已不可用，请重新加载对话。",
-  unsupported_native_fork:"分支需要 Codex CLI 稳定版 0.162.1 或更高版本，请升级 CLI 后重试。",
-});
+const translations = window.LazyfishReferenceI18n;
+
+
 const $ = (selector) => document.querySelector(selector);
-Object.assign(translations.en,{
-  codex_unavailable:"Codex CLI is unavailable or not signed in. Install and sign in to Codex, or configure its command path.",
-  environment_check_busy:"A check is already in progress. Try again shortly.",
-  codexOfficial:"Official Codex CLI installation documentation",
-  codexPathHelp:"Codex is detected from PATH. If it cannot be found, set codex.binary in config.toml or LAZYFISH_CODEX_BIN to its executable path, then restart Lazyfish."
-});
-Object.assign(translations.zh,{
-  codex_unavailable:"Codex CLI 不可用或尚未登录，请安装并登录 Codex，或配置命令路径。",
-  environment_check_busy:"已有检测正在进行，请稍后重试。",
-  codexOfficial:"Codex CLI 官方安装文档",
-  codexPathHelp:"默认从 PATH 查找 Codex。找不到时，在 config.toml 的 codex.binary 或环境变量 LAZYFISH_CODEX_BIN 中填写可执行文件路径，再重启 Lazyfish。"
-});
+
+
 const node = (tag, className = "", text = "") => { const element = document.createElement(tag); element.className = className; element.textContent = text; return element; };
 let language = navigator.language.startsWith("zh") ? "zh" : "en";
 try { const stored = localStorage.getItem("lazyfish.language"); if (["en","zh"].includes(stored)) language = stored; } catch { /* optional */ }
@@ -106,48 +27,17 @@ const pendingSends=new Map(),stoppedJobs=new Map(),settingWrites=new Map(),readR
 let expandedDetails = new Set();
 try { const ids = JSON.parse(localStorage.getItem("lazyfish.details")); if (Array.isArray(ids)) expandedDetails = new Set(ids.filter((id)=>typeof id === "string").slice(-300)); } catch { /* optional */ }
 const scroll = LazyfishScroll($("#messages"),$("#transcript"),{onRestore:()=>dock.settlePosition()});
-Object.assign(translations.en, {
-  "links.local_path":"Local path", "links.copy_path":"Copy path", "links.open_editor":"Open in VS Code",
-  "links.local_help":"This path is on the service machine. VS Code opens on the device running your browser; remote files require a matching remote workspace."
-});
-Object.assign(translations.zh, {
-  "links.local_path":"本地路径", "links.copy_path":"复制路径", "links.open_editor":"在 VS Code 中打开",
-  "links.local_help":"此路径位于服务端机器。VS Code 会在浏览器所在设备打开；远程文件需要对应的远程工作区。"
-});
+
+
 const markdown = LazyfishMarkdown({document,node:(tag,text,cls)=>node(tag,cls,text),copyButton,imageNode:(...args)=>features.nativeImageNode(...args),t:(...args)=>t(...args)}).markdown;
 const shortcuts = LazyfishShortcuts({entries:()=>conversations.slice(0,9),current:()=>conversation?.id,
   select:(id)=>loadConversation(id).catch(report),hints:showHints,toggleSidebar,
   enabled:()=>Boolean(status) && !sending && !document.querySelector("dialog[open]")});
 $("#shortcut-prefix").value = shortcuts.prefix;
-Object.assign(translations.en,{"account": "Account", "usage": "Weekly usage", "skills": "Skills", "connections": "Tools and connections", "add": "Add", "addSkill": "Add skill", "images": "Images", "context": "Context", "apply": "Apply", "remaining": "remaining", "resets": "Resets", "weekly": "Weekly", "fiveHours": "5 hours", "minutes": "minutes", "updated": "Updated", "quotaNone": "None", "noQuota": "No quota data", "quotaHelp": "Limits reported by the native Codex account. API-key accounts may not provide quota data.", "accountUnknown": "No account information", "accountHelp": "The Codex account on this machine. Credentials remain managed by the CLI.", "authentication": "Authentication", "skillsHelp": "Skills discovered by Codex for this workspace. Select via + or @ in your message.", "createSkill": "Create skill", "noSkills": "No skills found for this workspace.", "edit": "Edit", "view": "View", "useSkill": "Use in message", "editSkill": "Edit skill", "skillSaveHelp": "Saved to this workspace’s .agents/skills/<name>/SKILL.md. Bundled and external skills are read-only.", "skillName": "Name (lowercase letters, numbers and hyphens)", "description": "Description", "instructions": "Instructions", "save": "Save", "cancel": "Cancel", "back": "Back", "retry": "Retry", "viewTools": "View tools", "tools": "tools", "connectionsHelp": "MCP tools and authentication from the local CLI. Configure or sign in using codex mcp on this machine, then refresh.", "noConnections": "No MCP servers configured in Codex.", "auth.loggedIn": "Authorized", "auth.notLoggedIn": "Not authorized", "auth.bearerToken": "Token authentication", "auth.unsupported": "No OAuth required", "auth.": "Unknown", "uploading": "Uploading images…", "removeImage": "Remove image", "contextHelp": "From native token-usage events. Automatic compaction is managed by Codex.", "newContext": "No messages yet. Usage starts at 0%.", "contextUnknown": "Waiting for native context usage; it will update after the next turn.", "native_metadata_unavailable": "This CLI version, account or connection cannot provide this data. Refresh to retry.", "metadata_busy": "Another native inspection is in progress. Try again shortly.", "invalid_inputs": "Use at most 8 images and 12 skills per message.", "invalid_image": "Use PNG, JPEG or WebP images, up to 10 MiB each.", "attachment_unavailable": "The attachment is unavailable.", "invalid_workspace": "Choose an existing directory (within the workspace root, if configured).", "skill_unavailable": "This skill is unavailable or has changed. Select it again.", "skill_readonly": "Only workspace-local skills can be edited here.", "skill_exists": "A skill with this name already exists.", "invalid_skill": "Enter a valid skill name, description and instructions.", "skill": "Provide skill", "skills.scope.system": "System", "skills.no.matches": "No matching skills. Create or enable one in Manage skills.", "skills.remove": "Remove skill {name}", "skills.for.message": "Skills · This message", "ui.skills": "Skills", "ui.retry": "Retry", "skills.manage": "Manage skills", "ui.loading": "Loading…", "skills.scope.project": "Project", "skills.scope.user": "Personal", "skills.limit": "Select up to 12 skills per message."});
-Object.assign(translations.zh,{"account": "账户", "usage": "每周用量", "skills": "技能", "connections": "工具与连接", "add": "添加", "addSkill": "添加技能", "images": "图片", "context": "上下文用量", "apply": "应用", "remaining": "剩余", "resets": "重置时间", "weekly": "每周", "fiveHours": "5 小时", "minutes": "分钟", "updated": "更新时间", "quotaNone": "无", "noQuota": "暂无额度数据", "quotaHelp": "数据来自原生 Codex 账户；使用 API Key 的账户可能不提供额度数据。", "accountUnknown": "暂无账户信息", "accountHelp": "此机器上的 Codex 账户。凭据继续由 CLI 管理。", "authentication": "认证方式", "skillsHelp": "Codex 为此工作目录发现的技能。可通过加号或输入 @ 选择。", "createSkill": "创建技能", "noSkills": "此工作目录下暂无技能。", "edit": "编辑", "view": "查看", "useSkill": "在消息中使用", "editSkill": "编辑技能", "skillSaveHelp": "保存到当前工作目录的 .agents/skills/<名称>/SKILL.md。内置和外部技能只读。", "skillName": "名称（小写字母、数字和短横线）", "description": "描述", "instructions": "技能指令", "save": "保存", "cancel": "取消", "back": "返回", "retry": "重试", "viewTools": "查看工具", "tools": "个工具", "connectionsHelp": "本机 CLI 中的 MCP 工具及认证状态。可在此机器使用 codex mcp 配置或登录后刷新。", "noConnections": "Codex 尚未配置 MCP 服务器。", "auth.loggedIn": "已授权", "auth.notLoggedIn": "未授权", "auth.bearerToken": "令牌认证", "auth.unsupported": "无需 OAuth", "auth.": "未知", "uploading": "正在上传图片…", "removeImage": "移除图片", "contextHelp": "数据来自原生上下文事件，自动压缩由 Codex 管理。", "newContext": "尚未发送消息，上下文从 0% 开始。", "contextUnknown": "等待原生上下文用量数据，下次执行后更新。", "native_metadata_unavailable": "当前 CLI 版本、账户或连接无法提供此数据，可刷新重试。", "metadata_busy": "另一个原生信息请求正在进行，请稍后重试。", "invalid_inputs": "每条消息最多添加 8 张图片和 12 个技能。", "invalid_image": "请使用 PNG、JPEG 或 WebP 图片，每张不超过 10 MiB。", "attachment_unavailable": "附件已不可用。", "invalid_workspace": "请选择已存在的目录；若配置了根目录，需位于该目录内。", "skill_unavailable": "该技能已不可用或发生变化，请重新选择。", "skill_readonly": "此处只支持编辑工作目录内的技能。", "skill_exists": "同名技能已存在。", "invalid_skill": "请填写有效的技能名称、描述和指令。", "skill": "提供技能", "skills.scope.system": "系统", "skills.no.matches": "没有匹配的可用技能，可前往管理技能创建或启用。", "skills.remove": "移除技能 {name}", "skills.for.message": "技能 · 仅本次消息", "ui.skills": "技能", "ui.retry": "重试", "skills.manage": "管理技能", "ui.loading": "正在读取…", "skills.scope.project": "项目", "skills.scope.user": "个人", "skills.limit": "每条消息最多选择 12 个技能。"});
-Object.assign(translations.en,{
-  restoreFailed:'Could not restore this conversation. Refresh to retry.',searchFailed:'Search failed.',
-  loadingOlder:'Loading earlier messages…',loadingNewer:'Loading newer messages…',
-});
-Object.assign(translations.zh,{
-  restoreFailed:'恢复对话失败，请刷新重试。',searchFailed:'搜索失败。',
-  loadingOlder:'正在加载更早的消息…',loadingNewer:'正在加载更新的消息…',
-});
-Object.assign(translations.en,{
-  invalid_workspace:'Choose an existing absolute directory.',
-  installationHelp:'Working directories and execution permissions are configured independently.',
-  'workspace.default.label':'Default working directory for new chats',
-  'workspace.default.help':'Saved on this server and shared across browsers. Existing chats keep their directories. Leave empty to restore the configured default or the server user’s home directory.',
-  'workspace.default.saved':'Default directory saved.',
-  'workspace.purpose':'The working directory sets the execution starting point, project skill discovery and change tracking. File access is governed by sandbox permissions and approvals.',
-  'preferences.reset.confirm':'Reset this browser’s appearance, language, model defaults and shortcuts? The shared server working-directory default will be kept.'
-});
-Object.assign(translations.zh,{
-  invalid_workspace:'请选择已存在的绝对目录。',
-  installationHelp:'工作目录与执行权限分别设置。',
-  'workspace.default.label':'新对话默认工作目录',
-  'workspace.default.help':'保存在服务器，所有浏览器共用。已有对话保留各自目录；留空恢复服务配置默认值，未配置时使用运行用户的家目录。',
-  'workspace.default.saved':'默认目录已保存。',
-  'workspace.purpose':'工作目录决定执行起点、项目技能发现和改动跟踪；文件读写由沙箱权限与审批控制。',
-  'preferences.reset.confirm':'恢复当前浏览器的外观、语言、模型默认值和快捷键？服务器共享的默认工作目录将保留。'
-});
-for(const code of ["en","zh"])Object.assign(translations[code],window.LazyfishReferenceI18n[code]);
+
+
+
+
 const t = (key,values={}) => {
   let text=translations[language][key] || translations[language].nativeError;
   if(typeof text==='object')text=text[new Intl.PluralRules(language).select(Number(values.count ?? 0))] || text.other;
@@ -168,8 +58,12 @@ const dock=window.LazyfishUI.composerDock({document,onCollapse:()=>scroll.rememb
 const diagnostics=LazyfishDiagnostics({node,icon,t,api,selectConversation:loadConversation,connected:()=>syncConnected});
 const pinOrder=window.LazyfishUI.sidebarOrder({document,onStart:()=>shortcuts.clear(),onReorder:async ids=>{await api('/api/conversations/reorder',{ids});},onEnd:()=>refreshList().catch(report),report});pinOrder.bind();
 
+const textSelection=LazyfishTextSelection({node,t,getContext:()=>status&&!initializing?{id:conversation?.id||'new',epoch:generation}:null,
+  onAdd:quote=>{if(!features.addQuote(quote))return false;dock.reset(false);$('#prompt').focus({preventScroll:true});resizePrompt();return true;}});
+
 function closeStream() { if (stream) stream.close(); stream = null; }
 function unauthenticated() {
+  textSelection.hide();
   restorationFailed=false;
   authenticationEpoch++;
   scroll.suspend(); shortcuts.clear(); ++generation; closeStream(); status = null; conversation = null; conversations = []; views.clear(); savedViews.clear(); drafts.clear(); retry = null;
@@ -258,7 +152,7 @@ function renderPending(){
     const accepted=conversation?.jobs.some(j=>j.client_request_id===key||j.id===record.jobId||(j.instructions||[]).some(i=>i.id===record.instructionId));
     if(accepted){pendingSends.delete(key);continue;}
     if(record.conversationId!==(conversation?.id||null))continue;
-    const card=node('article','pending-send message user'),bubble=experience.userContent(card,{id:key,content:record.text});
+    const card=node('article','pending-send message user'),bubble=experience.userContent(card,{id:key,content:record.text,quotes:record.inputs.quotes});
     for(const skill of record.inputs.skills||[])bubble.append(node('span','skill-chip',skill.name));
     const images=node('div','image-list');for(const image of record.images||[])images.append(features.imageNode(image));bubble.append(images);card.append(bubble);
     const state=node('div','instruction-delivery',record.state==='failed'?t('send.failed',{error:t(record.error)}):t('ui.sending'));
@@ -480,8 +374,7 @@ function resizePrompt() {
 }
 function duration(seconds) {
   const value=Math.max(0,Math.floor(seconds));
-  if (language === "zh") return value<60 ? `${value} 秒` : `${Math.floor(value/60)} 分 ${value%60} 秒`;
-  return value<60 ? `${value}s` : `${Math.floor(value/60)}m ${value%60}s`;
+  return t(value<60?'elapsed.seconds':'elapsed.minutes',{minutes:Math.floor(value/60),seconds:value<60?value:value%60});
 }
 async function forkJob(job) {
   const source=conversation.id,signature=`${source}:${job.id}`;
@@ -510,7 +403,7 @@ function renderControls() {
   $("#empty").hidden = occupied || initializing || restorationFailed;
   $("#chat").classList.toggle("is-empty",!occupied&&!initializing&&!restorationFailed);
   renderModelPreview(); syncSidebar();
-  const canSteer=job?.status==='running'&&job?.inputs?.operation!=='compact',showSupplement=canSteer&&Boolean($('#prompt').value.trim());
+  const canSteer=job?.status==='running'&&job?.inputs?.operation!=='compact',showSupplement=canSteer&&Boolean($('#prompt').value.trim()||features.hasQuotes());
   $('#prompt').placeholder=t(canSteer?'ui.add.instructions':'prompt');
   $("#cancel").hidden = !job||showSupplement;
   $("#cancel").disabled = job?.status === "cancelling"||Boolean(stoppedJobs.get(job?.id)?.pending);
@@ -548,7 +441,7 @@ function renderJobContent(job) {
     meta.append(copy,node("span","reply-separator","·"),node("span","reply-model"));
     taskStatus.append(node("span","task-status status"),node("span","completed-at")); footer.append(meta,taskStatus);
     const items = node("div","assistant-items"), approvals = node("div","approvals"), error = node("p","job-error");
-    const user = node("div","user-turn message user"), bubble = experience.userContent(user,{id:job.id,content:job.prompt});
+    const user = node("div","user-turn message user"), bubble = experience.userContent(user,{id:job.id,content:job.prompt,quotes:job.inputs?.quotes});
     bubble.dataset.anchor = "user";
     for(const skill of job.inputs?.skills || [])bubble.append(node("span","skill-chip",skill.name));
     const images=node("div","image-list");for(const image of job.inputs?.images || []) {const box=node("div","image-preview");if(image.width&&image.height){box.style.width=Math.min(220,200*image.width/image.height)+'px';box.style.aspectRatio=image.width+' / '+image.height;}box.append(features.imageNode(image));images.append(box);}bubble.append(images);
@@ -688,6 +581,7 @@ function applyConversation(result,bookmark,previous,background=false,composerCol
   if(!background)connectConversation();renderPending();markRead();
 }
 async function loadConversation(id,latest=false,prepared=null) {
+  textSelection.hide();
   clearTimeout(listClickTimer);closeConversationStream();
   savePosition();cacheView();const request=++generation;
   let bookmark=latest?null:scroll.read(id),cached=latest?null:savedViews.get(id);
@@ -737,6 +631,7 @@ async function pageHistory(direction) {
   } catch (error) { report(error); } finally { if (request === generation) { paging=false; renderControls(); } }
 }
 async function newConversation() {
+  textSelection.hide();
   savePosition();cacheView();++generation;closeConversationStream();resetMessages();conversation=null;notice='';restorationFailed=false;
   try{localStorage.removeItem('lazyfish.activeConversation');}catch{}
   history.replaceState(null,'','/');preferences.applyDefaults();$('#prompt').value=drafts.get('new')||'';resizePrompt();panels.closePopovers();features.switch();render();renderPending();$('#prompt').focus({preventScroll:true});refreshDefaultWorkspace().catch(report);
@@ -789,7 +684,7 @@ async function sendPending(record){
     }
     await flushChoices(record.conversationId);
     if(record.targetJob){
-      const instruction=await api('/api/jobs/'+record.targetJob+'/instructions',{text:record.text,skills:record.inputs.skills,client_request_id:record.key});record.instructionId=instruction.id;
+      const instruction=await api('/api/jobs/'+record.targetJob+'/instructions',{text:record.text,skills:record.inputs.skills,quotes:record.inputs.quotes,client_request_id:record.key});record.instructionId=instruction.id;
       if(conversation?.id===record.conversationId){const job=conversation.jobs.find(j=>j.id===record.targetJob);if(job){job.instructions||=[];if(!job.instructions.some(i=>i.id===instruction.id))job.instructions.push(instruction);renderJob(job);}}
     }else{
       const settings={...record.settings};if(settings.permission_mode===null)delete settings.permission_mode;
@@ -811,7 +706,7 @@ async function sendPending(record){
 }
 $('#composer').addEventListener('submit',event=>{
   event.preventDefault();const running=activeJob();
-  if(sending||features.busy()||running&&(running.status!=='running'||!$('#prompt').value.trim())||(!$('#prompt').value.trim()&&!features.hasInputs()))return;
+  if(sending||features.busy()||running&&(running.status!=='running'||!$('#prompt').value.trim()&&!features.hasQuotes())||(!$('#prompt').value.trim()&&!features.hasInputs()))return;
   if(running&&features.hasImages()){report(new Error('supplement_text_only'));return;}
   const record={key:LazyfishRequestId(),epoch:generation,conversationId:conversation?.id||null,targetJob:running?.id,
     text:$('#prompt').value,inputs:{...features.inputs(),...panels.runSettings()},settings:runChoices(),workspace:features.newWorkspace(),images:features.selectedImages(),state:'sending'};

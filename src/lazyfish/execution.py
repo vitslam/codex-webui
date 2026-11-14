@@ -15,6 +15,7 @@ import tempfile
 import time
 
 from .auth_sessions import AuthSessions
+from .quotes import validate as validate_quotes, native_input as quoted_input
 from .changes import ChangeTracker
 from .outputs import Outputs,bounded
 from .approvals import choices as approval_choices
@@ -126,6 +127,10 @@ class Manager:
                 if fd is not None:os.close(fd)
 
     def submit(self, conversation: str, key: str, prompt: str, model=None, effort=None, inputs=None) -> dict:
+        if inputs and 'quotes' in inputs:
+            inputs=dict(inputs);quotes=validate_quotes(inputs['quotes'])
+            if quotes:inputs['quotes']=quotes
+            else:inputs.pop('quotes')
         with self.lock:
             if self.stopping:
                 raise StoreError("service_stopping")
@@ -189,7 +194,8 @@ class Manager:
             if created:self.dispatch()
             return self.store.job(job['id'])
 
-    def steer(self,job,key,text,skills=None):
+    def steer(self,job,key,text,skills=None,quotes=None):
+        quotes=validate_quotes([] if quotes is None else quotes)
         with self.lock:
             worker=self.workers.get(job)
             if not worker or worker.cancel.is_set() or worker.finished:raise StoreError('instruction_expired')
@@ -197,7 +203,7 @@ class Manager:
             if skills:
                 available=self.capabilities.read('skills',worker.conversation['workspace'],True)['skills']
                 if any(not any(s['name']==v['name'] and s['path']==v['path'] and s.get('enabled') is not False for s in available) for v in skills):raise StoreError('skill_unavailable')
-            value,created=self.store.instruction(job,key,text,skills)
+            value,created=self.store.instruction(job,key,text,skills,quotes)
             if created:worker.outbound.put(('steer',value))
             return value
 
@@ -288,7 +294,7 @@ class Worker:
                 kind,value=self.outbound.get_nowait()
                 if kind=='steer':
                     self.client.sequence+=1;request_id=self.client.sequence;self.pending_steers[request_id]=value['id']
-                    content=[{'type':'text','text':value['text']}]+[{'type':'skill','name':s['name'],'path':s['path']} for s in value.get('skills',[])]
+                    content=quoted_input(value['text'],value.get('quotes',[]))+[{'type':'skill','name':s['name'],'path':s['path']} for s in value.get('skills',[])]
                     self.client.send({'id':request_id,'method':'turn/steer','params':{'threadId':self.native_thread,'expectedTurnId':self.turn,'input':content}})
                     for s in value.get('skills',[]):
                         sid='instruction-skill-'+value['id']+'-'+s['name'];self.item(sid,'skill',s['name'],'completed')
@@ -507,7 +513,7 @@ class Worker:
                 return
             resolved_model=self.job["model"] or result.get("model")
             inputs = self.job.get("inputs") or {}
-            content = [{"type":"text","text":self.job["prompt"]}] if self.job["prompt"].strip() else []
+            content = quoted_input(self.job['prompt'],inputs.get('quotes',[]))
             for image in inputs.get("images",[]):
                 attachment = self.store.attachment(image["id"],True)
                 extension = {"image/png":".png","image/jpeg":".jpg","image/webp":".webp"}[attachment["mime"]]

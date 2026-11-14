@@ -21,6 +21,7 @@
   <script defer src="/activity.js"></script>
   <script defer src="/features.js"></script>
   <script defer src="/reference-i18n.js"></script>
+  <script defer src="/i18n-zh.js"></script>
   <script defer src="/steps.js"></script>
   <script defer src="/changes.js"></script>
   <script defer src="/artifacts.js"></script>
@@ -28,6 +29,7 @@
   <script defer src="/composer-dock.js"></script>
   <script defer src="/sidebar-projects.js"></script>
   <script defer src="/sidebar-order.js"></script>
+  <script defer src="/selection-quotes.js"></script>
   <script defer src="/experience.js"></script>
   <script defer src="/worker-monitor.js"></script>
   <script defer src="/diagnostics.js"></script>
@@ -41,6 +43,7 @@
   <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l8-8a2 2 0 0 1 3 3l-8 8a1 1 0 0 1-1.5-1.5L12 6"/></symbol>
+  <symbol id="i-quote" viewBox="0 0 24 24"><path d="M9 11H5V7h6v6a5 5 0 0 1-5 5M19 11h-4V7h6v6a5 5 0 0 1-5 5"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M15 9V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h4"/></symbol>
   <symbol id="i-fork" viewBox="0 0 24 24"><circle cx="6" cy="4" r="2"/><circle cx="18" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6 6v3a6 6 0 0 0 12 0V6M12 15v3"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></symbol>
@@ -110,36 +113,36 @@
       <button id="latest" class="history-more latest" type="button" data-text="latest" hidden>Jump to latest ↓</button>
       <div id="notice" role="status" aria-live="polite"></div>
       <button id="composer-handle" class="composer-handle" type="button" aria-controls="composer" data-label="ui.show.message.composer" hidden></button>
-      <form id="composer" class="composer"><label class="sr-only" for="prompt" data-text="message">Message</label><div id="skill-picker" class="skill-picker" hidden></div><textarea id="prompt" rows="1" enterkeyhint="enter" maxlength="64000" data-placeholder="prompt"></textarea><div id="selected-skills" hidden></div><div id="image-previews" class="image-list"></div><p id="upload-state" class="settings-hint" role="status" hidden></p>
+      <form id="composer" class="composer"><label class="sr-only" for="prompt" data-text="message">Message</label><div id="skill-picker" class="skill-picker" hidden></div><div id="selected-quotes" hidden></div><textarea id="prompt" rows="1" enterkeyhint="enter" maxlength="64000" data-placeholder="prompt"></textarea><div id="selected-skills" hidden></div><div id="image-previews" class="image-list"></div><p id="upload-state" class="settings-hint" role="status" hidden></p>
         <div class="composer-toolbar"><div class="composer-actions">
           <details class="attachment-settings" id="attachment-settings">
-            <summary class="icon-button attach-button" title="添加" aria-label="添加" data-title="ui.add" data-label="ui.add"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></summary>
+            <summary class="icon-button attach-button" title="Add" aria-label="Add" data-title="ui.add" data-label="ui.add"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></summary>
             <div class="attachment-panel">
-              <button type="button" id="add-image"><svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg><span data-text="ui.images">图片</span></button>
-              <button type="button" id="add-skill"><svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg><span data-text="skills.add">添加技能</span></button>
-              <button type="button" id="edit-workdir" aria-haspopup="dialog"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span data-text="ui.working.directory">工作目录</span><span id="workdir-preview" class="directory-preview"></span></button>
+              <button type="button" id="add-image"><svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg><span data-text="ui.images">Images</span></button>
+              <button type="button" id="add-skill"><svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg><span data-text="skills.add">Add skills</span></button>
+              <button type="button" id="edit-workdir" aria-haspopup="dialog"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span data-text="ui.working.directory">Working directory</span><span id="workdir-preview" class="directory-preview"></span></button>
               <input id="workdir" type="hidden">
             </div>
           </details><input id="image-input" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
           <details class="permission-settings" id="permission-settings">
-            <summary class="icon-button permission-toggle" title="权限模式" aria-label="权限模式" data-title="ui.permissions" data-label="ui.permissions"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></summary>
-            <div class="permission-panel" role="group" aria-label="权限模式" data-label="ui.permissions">
-              <p class="attachment-heading"><span data-text="ui.permissions">权限模式</span></p>
-              <button type="button" data-permission="ask" aria-pressed="false"><span><span data-text="ui.ask.for.approval">请求批准</span><small><span data-text="ui.work.in.the.workspace.asking.for.approval.when.needed">在工作区内执行，需要时由你批准</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
-              <button type="button" data-permission="auto_review" aria-pressed="false"><span><span data-text="ui.auto.review">帮我批准</span><small><span data-text="ui.codex.automatically.reviews.permission.requests">由 Codex 自动审查权限请求</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
-              <button type="button" data-permission="full_access" aria-pressed="true"><span><span data-text="ui.full.access">完全访问</span><small><span data-text="ui.unrestricted.file.and.network.access.without.approval">不限制文件和网络访问，无需批准</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
-              <button type="button" data-permission="read_only" aria-pressed="false"><span><span data-text="ui.read.only">只读</span><small><span data-text="ui.read.only.by.default.additional.operations.require.approval">默认仅查看，额外操作需要批准</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
-              <button type="button" data-permission="custom" aria-pressed="false"><span><span data-text="ui.custom.configuration">自定义配置</span><small><span data-text="ui.use.the.permission.configuration.on.the.codex.machine">使用 Codex 所在机器的权限配置</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
-              <p class="permission-hint" id="permission-hint"><span data-text="ui.applies.to.subsequent.tasks">仅对后续任务生效</span></p>
+            <summary class="icon-button permission-toggle" title="Permissions" aria-label="Permissions" data-title="ui.permissions" data-label="ui.permissions"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></summary>
+            <div class="permission-panel" role="group" aria-label="Permissions" data-label="ui.permissions">
+              <p class="attachment-heading"><span data-text="ui.permissions">Permissions</span></p>
+              <button type="button" data-permission="ask" aria-pressed="false"><span><span data-text="ui.ask.for.approval">Ask for approval</span><small><span data-text="ui.work.in.the.workspace.asking.for.approval.when.needed">Work in the workspace, asking for approval when needed</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <button type="button" data-permission="auto_review" aria-pressed="false"><span><span data-text="ui.auto.review">Auto review</span><small><span data-text="ui.codex.automatically.reviews.permission.requests">Codex automatically reviews permission requests</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <button type="button" data-permission="full_access" aria-pressed="true"><span><span data-text="ui.full.access">Full access</span><small><span data-text="ui.unrestricted.file.and.network.access.without.approval">Unrestricted file and network access, without approval</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <button type="button" data-permission="read_only" aria-pressed="false"><span><span data-text="ui.read.only">Read only</span><small><span data-text="ui.read.only.by.default.additional.operations.require.approval">Read only by default; additional operations require approval</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <button type="button" data-permission="custom" aria-pressed="false"><span><span data-text="ui.custom.configuration">Custom configuration</span><small><span data-text="ui.use.the.permission.configuration.on.the.codex.machine">Use the permission configuration on the Codex machine</span></small></span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+              <p class="permission-hint" id="permission-hint"><span data-text="ui.applies.to.subsequent.tasks">Applies to subsequent tasks</span></p>
             </div>
           </details>
           <span class="composer-spacer" aria-hidden="true"></span>
-<button type="button" id="plan-toggle" class="plan-toggle" aria-label="plan" aria-pressed="false" title="切换到计划模式" hidden data-title="ui.switch.to.plan.mode">plan</button>
+<button type="button" id="plan-toggle" class="plan-toggle" aria-label="plan" aria-pressed="false" title="Switch to Plan mode" hidden data-title="ui.switch.to.plan.mode">plan</button>
           <details class="context-settings" id="context-settings">
-            <summary class="context-toggle" aria-label="上下文用量待更新" data-label="context.pending">
-              <svg class="context-ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle id="context-ring-value" cx="12" cy="12" r="9" pathLength="100" stroke-dasharray="0 100"/></svg><span id="context-preview" class="context-tooltip" aria-hidden="true"><span data-text="ui.pending.update">待更新</span></span>
+            <summary class="context-toggle" aria-label="Context usage pending update" data-label="context.pending">
+              <svg class="context-ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle id="context-ring-value" cx="12" cy="12" r="9" pathLength="100" stroke-dasharray="0 100"/></svg><span id="context-preview" class="context-tooltip" aria-hidden="true"><span data-text="ui.pending.update">Pending update</span></span>
             </summary>
-            <div class="context-panel"><div class="context-heading"><span><span data-text="ui.context">上下文</span></span><span id="context-percent"><span data-text="ui.pending.update">待更新</span></span></div><progress id="context-meter" max="100" value="0" aria-label="上下文用量" data-label="ui.context.usage"></progress><p id="context-detail" class="settings-hint"></p><button id="compact-context" type="button" disabled><span data-text="ui.compact.context">压缩上下文</span></button></div>
+            <div class="context-panel"><div class="context-heading"><span><span data-text="ui.context">Context</span></span><span id="context-percent"><span data-text="ui.pending.update">Pending update</span></span></div><progress id="context-meter" max="100" value="0" aria-label="Context usage" data-label="ui.context.usage"></progress><p id="context-detail" class="settings-hint"></p><button id="compact-context" type="button" disabled><span data-text="ui.compact.context">Compact context</span></button></div>
           </details>
           <details id="model-options" class="composer-settings"><summary data-label="modelOptions"><span class="run-preview"><svg class="icon run-speed" aria-hidden="true"><use href="#i-bolt"/></svg><span id="model-preview">Codex</span><span id="effort-preview"></span></span><span class="run-settings-prompt" data-text="chooseEffort">Reasoning effort</span><svg class="icon run-chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
             <div class="settings-panel">
@@ -156,7 +159,7 @@
 </div>
 <div id="shortcut-hints" class="shortcut-hints-panel" role="region" data-label="switchConversation" hidden></div>
 <dialog id="account-dialog" aria-labelledby="account-dialog-title"><div class="account-shell"><nav class="account-nav" data-label="settingsNavigation"><span class="account-nav-brand">lazyfish<span>.</span></span><button type="button" data-account-tab="account" data-text="account">Account</button><button type="button" data-account-tab="usage" data-text="usage">Weekly usage</button><button type="button" data-account-tab="settings" data-text="settings">Settings</button><button type="button" data-account-tab="dataManagement" data-text="dataManagement">Data management</button><button type="button" data-account-tab="skills" data-text="skills">Skills</button><button type="button" data-account-tab="connections" data-text="connections">Tools and connections</button><button type="button" data-account-tab="diagnostics" data-text="diagnostics">Installation checks</button><button type="button" data-account-tab="installation" data-text="installation">Installation</button></nav><section class="account-main"><header class="account-toolbar"><h2 id="account-dialog-title"></h2><div><button id="account-reload" class="icon-button" type="button" data-label="refresh"><svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg></button><button id="account-close" class="icon-button" type="button" data-label="close">×</button></div></header><div class="account-content"><section id="native-page" hidden aria-live="polite"></section>
-  <section id="settings" class="account-settings"><div class="account-section-heading"><h3 data-text="preferences">Preferences</h3><p class="account-note" data-text="preferencesHelp">Personalize this workspace in your browser.</p></div><div class="account-row"><label class="account-row-label" for="appearance" data-text="appearance">Appearance</label><select id="appearance"></select></div><div class="account-row"><label class="account-row-label" for="language" data-text="language">Language</label><select id="language"><option value="en">English</option><option value="zh">简体中文</option></select></div><div class="account-section-heading"><h3 data-text="keyboardShortcuts">Keyboard shortcuts</h3></div><div class="account-row"><label class="account-row-label" for="shortcut-prefix" data-text="shortcutPrefix">Switch conversation</label><select id="shortcut-prefix"><option value="ctrlShift">Control + Shift</option><option value="ctrl">Control</option><option value="metaAlt">Cmd + Option</option><option value="alt">Option / Alt</option><option value="altShift">Option / Alt + Shift</option><option value="ctrlAlt">Control + Option / Alt</option><option value="ctrlAltShift">Control + Option / Alt + Shift</option><option value="disabled" data-text="disabled">Disabled</option></select></div><p class="account-note" data-text="shortcutHelp"></p></section>
+  <section id="settings" class="account-settings"><div class="account-section-heading"><h3 data-text="preferences">Preferences</h3><p class="account-note" data-text="preferencesHelp">Personalize this workspace in your browser.</p></div><div class="account-row"><label class="account-row-label" for="appearance" data-text="appearance">Appearance</label><select id="appearance"></select></div><div class="account-row"><label class="account-row-label" for="language" data-text="language">Language</label><select id="language"><option value="en">English</option><option value="zh" data-text="language.zh">Simplified Chinese</option></select></div><div class="account-section-heading"><h3 data-text="keyboardShortcuts">Keyboard shortcuts</h3></div><div class="account-row"><label class="account-row-label" for="shortcut-prefix" data-text="shortcutPrefix">Switch conversation</label><select id="shortcut-prefix"><option value="ctrlShift">Control + Shift</option><option value="ctrl">Control</option><option value="metaAlt">Cmd + Option</option><option value="alt">Option / Alt</option><option value="altShift">Option / Alt + Shift</option><option value="ctrlAlt">Control + Option / Alt</option><option value="ctrlAltShift">Control + Option / Alt + Shift</option><option value="disabled" data-text="disabled">Disabled</option></select></div><p class="account-note" data-text="shortcutHelp"></p></section>
   <section id="data-management" hidden aria-busy="false"></section>
   <section id="diagnostics" hidden><div class="account-section-heading"><h3 data-text="diagnostics">Installation checks</h3><p class="account-note" data-text="scope"></p></div><span id="readiness" class="badge"></span><dl id="details"></dl><ul id="checks"></ul></section>
   <section id="installation" hidden>
@@ -169,22 +172,22 @@
 </div></section></div></dialog>
 <dialog id="workdir-dialog" aria-labelledby="workdir-heading">
   <form id="workdir-form" novalidate>
-    <h2 id="workdir-heading"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span data-text="ui.working.directory">工作目录</span></h2>
-    <label for="workdir-input" data-text="directory.path">目录路径</label>
+    <h2 id="workdir-heading"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span data-text="ui.working.directory">Working directory</span></h2>
+    <label for="workdir-input" data-text="directory.path">Directory path</label>
     <input id="workdir-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" aria-describedby="workdir-hint workdir-error">
-    <p id="workdir-hint" data-text="workspace.purpose">工作目录决定执行起点、项目技能发现和改动跟踪；文件读写由沙箱权限与审批控制。</p>
+    <p id="workdir-hint" data-text="workspace.purpose">The working directory sets the execution starting point, project skill discovery and change tracking. File access is governed by sandbox permissions and approvals.</p>
     <p id="workdir-error" role="alert" hidden></p>
-    <div class="directory-actions"><button type="button" id="workdir-cancel" data-text="ui.cancel">取消</button><button type="submit" id="workdir-save" data-text="ui.save">保存</button></div>
+    <div class="directory-actions"><button type="button" id="workdir-cancel" data-text="ui.cancel">Cancel</button><button type="submit" id="workdir-save" data-text="ui.save">Save</button></div>
   </form>
 </dialog>
 <dialog id="search-dialog" aria-labelledby="search-title"><h2 id="search-title" class="sr-only" data-text="searchConversations">Search conversations</h2><form id="conversation-search-form" class="search-controls" role="search"><label class="search-field"><input id="conversation-search" type="text" maxlength="200" autocomplete="off" data-label="searchConversations" data-placeholder="searchByTitle"></label></form><div id="search-results" class="search-results" aria-live="polite"></div></dialog>
 <dialog id="question-dialog" aria-labelledby="question-heading" aria-describedby="question-hint">
   <form id="question-form">
-    <div class="question-heading"><span class="question-mark" aria-hidden="true"><svg class="icon"><use href="#i-shield"/></svg></span><h2 id="question-heading"><span data-text="ui.codex.has.a.question">Codex 想了解你的选择</span></h2><button id="question-close" type="button" aria-label="关闭" data-label="dialog.close">×</button></div>
-    <p id="question-hint" class="meta"><span data-text="ui.codex.will.keep.working.while.you.consider.your.answer">你可以边考虑边选择，Codex 会继续处理任务。</span></p>
+    <div class="question-heading"><span class="question-mark" aria-hidden="true"><svg class="icon"><use href="#i-shield"/></svg></span><h2 id="question-heading"><span data-text="ui.codex.has.a.question">Codex has a question</span></h2><button id="question-close" type="button" aria-label="Close" data-label="dialog.close">×</button></div>
+    <p id="question-hint" class="meta"><span data-text="ui.codex.will.keep.working.while.you.consider.your.answer">Codex will keep working while you consider your answer.</span></p>
     <div id="question-fields"></div>
     <p id="question-status" role="status" aria-live="polite"></p>
-    <div class="question-actions"><button id="question-later" type="button"><span data-text="ui.not.now">暂不回答</span></button><button id="question-submit" type="submit"><span data-text="ui.submit.answer">提交回答</span></button></div>
+    <div class="question-actions"><button id="question-later" type="button"><span data-text="ui.not.now">Not now</span></button><button id="question-submit" type="submit"><span data-text="ui.submit.answer">Submit answer</span></button></div>
   </form>
 </dialog>
 </body>

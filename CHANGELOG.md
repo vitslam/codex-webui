@@ -2,61 +2,45 @@
 
 ## Unreleased
 
+- Add selected transcript passages to the current chat as removable reference context; retain references through history, retries, editing, branching and supplementary instructions.
+
+- Keep general repository text in English, isolate Chinese UI strings in locale resources, preserve Unicode regression fixtures and maintain compatibility with saved localized change reports.
+
 - Group sidebar history by saved project directory between pinned and recent chats, with on-demand pagination, remembered disclosures and recent chats initially collapsed.
-- 侧栏在置顶与最近对话之间按已保存工作目录收纳项目历史，按需分页并记住折叠状态，最近对话默认收起。
 
 - Use the service user's home when no working directory is configured; persist a server-wide new-chat default, allow any existing absolute directory, and keep conversation directories separate from sandbox and approval permissions.
-- 未配置工作目录时使用运行用户家目录；新对话默认目录在服务端共享保存，可选择任意已存在的绝对目录；各对话独立保存目录，文件授权继续由沙箱与审批控制。
 
 - Search after 50 ms of settled input, defer loading feedback until requests take 300 ms, retain previous results, and support IME composition and explicit retry; restore conversations silently without a loading splash.
-- 搜索输入防抖改为 50ms，请求超过 300ms 才显示加载提示并保留上一组结果，支持中文输入、过期结果隔离与失败重试；刷新静默恢复会话，不再显示整屏加载文案。
 
 - Avoid welcome-screen flashes while restoring a conversation; show cached recent chats immediately in search, display up to 50 matches with relative timestamps, and label in-progress history loads.
-- 刷新恢复对话时不再闪现欢迎页；搜索立即展示本地最近对话，最多显示 50 条匹配结果并使用相对时间；加载历史消息时显示明确的进行中提示。
 
 - Keep skill discovery and selection aligned with the chosen directory, isolate delayed directory saves to their conversation, preserve question choices and ordinary answer drafts, and restore new-chat defaults instead of inheriting the previous conversation's run settings.
-- 技能发现和选择跟随当前目录；目录保存的慢响应不再影响其他会话；提问保留所选选项与普通回答草稿；新对话恢复默认参数，不再继承上一会话的临时设置。
 
 - Preserve unsent new-chat images and skills when sending in another conversation; support text copying on HTTP pages with a selection-based fallback and specific failure feedback.
-- 在其他会话发送消息时保留尚未发送的新对话图片和技能；HTTP 页面复制文本增加兼容方式，并提供明确的复制失败提示。
 
 - Exclude native user-message echoes from execution steps and hide previously saved echoes in timelines while preserving genuine tool activity.
-- 执行步骤不再收录原生用户消息回显；时间线隐藏历史回显记录，保留真实工具活动。
 
 - Use cryptographic request IDs on HTTP LAN origins where randomUUID is unavailable; explain missing conversation directories in the Skills panel and keep global metadata available.
-- 修复内网 HTTP 地址缺少 randomUUID 导致消息无法发送的问题；技能页明确提示失效的会话目录，全局元数据仍可加载。
 
 - Replace the sidebar delete action with reversible chat archiving; add searchable, workspace-grouped archive management and restoration in Settings.
-- 侧栏删除改为可恢复的聊天归档；设置新增支持搜索、工作目录分组和恢复的数据管理页面。
 
 - Fold user-message text after 20 rendered lines, keeping attachments visible and preserving full-text copy/edit; show localized, bounded skill-loading diagnostics and catalog truncation notices.
-- 用户消息超过 20 个显示行时折叠正文，附件保持可见，复制和编辑使用全文；技能页新增本地化、有数量上限的加载诊断及列表截断提示。
 
 - Add opt-in `lazyfish serve --no-token` to disable Web sign-in for one run, with a startup warning; retain Host/origin checks and authenticated status/stop.
-- 新增显式的 `lazyfish serve --no-token`，仅本次运行免 Web 登录并在启动时警告；保留 Host/同源校验及状态查询、停服的认证。
 
 - Add `lazyfish token --rotate` to atomically replace the Web token while stopped, preserving other secrets and comments; refuse running instances and environment token overrides.
-- 新增 `lazyfish token --rotate`，停服后原子更换 Web 令牌并保留其他密钥和注释；实例运行或环境变量覆盖令牌时拒绝更换。
 
 - Allow an explicit unicast IPv4 bind, including public addresses; keep `127.0.0.1` as the default. Host checks still require an address of this process.
-- 允许显式绑定任意单播 IPv4（包括公网地址），默认仍为 `127.0.0.1`；Host 检查仍要求为本进程的地址。
 
 - Support Linux and macOS with native process identity, ownership-safe session cleanup and parent-death protection; preserve Linux journal compatibility without adding runtime dependencies.
 - Use portable `getifaddrs` interface discovery, retain VPN addresses and hide macOS wireless-direct interfaces only in the startup banner; update requirements and deployment documentation for both platforms.
-- 支持 Linux 与 macOS 的原生进程身份、会话安全清理和父进程退出保护，保留 Linux 归属日志兼容性，不增加运行时依赖。
-- 使用跨平台 `getifaddrs` 发现网卡，保留 VPN 地址，仅在启动提示中隐藏 macOS 无线直连接口；同步双平台安装要求和部署文档。
 
 - Make the installer portable to macOS `chmod`, which rejects `--` and otherwise aborts with `chmod: --: No such file or directory`.
-- 修复安装脚本在 macOS 上因 `chmod --` 无法识别而失败的问题。
 
 - Add opt-in `0.0.0.0` or a specific IPv4 binding with startup URLs; keep localhost as the default and require token authentication.
-- 支持显式开启 `0.0.0.0` 或指定 IPv4 绑定，启动时打印访问地址；默认仍仅本机访问，并保留令牌认证。
 
 - Remember the first successfully used custom installation when no standard configuration exists; ordinary commands work from any directory without repeating `--config`.
 - Preserve explicit/environment overrides, existing configuration, tokens and history; never silently switch instances or replace missing/unsafe configuration.
-
-默认配置自动发现；自定义配置首次成功使用后记住路径，后续命令无需重复指定 `--config`。
-保留多实例覆盖方式，配置、令牌和聊天历史均不迁移。
 
 ## 0.5.0a6 — unreleased
 
@@ -66,9 +50,6 @@
 - Update readiness after native login/logout and retire completed login-resumption records; preserve metadata snapshots when unchanged checks are refreshed.
 - Remove the duplicate Diagnostics body refresh button and keep the header action wired to live checks.
 
-增加首次部署安装、登录与验证向导，已有 CLI/登录自动跳过；网页可继续配置与重新检测。
-中英文同步，不迁移原生凭据、不调用模型验证、不修改数据库结构。尚未发布。
-
 ## 0.5.0a5 — unreleased
 
 - Remove the extra composer shortcut hint and duplicate global CSS that reintroduced textarea focus outlines and reset component typography.
@@ -76,16 +57,12 @@
 - Remove reference-style overrides for permission popovers, message spacing, image previews, approval details and mobile search bounds.
 - Scope reduced-motion handle styling correctly and preserve pointer/keyboard editing, cached restoration and image dismissal.
 
-清理输入区及常用弹层的迁移残留样式，中英文同步；新增浅色/暗色、桌面/手机和交互回归，无需数据库升级。尚未发布。
-
 ## 0.5.0a4 — unreleased
 
 - Restore cached composer visibility together with reading position, without switch animations or transient folding.
 - Remove extra focus outlines from sidebar conversation names and renaming fields while preserving keyboard editing.
 - Add the bilingual Show reasoning summaries preference, off by default, with immediate cached/deferred timeline updates and grouping before hidden summaries.
 - Preserve execution records and model settings; restoring defaults clears the display preference.
-
-同步原版三项交互更新：对话切换无动画恢复输入框、侧栏改名焦点样式、默认隐藏思考摘要的双语开关。无需数据库升级，尚未发布。
 
 ## 0.5.0a3 — unreleased
 
@@ -96,8 +73,6 @@
 - Reuse the original local slot cards and request timing chart; retain only bounded sampling timing metadata from a loopback collector.
 - Migrate schema 7 → 8 non-destructively and expand fake-native, actual Chromium and installed-package checks.
 
-补迁审计列出的 20 项链路，复用原版交互并适配单机执行；中英文同步。新增链路使用隔离假 CLI 和 Chromium 验证，Safari 真机、真实模型及外部授权仍需单独验收。尚未发布。
-
 ## 0.5.0a2 — unreleased
 
 - Restore content-versioned static assets with immutable caching and ETag revalidation.
@@ -106,8 +81,6 @@
 - Retain six recent conversation views and reconcile fresh events/edits without replacing unchanged DOM.
 - Preserve history with schema 6 → 7; invalidate account snapshots before authorization completion becomes visible.
 - Verify delayed/failed refreshes, browser reloads, query volume, lazy processes and cross-tab edit reconciliation.
-
-补齐原版缓存与按需加载优化，中英文同步，尚未发布。
 
 ## 0.5.0a1 — unreleased
 
@@ -118,8 +91,6 @@
 - Add retained native account/MCP OAuth sessions with owned-process cleanup and credential-safe responses.
 - Preserve schema 5 history/native IDs in schema 6; verify fake-native behavior, actual Chromium and installed assets.
 
-补齐剩余原版功能及单机链路，中英文同步；原生外部授权及新能力使用模拟协议验证，尚未发布。
-
 ## 0.4.0a3 — unreleased
 
 - Restore original context hover/popup, native manual compaction, and mobile anchoring.
@@ -128,15 +99,11 @@
 - Add message-content search/snippets, sidebar rename/delete, independent sidebar shortcut.
 - Preserve history with schema 4 → 5; document verified parity and remaining gaps.
 
-按原版逐项补齐展开交互及后端链路，中英文同步，尚未发布。
-
 ## 0.4.0a2 — unreleased
 
 - Port original reasoning control: named models, capability-driven levels, thumb dragging/cancel, model-list keyboard selection and reset.
 - Restore the original fast toggle, Ultra visuals and per-turn native speed parameter.
 - Persist run preferences in this browser and preserve speed in durable inputs/forks/idempotency.
-
-迁入原版推理选择按钮及展开交互，中英文同步，尚未发布。
 
 ## 0.4.0a1 — unreleased
 
@@ -146,8 +113,6 @@
 - Persist attachment references and native context usage across history, refresh and forks.
 - Migrate schema 3 → 4 without changing history/native IDs; preserve execution ownership.
 
-补齐原版菜单和输入框背后的数据链路，中英文同步，尚未发布。
-
 ## 0.3.0a3 — unreleased
 
 - Reuse original two-column settings/diagnostics and mobile panel navigation.
@@ -156,8 +121,6 @@
 - Add the original search dialog backed by bounded, literal title search.
 - Preserve popup dismissal/focus and adapt to the mobile visual viewport.
 
-继续对齐原版展开界面、按钮位置与交互，并补齐名称搜索；尚未发布。
-
 ## 0.3.0a2 — unreleased
 
 - Reuse original Lazyfish layout, SVG icons, message/composer styles and eight palettes.
@@ -165,8 +128,6 @@
 - Center the welcome/composer view and add a mobile sidebar drawer with backdrop dismissal.
 - Show reply copy/model/status/time metadata; keep pinned groups ordered on new chat.
 - Validate and package the theme registry, with persistent system/manual appearance selection.
-
-迁入原项目视觉组件与 8 套配色，统一桌面/移动布局、菜单、消息及输入框；尚未发布。
 
 ## 0.3.0a1 — unreleased
 
@@ -177,8 +138,6 @@
 - Configurable prefix + digits/release, prefix + Tab (MRU) and prefix + B; no arrow capture.
 - Bilingual UI/docs, browser regression suite and transactional schema 2 → 3 migration.
 
-第三阶段预览版：富文本、分页、分支、阅读位置恢复及可配置快捷键；尚未发布。
-
 ## 0.2.0a1 — unreleased
 
 - Local native thread creation/resume, streamed replies and durable conversation history.
@@ -188,8 +147,6 @@
 - Bilingual chat UI, reconnectable SSE events and configurable native execution defaults.
 - SQLite migration from version 1 to 2, preserving service audit records.
 
-第二阶段预览版：单机对话、流式回复、审批、取消及安全异常收尾；不自动重跑。
-
 ## 0.1.0a1 — unreleased
 
 - Independent, single-machine project with an MIT license and clean configuration.
@@ -198,5 +155,3 @@
 - Bilingual diagnostics page, Web token/session authentication, health/readiness.
 - Instance locking, authenticated shutdown, private rotating logs and CI checks.
 - Chat, attachments, skills and task execution are deferred to subsequent stages.
-
-首个基础框架预览版，尚未发布；暂不包含聊天、附件、技能及任务执行。

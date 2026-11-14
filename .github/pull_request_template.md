@@ -1,8 +1,8 @@
-Describe the problem and resulting behavior / 说明问题及修改后的行为。
+Describe the problem and resulting behavior
 
-Validation / 验证：
+Validation
 
-- [ ] Relevant tests pass / 相关测试通过
-- [ ] English and Chinese text updated / 同步中英文文案
-- [ ] No credentials, personal infrastructure or private data included / 无凭据及私人数据
-- [ ] Imported code/assets have compatible licenses / 引入代码及资源许可证兼容
+- [ ] Relevant tests pass
+- [ ] English and Chinese UI locale strings updated when needed
+- [ ] No credentials, personal infrastructure or private data included
+- [ ] Imported code/assets have compatible licenses

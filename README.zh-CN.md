@@ -150,7 +150,7 @@ ssh -N -L 3210:127.0.0.1:3210 user@your-server
 
 **警告：**`serve --no-token` 允许任何能访问该 URL 的人使用此 Codex 会话，
 包括其可访问的文件和原生账户。此选项只对本次运行生效，普通 `serve` 仍需令牌。
-Host 检查不是访问控制，HTTP 仍不加密。详见[配置说明](docs/configuration.md#optional-web-sign-in-bypass--可选的免-web-登录模式)。
+Host 检查不是访问控制，HTTP 仍不加密。详见[配置说明](docs/configuration.md#optional-web-sign-in-bypass)。
 
 普通命令自动查找默认配置；没有默认配置时，会记住首次成功初始化或使用的自定义配置，
 以后切换目录也无需反复指定 `--config`。仅操作其他实例等高级场景，才需要用

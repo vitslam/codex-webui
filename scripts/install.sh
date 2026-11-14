@@ -8,7 +8,7 @@ command_dir="$HOME/.local/bin"
 command_path="$command_dir/lazyfish"
 command_marker='# Lazyfish managed command entry'
 if [[ -L "$command_path" ]] || { [[ -e "$command_path" ]] && { [[ ! -f "$command_path" ]] || ! grep -Fxq -- "$command_marker" "$command_path"; }; }; then
-  printf '%s\n' "Command already exists; refusing to overwrite / 命令已存在，不会覆盖: $command_path" >&2
+  printf '%s\n' "Command already exists; refusing to overwrite: $command_path" >&2
   exit 1
 fi
 python_bin="${PYTHON:-}"
@@ -83,7 +83,7 @@ case ":$PATH:" in
 esac
 LAZYFISH_PATH
     fi
-    printf '\nRun once in this terminal / 请在当前终端执行一次:\n  %s %q\n' "$source_command" "$shell_rc"
+    printf '\nRun once in this terminal:\n  %s %q\n' "$source_command" "$shell_rc"
     ;;
 esac
-printf '\nStart / 启动: lazyfish serve\nToken / 令牌: lazyfish token\n'
+printf '\nStart: lazyfish serve\nToken: lazyfish token\n'

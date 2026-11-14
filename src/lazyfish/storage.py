@@ -12,6 +12,8 @@ import hashlib
 import time
 from datetime import datetime, timezone
 
+from .locales.zh import EXIT_CODE_PREFIX
+
 ACTIVE = ("queued", "running", "cancelling")
 TERMINAL = ("completed", "failed", "cancelled", "interrupted")
 
@@ -35,7 +37,7 @@ def open_store(path: Path) -> sqlite3.Connection:
     path.chmod(0o600)
     try:
         version = connection.execute("PRAGMA user_version").fetchone()[0]
-        if version > 8:
+        if version > 9:
             raise ValueError("Database version is newer than this application; do not downgrade it.")
         if version == 0:
             with connection:
@@ -162,6 +164,10 @@ def open_store(path: Path) -> sqlite3.Connection:
                         connection.execute('UPDATE conversations SET run_settings=? WHERE id=?',(json.dumps(values),row['id']))
                         break
                 connection.execute('PRAGMA user_version=8')
+        if version < 9:
+            with connection:
+                connection.execute("ALTER TABLE instructions ADD COLUMN quotes TEXT NOT NULL DEFAULT '[]'")
+                connection.execute('PRAGMA user_version=9')
         return connection
     except Exception:
         connection.close()
@@ -275,11 +281,12 @@ class Store:
             job['report']=report
         for row in db.execute(f"SELECT job_id,hash,name,mime,length(content) AS size FROM output_artifacts WHERE job_id IN ({marks})",identifiers):
             jobs[row['job_id']]['artifacts'].append(self.artifact_info(row['job_id'],row))
-        for table,columns in [('instructions','id,job_id,text,state,position,created_at,skills'),('questions','*'),('approvals','id,job_id,kind,description,state,choices')]:
+        for table,columns in [('instructions','id,job_id,text,state,position,created_at,skills,quotes'),('questions','*'),('approvals','id,job_id,kind,description,state,choices')]:
             for row in db.execute(f"SELECT {columns} FROM {table} WHERE job_id IN ({marks}) ORDER BY rowid",identifiers):
                 value=dict(row);job=jobs[value.pop('job_id')]
                 if table=='questions':value=dict(id=value['id'],state=value['state'],**json.loads(value['payload']))
-                if table=='instructions':value['skills']=json.loads(value['skills'])
+                if table=='instructions':
+                    value['skills']=json.loads(value['skills']);value['quotes']=json.loads(value['quotes'])
                 if table=='approvals':value['choices']=json.loads(value['choices'])
                 job[table].append(value)
         contexts={row['conversation_id']:dict(used=row['used'],window=row['window'],updated_at=row['updated_at']) for row in db.execute(f"SELECT * FROM conversation_context WHERE conversation_id IN (SELECT conversation_id FROM jobs WHERE id IN ({marks}))",identifiers)}
@@ -467,7 +474,7 @@ class Store:
                 if report:db.execute('INSERT INTO job_reports VALUES (?,?)',(new_id,report[0].replace('/api/jobs/'+row['id']+'/', '/api/jobs/'+new_id+'/')))
                 db.execute('UPDATE items SET text=replace(text,?,?),detail=replace(detail,?,?) WHERE job_id=?',('/api/jobs/'+row['id']+'/', '/api/jobs/'+new_id+'/', '/api/jobs/'+row['id']+'/', '/api/jobs/'+new_id+'/',new_id))
                 for instruction in db.execute('SELECT * FROM instructions WHERE job_id=? ORDER BY rowid',(row['id'],)):
-                    db.execute('INSERT INTO instructions VALUES (?,?,?,?,?,?,?,?)',(uuid.uuid4().hex,new_id,uuid.uuid4().hex,instruction['text'],instruction['state'],instruction['position'],instruction['created_at'],instruction['skills']))
+                    db.execute('INSERT INTO instructions VALUES (?,?,?,?,?,?,?,?,?)',(uuid.uuid4().hex,new_id,uuid.uuid4().hex,instruction['text'],instruction['state'],instruction['position'],instruction['created_at'],instruction['skills'],instruction['quotes']))
 
         return self.conversation(identifier)
 
@@ -692,19 +699,19 @@ class Store:
             for index,identifier in enumerate(ordered):db.execute("UPDATE conversations SET pin_order=? WHERE id=?",(len(ordered)-index,identifier))
         return {"ok":True}
 
-    def instruction(self, job, key, text, skills=None):
-        skills=skills or []
+    def instruction(self, job, key, text, skills=None, quotes=None):
+        skills=skills or [];quotes=quotes or []
         with closing(self.connect()) as db,db:
             db.execute("BEGIN IMMEDIATE")
             prior=db.execute("SELECT * FROM instructions WHERE job_id=? AND request_key=?",(job,key)).fetchone()
             if prior:
-                if prior['text']!=text or json.loads(prior['skills'])!=skills:raise StoreError('request_key_conflict')
-                return {**dict(prior),'skills':skills},False
+                if prior['text']!=text or json.loads(prior['skills'])!=skills or json.loads(prior['quotes'])!=quotes:raise StoreError('request_key_conflict')
+                return {**dict(prior),'skills':skills,'quotes':quotes},False
             if not db.execute("SELECT 1 FROM jobs WHERE id=? AND status='running'",(job,)).fetchone():raise StoreError('instruction_expired')
             identifier=uuid.uuid4().hex
             position=db.execute("SELECT COUNT(*) FROM items WHERE job_id=?",(job,)).fetchone()[0]
-            value=dict(id=identifier,text=text,state='pending',position=position,created_at=now(),skills=skills)
-            db.execute("INSERT INTO instructions VALUES (?,?,?,?,?,?,?,?)",(identifier,job,key,text,'pending',position,value['created_at'],json.dumps(skills)))
+            value=dict(id=identifier,text=text,state='pending',position=position,created_at=now(),skills=skills,quotes=quotes)
+            db.execute("INSERT INTO instructions VALUES (?,?,?,?,?,?,?,?,?)",(identifier,job,key,text,'pending',position,value['created_at'],json.dumps(skills),json.dumps(quotes)))
             self.event(db,job,{"type":"instruction","instruction":value})
         return value,True
 
@@ -794,7 +801,7 @@ class Store:
             if command is None or row['status']=='running':
                 command,_,output=row['text'].partition('\n')
             parts=[command,output]
-            if type(detail.get('exit_code')) is int:parts.append(('退出码：' if language.startswith('zh') else 'Exit code: ')+str(detail['exit_code']))
+            if type(detail.get('exit_code')) is int:parts.append((EXIT_CODE_PREFIX if language.startswith('zh') else 'Exit code: ')+str(detail['exit_code']))
             body='\n\n'.join(str(p) for p in parts if p is not None and p!='').encode()
             reset=offset>len(body) or bool(offset and hashlib.sha256(body[:offset]).hexdigest()!=prefix_hash)
             if reset:offset=0

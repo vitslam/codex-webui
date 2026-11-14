@@ -1192,3 +1192,19 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 .sidebar-project-chats { padding-left:12px; }
 .sidebar-project-more { margin:3px 8px 7px 28px; padding:5px; background:transparent; color:var(--muted); font-size:11px; text-align:left; }
 .sidebar-project-empty { margin:4px 10px 9px; color:var(--muted); font-size:11px; }
+
+.text-selection-toolbar { position:fixed; z-index:120; padding:3px; max-width:calc(100vw - 16px); border:1px solid var(--strong-border); border-radius:10px; background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
+.selection-add { padding:8px 12px; border-radius:7px; background:transparent; color:var(--text); font-size:12px; white-space:nowrap; }
+.selection-add:hover { background:var(--hover); }
+#selected-quotes { margin:0 4px 10px; }
+.quote-context { max-width:100%; min-width:0; color:var(--secondary); }
+.quote-summary { display:flex; align-items:center; gap:6px; width:fit-content; max-width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:16px; background:var(--soft); color:var(--secondary); cursor:pointer; list-style:none; font-size:12px; }
+.quote-summary::-webkit-details-marker { display:none; }
+.quote-summary .icon { width:15px; height:15px; flex-shrink:0; }
+.quote-passages { max-height:220px; margin:7px 0; overflow:auto; overscroll-behavior:contain; }
+.quote-passage { padding:7px 10px; border-left:2px solid var(--strong-border); margin:8px 0; }
+.quote-passage-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:5px; color:var(--muted); font-size:11px; }
+.quote-text { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; line-height:1.6; }
+.quote-remove { padding:2px 6px; border-radius:5px; background:transparent; color:var(--muted); }
+.quote-remove:hover { background:var(--hover); color:var(--text); }
+.user-content>.quote-context { margin-bottom:10px; }

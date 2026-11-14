@@ -25,7 +25,7 @@ class ChangeTracker:
             self.root = self.git(cwd, 'rev-parse', '--show-toplevel').decode().strip()
             self.before = self.snapshot()
         except (OSError, ValueError, subprocess.SubprocessError):
-            self.error = '工作目录没有可读取的 Git 仓库，未采集文件快照。'
+            self.error = 'The working directory has no readable Git repository; file snapshots were not captured.'
             if discover:
                 # The default workspace often contains several project repositories.
                 try:
@@ -34,7 +34,7 @@ class ChangeTracker:
                     self.children = [ChangeTracker(str(p), discover=False,excluded=self.excluded) for p in candidates[:8]]
                     self.discovery_truncated = len(candidates) > 8
                     if candidates:
-                        self.error = '最多采集工作目录下一层的 8 个 Git 仓库。'
+                        self.error = 'At most 8 Git repositories directly under the working directory can be captured.'
                 except OSError:
                     pass
 
@@ -117,7 +117,7 @@ class ChangeTracker:
                     raw = entry['diff'].encode('utf-8')
                     if len(raw) > budget:
                         entry['diff'] = raw[:budget].decode('utf-8', errors='ignore')
-                        entry['notice'] = 'Diff 已截断。'
+                        entry['notice'] = 'diff_truncated'
                     budget -= min(len(raw), budget)
                     report['files'].append(entry)
                 for key in ('file_count', 'additions', 'deletions'):
@@ -143,7 +143,7 @@ class ChangeTracker:
                 entry = {'path': name, 'status': 'added' if old is None else 'deleted' if new is None else 'modified',
                          'additions': 0, 'deletions': 0, 'diff': '', 'notice': ''}
                 if any(value is not None and value['text'] is None for value in (old, new)):
-                    entry['notice'] = '二进制、大文件或未缓存的内容，仅记录文件变化。'
+                    entry['notice'] = 'binary_or_uncached'
                 else:
                     before_lines = old['text'].splitlines(keepends=True) if old else []
                     after_lines = new['text'].splitlines(keepends=True) if new else []
@@ -174,9 +174,9 @@ class ChangeTracker:
                     entry['diff'] = raw[:allowance].decode('utf-8', errors='ignore')
                     budget -= min(len(raw), allowance)
                     if len(raw) > allowance:
-                        entry['notice'] = 'Diff 已截断。'
+                        entry['notice'] = 'diff_truncated'
                     elif not chunks:
-                        entry['notice'] = '文件模式或换行发生变化。'
+                        entry['notice'] = 'file_mode_changed'
                 report['files'].append(entry)
                 report['additions'] += entry['additions']; report['deletions'] += entry['deletions']
             head, previous = after['head'], self.before['head']
@@ -197,8 +197,8 @@ class ChangeTracker:
                              'ahead': int(counts[0]) if len(counts) == 2 else None,
                              'behind': int(counts[1]) if len(counts) == 2 else None,
                              'dirty': bool(self.ref('status', '--porcelain'))}
-            report['reason'] = '只展示已采集的文件；仓库过大或部分文件不可读取。' if report['state'] == 'partial' else ''
+            report['reason'] = 'Only captured files are shown; the repository is too large or some files cannot be read.' if report['state'] == 'partial' else ''
         except (OSError, ValueError, subprocess.SubprocessError):
             report['state'] = 'unavailable'
-            report['reason'] = '文件变更采集失败，任务回复仍可正常查看。'
+            report['reason'] = 'File change collection failed; the task response remains available.'
         return report

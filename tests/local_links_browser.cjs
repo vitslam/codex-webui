@@ -40,8 +40,8 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     await dialog.getByRole("button", {name:"Close", exact:true}).click(); await dialog.waitFor({state:"detached"});
     await page.evaluate(() => localStorage.setItem("lazyfish.language", "zh")); await page.reload();
     await page.locator(".markdown li a").click(); await dialog.waitFor();
-    assert.equal(await dialog.getAttribute("aria-label"), "本地路径");
-    assert.equal(await dialog.getByRole("button", {name:"复制路径", exact:true}).count(), 1);
+    assert.equal(await dialog.getAttribute("aria-label"), "\u672c\u5730\u8def\u5f84");
+    assert.equal(await dialog.getByRole("button", {name:"\u590d\u5236\u8def\u5f84", exact:true}).count(), 1);
     await page.setViewportSize({width:390, height:780});
     assert.ok(await dialog.evaluate(el => el.getBoundingClientRect().right <= innerWidth && el.scrollWidth <= el.clientWidth));
     await page.screenshot({path:fixture.output + "/local-path-mobile.png"});

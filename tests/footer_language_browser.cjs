@@ -12,12 +12,15 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
     const summaries=page.locator('.changes-host .change-panel>summary');await summaries.first().waitFor();assert.equal(await summaries.count(),2);
     async function check(expected){const values=await summaries.allTextContents();expected.forEach((text,index)=>assert.ok(values[index].includes(text),values[index]));values.forEach(text=>{assert.ok(text.includes('+56'));assert.ok(text.includes('-4'));});}
     async function setLanguage(value){await page.evaluate(()=>panels.open('settings'));await page.selectOption('#language',value);await page.locator('#account-dialog').press('Escape');}
-    await check(['修改 1 个文件','修改 7 个文件']);
+    await check(['\u4fee\u6539 1 \u4e2a\u6587\u4ef6','\u4fee\u6539 7 \u4e2a\u6587\u4ef6']);
     // Keep the report expanded while switching locale; language changes must redraw it.
     await summaries.first().click();await page.locator('.change-panel-body .review-files').waitFor();
+    await page.locator('.review-file>summary').first().click();await page.getByText('\u6587\u4ef6\u6a21\u5f0f\u6216\u6362\u884c\u53d1\u751f\u53d8\u5316\u3002',{exact:true}).waitFor();
+    await summaries.nth(1).click();await page.locator('.review-file>summary').nth(1).click();await page.getByText('Diff \u5df2\u622a\u65ad\u3002',{exact:true}).waitFor();
     await setLanguage('en');await check(['changed 1 file','changed 7 files']);
+    await page.getByText('File mode or newline changed.',{exact:true}).waitFor();await page.getByText('Diff truncated.',{exact:true}).waitFor();
     assert.ok(await page.locator('.change-panel').first().evaluate(el=>el.open));
-    await setLanguage('zh');await check(['修改 1 个文件','修改 7 个文件']);
+    await setLanguage('zh');await check(['\u4fee\u6539 1 \u4e2a\u6587\u4ef6','\u4fee\u6539 7 \u4e2a\u6587\u4ef6']);
     await setLanguage('en');await page.reload();await summaries.first().waitFor();await check(['changed 1 file','changed 7 files']);
     assert.deepEqual(errors,[]);console.log('footer language checks passed');
   }finally{await browser.close();}

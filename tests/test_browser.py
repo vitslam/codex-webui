@@ -14,6 +14,20 @@ from test_service import ServiceCase
     "LAZYFISH_BROWSER_NODE", "LAZYFISH_BROWSER_MODULE", "LAZYFISH_BROWSER_EXECUTABLE")),
     "Set LAZYFISH_BROWSER_NODE/MODULE/EXECUTABLE to run browser checks")
 class BrowserTests(ServiceCase):
+    def test_selected_passages(self):
+        chats=[]
+        for title in ('Selection Alpha', 'Selection Beta'):
+            chat=Store(self.settings.data_dir/'lazyfish.db').create_conversation(str(self.workspace),title)
+            store=Store(self.settings.data_dir/'lazyfish.db');chats.append(chat['id'])
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question about the project',None,None)
+            store.item(job['id'],'reply','assistant','Working directories define where a task starts. File access is controlled by sandbox permissions and approvals.\n\n```html\n<img src=x onerror=alert(1)>\n```','completed')
+            store.finish(job['id'],'completed')
+        fixture=self.root/'selection-quotes.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,main=chats[0],other=chats[1],output=os.environ.get('LAZYFISH_BROWSER_OUTPUT',str(self.root)))))
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('selection_quotes_browser.cjs'))],env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=120)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('selected passage browser checks passed',result.stdout)
+
     def test_search_timing_composition_stale_results_and_retry(self):
         self._display_browser('search-timing')
 
@@ -83,7 +97,7 @@ class BrowserTests(ServiceCase):
         for count in (1,7):
             job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question',None,None)
             store.item(job['id'],'reply','assistant','Saved answer','completed')
-            store.report(job['id'],{'changes':{'state':'complete','file_count':count,'additions':56,'deletions':4,'files':[]}})
+            store.report(job['id'],{'changes':{'state':'complete','file_count':count,'additions':56,'deletions':4,'files':[{'path':'example.txt','status':'modified','additions':56,'deletions':4,'diff':'+saved output\n','notice':'\u6587\u4ef6\u6a21\u5f0f\u6216\u6362\u884c\u53d1\u751f\u53d8\u5316\u3002' if count==1 else 'diff_truncated'}]}})
             store.finish(job['id'],'completed')
         fixture=self.root/'footer-language.json'
         fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,chat=chat['id'])))
@@ -191,16 +205,16 @@ class BrowserTests(ServiceCase):
         workspaces=[self.workspace/'lazyfish',self.workspace/'example-project']
         for path in workspaces:path.mkdir()
         archived=[]
-        for index,title in enumerate(('梳理会话归档交互','修复技能加载诊断','检查长消息折叠效果','Review project notes')):
+        for index,title in enumerate(('\u68b3\u7406\u4f1a\u8bdd\u5f52\u6863\u4ea4\u4e92','\u4fee\u590d\u6280\u80fd\u52a0\u8f7d\u8bca\u65ad','\u68c0\u67e5\u957f\u6d88\u606f\u6298\u53e0\u6548\u679c','Review project notes')):
             chat=store.create_conversation(str(workspaces[index//3]),title)
             job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question',None,None)
             store.item(job['id'],'answer','assistant','Saved response.','completed');store.finish(job['id'],'completed')
             store.archive(chat['id']);archived.append(chat['id'])
         active=[]
-        for title in ('归档功能预览','发布前检查','界面交互记录'):
+        for title in ('\u5f52\u6863\u529f\u80fd\u9884\u89c8','\u53d1\u5e03\u524d\u68c0\u67e5','\u754c\u9762\u4ea4\u4e92\u8bb0\u5f55'):
             chat=store.create_conversation(str(workspaces[0]),title)
-            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'请检查项目当前的状态。',None,None)
-            store.item(job['id'],'answer','assistant','已完成检查。\n\n项目文件和会话记录均正常，可以继续处理后续任务。','completed');store.finish(job['id'],'completed');active.append(chat['id'])
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'\u8bf7\u68c0\u67e5\u9879\u76ee\u5f53\u524d\u7684\u72b6\u6001\u3002',None,None)
+            store.item(job['id'],'answer','assistant','\u5df2\u5b8c\u6210\u68c0\u67e5\u3002\n\n\u9879\u76ee\u6587\u4ef6\u548c\u4f1a\u8bdd\u8bb0\u5f55\u5747\u6b63\u5e38\uff0c\u53ef\u4ee5\u7ee7\u7eed\u5904\u7406\u540e\u7eed\u4efb\u52a1\u3002','completed');store.finish(job['id'],'completed');active.append(chat['id'])
         fixture=self.root/'archive-browser.json'
         fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,active=active,archived=archived,workspaces=[str(p) for p in workspaces],output=os.environ.get('LAZYFISH_BROWSER_OUTPUT',str(self.root)))))
         result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('archive_browser.cjs'))],env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=120)
@@ -256,8 +270,8 @@ class BrowserTests(ServiceCase):
                                     ('landscape.png', 1400, 900), ('portrait.png', 800, 1600)]:
             raw = png(width, height)
             artifacts.append(store.save_artifact(job['id'], hashlib.sha256(raw).hexdigest(), name, 'image/png', raw))
-        text = '### 图片展示\n\n[查看截图](' + artifacts[0]['url'] + '?download=1#preview)\n\n' + \
-               '![正文图片](' + artifacts[1]['url'] + ')\n\n[下载原图](' + artifacts[1]['url'] + '?download=1)'
+        text = '### \u56fe\u7247\u5c55\u793a\n\n[\u67e5\u770b\u622a\u56fe](' + artifacts[0]['url'] + '?download=1#preview)\n\n' + \
+               '![\u6b63\u6587\u56fe\u7247](' + artifacts[1]['url'] + ')\n\n[\u4e0b\u8f7d\u539f\u56fe](' + artifacts[1]['url'] + '?download=1)'
         store.item(job['id'], 'reply', 'assistant', text, 'completed')
         store.report(job['id'], {'artifacts':artifacts+[artifacts[-1]]}); store.finish(job['id'], 'completed')
         fixture = self.root/'image-outputs-browser.json'
@@ -274,9 +288,9 @@ class BrowserTests(ServiceCase):
         job, _ = store.reserve(chat['id'], 'fixture', uuid.uuid4().hex, 'Show local repositories', None, None)
         content = '\n\n'.join([
             '- [aclone](/projects/dataset/aclone)',
-            '| File | Purpose |\n| --- | --- |\n| [报告](</projects/My Report (draft).md:12:3>) | Notes |',
+            '| File | Purpose |\n| --- | --- |\n| [\u62a5\u544a](</projects/My Report (draft).md:12:3>) | Notes |',
             '**[nested](/projects/a(b(c)).py#L42C2)**',
-            '[中文](/projects/数据/说明.md)',
+            '[\u4e2d\u6587](/projects/\u6570\u636e/\u8bf4\u660e.md)',
             '[web](https://example.org/docs) [mail](mailto:user@example.org)',
             '[download](/api/jobs/' + job['id'] + '/artifacts/' + 'a'*64 + '?download=1)',
             '`[literal](/projects/code)`\n\n```text\n[fenced](/projects/code)\n```',
@@ -354,21 +368,21 @@ class BrowserTests(ServiceCase):
             store.item(job["id"],"reply","assistant",rich+'\n\n'+'\n'.join(
                 f'Paragraph {index}.{line} — readable history.' for line in range(9)),"completed")
             store.finish(job["id"],"completed"); ids.append(job["id"])
-        other = store.create_conversation(str(self.workspace),"Codex Web 项目")
+        other = store.create_conversation(str(self.workspace),"Codex Web \u9879\u76ee")
         store.update_conversation(other["id"],pinned=True)
         sample,_ = store.reserve(other["id"],"fixture",uuid.uuid4().hex,
-            "帮我梳理一下接下来的开发计划，优先打磨日常使用的对话体验。",None,"medium")
+            "\u5e2e\u6211\u68b3\u7406\u4e00\u4e0b\u63a5\u4e0b\u6765\u7684\u5f00\u53d1\u8ba1\u5212\uff0c\u4f18\u5148\u6253\u78e8\u65e5\u5e38\u4f7f\u7528\u7684\u5bf9\u8bdd\u4f53\u9a8c\u3002",None,"medium")
         store.item(sample["id"],"reply","assistant",
-            "可以。先把核心对话体验打磨完整，再扩展附件与技能。\n\n"
-            "### 接下来的重点\n\n"
-            "| 优先级 | 方向 | 目标 |\n| --- | --- | --- |\n"
-            "| 01 | 对话体验 | 稳定续聊、历史定位和快捷切换 |\n"
-            "| 02 | 附件与技能 | 图片预览、文件下载和技能选择 |\n\n"
-            "日常开发可以先检查本机环境，再启动服务：\n\n"
+            "\u53ef\u4ee5\u3002\u5148\u628a\u6838\u5fc3\u5bf9\u8bdd\u4f53\u9a8c\u6253\u78e8\u5b8c\u6574\uff0c\u518d\u6269\u5c55\u9644\u4ef6\u4e0e\u6280\u80fd\u3002\n\n"
+            "### \u63a5\u4e0b\u6765\u7684\u91cd\u70b9\n\n"
+            "| \u4f18\u5148\u7ea7 | \u65b9\u5411 | \u76ee\u6807 |\n| --- | --- | --- |\n"
+            "| 01 | \u5bf9\u8bdd\u4f53\u9a8c | \u7a33\u5b9a\u7eed\u804a\u3001\u5386\u53f2\u5b9a\u4f4d\u548c\u5feb\u6377\u5207\u6362 |\n"
+            "| 02 | \u9644\u4ef6\u4e0e\u6280\u80fd | \u56fe\u7247\u9884\u89c8\u3001\u6587\u4ef6\u4e0b\u8f7d\u548c\u6280\u80fd\u9009\u62e9 |\n\n"
+            "\u65e5\u5e38\u5f00\u53d1\u53ef\u4ee5\u5148\u68c0\u67e5\u672c\u673a\u73af\u5883\uff0c\u518d\u542f\u52a8\u670d\u52a1\uff1a\n\n"
             "```bash\nlazyfish doctor --probe\nlazyfish serve\n```\n\n"
-            "保持每一步都可以独立运行和验证。","completed")
+            "\u4fdd\u6301\u6bcf\u4e00\u6b65\u90fd\u53ef\u4ee5\u72ec\u7acb\u8fd0\u884c\u548c\u9a8c\u8bc1\u3002","completed")
         store.finish(sample["id"],"completed")
-        titles = ["部署与环境检查","原生会话续聊","Markdown 排版","对话分支设计","主题与快捷键","工作目录梳理","附件预览","开发路线图"]
+        titles = ["\u90e8\u7f72\u4e0e\u73af\u5883\u68c0\u67e5","\u539f\u751f\u4f1a\u8bdd\u7eed\u804a","Markdown \u6392\u7248","\u5bf9\u8bdd\u5206\u652f\u8bbe\u8ba1","\u4e3b\u9898\u4e0e\u5feb\u6377\u952e","\u5de5\u4f5c\u76ee\u5f55\u68b3\u7406","\u9644\u4ef6\u9884\u89c8","\u5f00\u53d1\u8def\u7ebf\u56fe"]
         for index in range(53):
             store.create_conversation(str(self.workspace),titles[index%len(titles)]+(f" · {index//len(titles)+1}" if index>=len(titles) else ""))
         fixture = self.root/"browser-fixture.json"

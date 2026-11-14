@@ -1,4 +1,4 @@
-# Third-party notices / 第三方说明
+# Third-party notices
 
 This foundation contains original application code and uses the Python standard
 library at runtime. It does not bundle Codex CLI, its credentials, a private
@@ -17,9 +17,3 @@ separately by developers/CI; they are not runtime dependencies or bundled assets
 
 Review ownership, license compatibility and attribution before importing any future
 third-party component.
-
-当前基础框架不捆绑 Codex、凭据、私有部署数据或外部 UI 资源。Codex 由用户自行安装，
-遵循其许可证与服务条款。布局、SVG 图标、组件样式、配色注册表/加载器及 Markdown 组件
-以及执行槽卡片、请求耗时图和图片头部尺寸解析器，改编自项目所有者授权复用的原 Lazyfish 自有代码，
-采用本项目 MIT 许可证，无第三方解析器和私有部署接入。浏览器测试可选使用单独安装的
-Playwright/Chromium，不作为运行时依赖或分发资源。后续引入外部组件前仍需审核许可。

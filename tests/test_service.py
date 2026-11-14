@@ -87,7 +87,7 @@ class ServiceTests(ServiceCase):
         self.assertEqual(self.http("/api/status")[0], 401)
         self.assertEqual(self.http("/api/control/status")[0], 401)
         self.assertNotIn("WARNING: Web token authentication is disabled.", self.output_path.read_text())
-        for path in ("/", "/app.js", "/app.css", "/markdown.js", "/scroll.js", "/shortcuts.js", "/themes.css", "/themes.js", "/panels.js", "/run-settings.js", "/features.js", "/skills.js", "/images.js", "/preferences.js", "/reference-i18n.js", "/activity.js", "/experience.js", "/steps.js", "/changes.js", "/artifacts.js", "/message-view.js", "/composer-dock.js", "/sidebar-order.js", "/sidebar-projects.js"):
+        for path in ("/", "/app.js", "/app.css", "/markdown.js", "/scroll.js", "/shortcuts.js", "/themes.css", "/themes.js", "/panels.js", "/run-settings.js", "/features.js", "/skills.js", "/images.js", "/preferences.js", "/reference-i18n.js", "/i18n-zh.js", "/activity.js", "/experience.js", "/steps.js", "/changes.js", "/artifacts.js", "/message-view.js", "/composer-dock.js", "/sidebar-order.js", "/sidebar-projects.js", "/selection-quotes.js"):
             code, headers, body = self.http(path)
             self.assertEqual(code, 200)
             self.assertEqual(headers["Cache-Control"], "no-store" if path=="/" else "no-cache")

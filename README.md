@@ -4,7 +4,7 @@
   <img src="docs/assets/lazyfish-logo.png" alt="Lazyfish logo" width="640">
 </p>
 
-[简体中文](README.zh-CN.md) · [Configuration](docs/configuration.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
+[Simplified Chinese](README.zh-CN.md) · [Configuration](docs/configuration.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
 
 A lightweight, self-hosted web companion for an existing **Codex CLI** installation.
 The Web service and CLI run on the **same machine**. Use a browser locally, on a
@@ -16,7 +16,7 @@ Lazyfish is an independently developed third-party project. It is not affiliated
 
 ## Interface preview
 
-| Dark mode · 中文 | Light mode · English |
+| Dark mode · Chinese | Light mode · English |
 | --- | --- |
 | ![Lazyfish dark theme with Chinese interface](docs/assets/screenshot-dark.png) | ![Lazyfish light theme with English interface and reasoning controls](docs/assets/screenshot-light.png) |
 
@@ -158,7 +158,7 @@ See the [feature guide](docs/features.md) for detailed behavior and limits, and 
 **Warning:** `serve --no-token` lets anyone who can reach the URL use this Codex
 session, including its files and native account. It applies only to that run;
 normal `serve` still requires the token. Host checks are not access control and
-HTTP remains unencrypted. See [configuration](docs/configuration.md#optional-web-sign-in-bypass--可选的免-web-登录模式).
+HTTP remains unencrypted. See [configuration](docs/configuration.md#optional-web-sign-in-bypass).
 
 Ordinary commands find the default configuration automatically. If no default
 exists, the first successfully initialized/used custom configuration is remembered
