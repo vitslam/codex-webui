@@ -14,7 +14,7 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     assert.equal(await gallery.locator(".output-artifact").count(), 3);
     assert.equal(await gallery.locator("figcaption").filter({hasText:"linked.png"}).count(), 1);
     assert.equal(await gallery.locator("figcaption").filter({hasText:"inline.png"}).count(), 0);
-    assert.equal(await page.getByRole("link", {name:"查看截图", exact:true}).count(), 1);
+    assert.equal(await page.getByRole("link", {name:"\u67e5\u770b\u622a\u56fe", exact:true}).count(), 1);
     assert.equal(await inline.count(), 1);
     async function checkImages(selector, maxWidth, maxHeight) {
       for (const image of await page.locator(selector).all()) {

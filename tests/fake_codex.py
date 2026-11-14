@@ -216,7 +216,10 @@ def main():
         if job and not awaiting and time.monotonic()>ready_at:
             if job["prompt"]=="[slow]" and job["index"]>0:
                 continue
-            chunk = job["text"][job["index"]:job["index"]+4]
+            # Bound normal fixture latency independently of prompt/snapshot length.
+            # Explicit streaming and cancellation fixtures keep their original pacing.
+            size = 4 if job['prompt'] in ('[stream]', '[slow]') else max(4, (len(job['text'])+15)//16)
+            chunk = job["text"][job["index"]:job["index"]+size]
             if chunk:
                 event("item/plan/delta" if job['prompt']=='[plan-only]' else "item/agentMessage/delta",{"turnId":job["id"],"itemId":"reply","delta":chunk})
                 job["index"] += len(chunk)

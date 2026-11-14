@@ -4,7 +4,7 @@
   <img src="docs/assets/lazyfish-logo.png" alt="Lazyfish logo" width="640">
 </p>
 
-[简体中文](README.zh-CN.md) · [Configuration](docs/configuration.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
+[Simplified Chinese](README.zh-CN.md) · [Configuration](docs/configuration.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
 
 A lightweight, self-hosted web companion for an existing **Codex CLI** installation.
 The Web service and CLI run on the **same machine**. Use a browser locally, on a
@@ -16,7 +16,7 @@ Lazyfish is an independently developed third-party project. It is not affiliated
 
 ## Interface preview
 
-| Dark mode · 中文 | Light mode · English |
+| Dark mode · Chinese | Light mode · English |
 | --- | --- |
 | ![Lazyfish dark theme with Chinese interface](docs/assets/screenshot-dark.png) | ![Lazyfish light theme with English interface and reasoning controls](docs/assets/screenshot-light.png) |
 
@@ -40,7 +40,7 @@ These optimizations improve page loading, interaction and access. Model generati
   CLI is installed and authenticated separately; existing installations are reused.
 - Authenticate with your chosen native Codex login method, or use the Web account panel before chatting.
   See [Codex authentication](https://learn.chatgpt.com/docs/auth).
-- An optional project directory; leave the workspace empty to use a private default workspace.
+- An optional default project directory; leave it empty to start new chats in the service user’s home directory.
 
 Codex is not bundled or installed by Lazyfish. An existing CLI login is reused;
 a separate OpenAI API key is **not required** when your native login already works.
@@ -69,9 +69,7 @@ file and prints the `source` command to run once in the current terminal. Run th
 command before using `lazyfish` (or open a new terminal). Reinstalling updates the
 managed launcher without duplicating PATH configuration; unrelated existing commands
 are not overwritten. Keep the installation directory in place.
-Workspace configuration defaults to empty. Tasks without a selected directory use
-`workspace/` under the data directory; optionally pass `--workspace /path/to/project`
-to the installer to restrict work to an existing project directory.
+Workspace configuration defaults to empty, so new chats start in the service user’s home directory. Use `--workspace /path/to/project` to choose another default. Settings → Default working directory for new chats saves a server-wide override shared across browsers. Defaults never restrict directory selection or change existing chats; every chat stores its own working directory. Sandbox permissions and approvals control file access.
 
 The installer installs Lazyfish and initializes private configuration and data only.
 Install and sign in to Codex separately using the [official CLI documentation](https://learn.chatgpt.com/docs/codex/cli).
@@ -160,7 +158,7 @@ See the [feature guide](docs/features.md) for detailed behavior and limits, and 
 **Warning:** `serve --no-token` lets anyone who can reach the URL use this Codex
 session, including its files and native account. It applies only to that run;
 normal `serve` still requires the token. Host checks are not access control and
-HTTP remains unencrypted. See [configuration](docs/configuration.md#optional-web-sign-in-bypass--可选的免-web-登录模式).
+HTTP remains unencrypted. See [configuration](docs/configuration.md#optional-web-sign-in-bypass).
 
 Ordinary commands find the default configuration automatically. If no default
 exists, the first successfully initialized/used custom configuration is remembered

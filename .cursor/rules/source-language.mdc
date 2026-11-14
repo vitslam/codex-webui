@@ -1,0 +1,13 @@
+---
+description: Keep repository text in English outside the Chinese README and locale resources
+alwaysApply: true
+---
+
+# Repository language
+
+- Write documentation, comments, identifiers, templates and CLI messages in English.
+- Keep Chinese text only in `README.zh-CN.md`, `src/lazyfish/web/static/i18n-zh.js`
+  and `src/lazyfish/locales/zh.py`.
+- Keep English and Chinese UI strings synchronized when changing user-facing behavior.
+- Retain Unicode input, path and locale regression coverage using escaped fixtures.
+- Preserve backward compatibility for already saved localized reports.

@@ -4,7 +4,7 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = create;
   else (root.LazyfishUI || (root.LazyfishUI = {})).changes = create;
 })(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global,
-function createChanges({document, node, icon, t, api, executionDetails, jobFinished}) {
+function createChanges({document, node, icon, t, api, executionDetails, jobFinished, legacyNotices={}}) {
   const changeReports = new Map();
   function renderChangeReport(body, report, job) {
     body.replaceChildren();
@@ -47,7 +47,7 @@ function createChanges({document, node, icon, t, api, executionDetails, jobFinis
         }
       }
       details.addEventListener('toggle', draw); draw();
-      if (file.notice) details.append(node('p', t(file.notice==='Diff 已截断。'?'changes.truncated':file.notice==='文件模式或换行发生变化。'?'changes.mode':'changes.binary'), 'meta'));
+      if (file.notice) details.append(node('p', t(({diff_truncated:'changes.truncated',file_mode_changed:'changes.mode',binary_or_uncached:'changes.binary'})[file.notice]||legacyNotices[file.notice]||'changes.binary'), 'meta'));
       details.append(diff);
       files.append(details);
     }
@@ -55,7 +55,7 @@ function createChanges({document, node, icon, t, api, executionDetails, jobFinis
     body.append(files);
   }
   function appendChangePanel(card, message, job) {
-    if (!job || !job.id || !jobFinished(job) || !job.changes || !(job.changes.file_count > 0 || ['partial','unavailable'].includes(job.changes.state))) return;
+    if (!job || !job.id || !jobFinished(job) || !job.changes || !(job.changes.file_count > 0)) return;
     const summary = job.changes;
     const panel = executionDetails(message.id + ':changes', '', 'change-panel');
     const separator = node('span', '·'); separator.setAttribute('aria-hidden', 'true');

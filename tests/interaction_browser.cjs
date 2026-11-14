@@ -34,7 +34,7 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
       await page.waitForFunction(async({id,path})=>(await(await fetch('/api/conversations/'+id)).json()).workspace===path,{id:f.chats[0],path:f.workspace});
       assert.equal(await page.locator('#workdir').inputValue(),f.projects[1]);assert.equal(await page.evaluate(()=>conversation.workspace),f.projects[1]);await page.unrouteAll({behavior:'wait'});
       // Explicit saved defaults win over any previously viewed chat's settings.
-      await page.evaluate(()=>panels.open('settings'));await page.locator('#default-fast').check();await page.locator('#default-permission').selectOption('ask');await page.locator('#default-workspace').fill(f.projects[1]);await page.locator('#default-workspace').press('Tab');await page.locator('#account-dialog').press('Escape');
+      await page.evaluate(()=>panels.open('settings'));await page.locator('#default-fast').check();await page.locator('#default-permission').selectOption('ask');await page.locator('#default-workspace').fill(f.projects[1]);await page.locator('#default-workspace').press('Tab');await page.locator('#default-workspace-status').filter({hasText:'Default directory saved.'}).waitFor();await page.locator('#account-dialog').press('Escape');
       await chat(f.chats[0]);await fresh();assert.equal(await page.locator('#workdir').inputValue(),f.projects[1]);const explicit=await page.evaluate(()=>runChoices());assert.equal(explicit.fast_mode,true);assert.equal(explicit.permission_mode,'ask');assert.equal(explicit.collaboration_mode,'default');
     }else{
       const first=await send('[question]');await page.locator('#question-dialog').waitFor();

@@ -7,13 +7,16 @@ There is no automatic production deployment. Do not add a remote or publish
 without an explicit request.
 
 Stage 4 also adds native account/quota/MCP panels, image inputs, workspace skills
-and persisted context usage. Keep schema 3 → 4 → 5 → 6 → 7 → 8 migrations non-destructive.
+and persisted context usage. Keep schema 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 migrations non-destructive.
 Keep native Codex integration behind the adapter boundary. Never run a real model
 in normal tests. Use fake executables and isolated configuration/data directories.
 
 Use Python 3.11+ and the standard library for runtime code. Run relevant checks:
 `python -m unittest discover -s tests -v`, and build/install a wheel when packaging
-changes. Preserve English and Chinese documentation/UI together.
+changes. Keep documentation, source code, comments, templates and command output in English.
+Chinese text belongs only in `README.zh-CN.md`, `src/lazyfish/web/static/i18n-zh.js`
+and `src/lazyfish/locales/zh.py`. Keep both UI locales synchronized. Unicode tests
+should retain their coverage using escaped fixtures.
 
 Keep disposable scripts, test output, build artifacts and screenshots in the
 task's private temporary directory. Set TMPDIR, TEMP, TMP and browser cache paths

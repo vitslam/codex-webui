@@ -1,7 +1,7 @@
 "use strict";
 // Original Lazyfish model display, dashboard and pointer interaction, using local APIs.
-window.LazyfishRunSettings = function({node,icon,t,getStatus,getConversation,onModel}) {
-  const $=s=>document.querySelector(s), models=new Map(), fallback=["low","medium","high","xhigh","max","ultra"];
+window.LazyfishRunSettings = function({node,icon,t,getStatus,getConversation,onModel,query=null,storageKey="lazyfish.run.v1",notify=true,onChange=()=>{}}) {
+  const $=query||((s)=>document.querySelector(s)), models=new Map(), fallback=["low","medium","high","xhigh","max","ultra"];
   const validEfforts=new Set(["","none","minimal",...fallback]), slider=$("#effort-slider"), track=$(".effort-slider");
   let defaults={},fast=false,drag=null,signature="";
   const current=()=>$("#model").value;
@@ -11,7 +11,7 @@ window.LazyfishRunSettings = function({node,icon,t,getStatus,getConversation,onM
   function defaultEffort() {const supported=levels();return [model()?.default_effort,getStatus()?.execution.effort,defaults.effort,"medium",supported[0]].find(value=>supported.includes(value));}
   function effort() {return levels().includes($("#effort").value) ? $("#effort").value : defaultEffort();}
   function normalize() {if($("#effort").value && !levels().includes($("#effort").value))$("#effort").value=defaultEffort();}
-  function save() {try{localStorage.setItem("lazyfish.run.v1",JSON.stringify({model:current(),effort:$("#effort").value,fast}));}catch{ /* optional browser preferences */ }window.dispatchEvent(new Event('lazyfish-run-settings'));}
+  function save() {try{storageKey&&localStorage.setItem(storageKey,JSON.stringify({model:current(),effort:$("#effort").value,fast}));}catch{ /* optional browser preferences */ }onChange({model:current()||null,effort:$('#effort').value||null,fast_mode:fast});if(notify)window.dispatchEvent(new Event('lazyfish-run-settings'));}
   function changed() {onModel();save();}
   function resetPicker(focus=false) {$("#model-picker").hidden=true;$("#dashboard-controls").hidden=false;$("#model-toggle").setAttribute("aria-expanded","false");if(focus)$("#model-toggle").focus();}
   function choose(value) {finishDrag(true);$("#model").value=value;if(value&&!models.has(value))models.set(value,{id:value});normalize();resetPicker(true);changed();}
@@ -80,6 +80,6 @@ window.LazyfishRunSettings = function({node,icon,t,getStatus,getConversation,onM
   window.addEventListener("blur",()=>finishDrag(true));
   return {render,defaults:()=>({models:[...models.values()],fallback,model:getStatus()?.execution.model||defaults.model||'',effort:getStatus()?.execution.effort||defaults.effort||'medium',fast:false}),
     restoreConversation:value=>{finishDrag(true);$('#model').value=value.model||'';$('#effort').value=value.effort||'';fast=value.fast_mode===true;normalize();render();},
-    applyDefaults:value=>{finishDrag(true);$("#model").value=value.model || "";$("#effort").value=value.effort || "";fast=value.fast===true;normalize();changed();},settings:()=>({fast_mode:fast}),restore:()=>{try{const saved=JSON.parse(localStorage.getItem("lazyfish.run.v1"));if(saved&&typeof saved.model==="string"&&/^[a-zA-Z0-9._:/-]{0,120}$/.test(saved.model)&&validEfforts.has(saved.effort)){$("#model").value=saved.model;$("#effort").value=saved.effort;fast=saved.fast===true;}}catch{ /* optional browser preferences */ }render();},
-    catalog:value=>{finishDrag(true);defaults=value.defaults || {};for(const item of value.models || [])if(item.id)models.set(item.id,item);normalize();onModel();window.dispatchEvent(new Event("lazyfish-models"));}};
+    applyDefaults:value=>{finishDrag(true);$("#model").value=value.model || "";$("#effort").value=value.effort || "";fast=value.fast===true;normalize();changed();},settings:()=>({fast_mode:fast}),restore:()=>{try{const saved=JSON.parse(localStorage.getItem(storageKey));if(saved&&typeof saved.model==="string"&&/^[a-zA-Z0-9._:/-]{0,120}$/.test(saved.model)&&validEfforts.has(saved.effort)){$("#model").value=saved.model;$("#effort").value=saved.effort;fast=saved.fast===true;}}catch{ /* optional browser preferences */ }render();},
+    catalog:value=>{finishDrag(true);defaults=value.defaults || {};for(const item of value.models || [])if(item.id)models.set(item.id,item);normalize();onModel();if(notify)window.dispatchEvent(new Event("lazyfish-models"));}};
 };

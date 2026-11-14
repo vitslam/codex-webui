@@ -67,8 +67,7 @@ lazyfish serve
 `source` 命令；请先执行提示的命令，再使用 `lazyfish`（也可重新打开终端）。
 重复安装会更新命令入口，不会重复添加 PATH 配置，也不会覆盖其他已有的同名命令。
 请保留安装目录。
-工作目录配置默认留空；未选择目录的任务使用数据目录下的 `workspace/`。
-也可在网页选择项目目录，或在安装时用 `--workspace /项目路径` 限定工作范围。
+工作目录配置默认留空，新对话从运行用户的家目录开始；安装时可用 `--workspace /项目路径` 指定其他默认值。设置中的“新对话默认工作目录”在服务器保存，所有浏览器共用。默认值不限制可选目录，也不修改已有对话；每个对话独立保存自己的工作目录，读写权限仍由沙箱和审批控制。
 
 安装脚本仅安装 Lazyfish、初始化配置和数据。Codex 请按照[官方 CLI 文档](https://learn.chatgpt.com/docs/codex/cli)自行安装并登录。
 找不到 `codex` 命令时，可手动指定路径：
@@ -151,7 +150,7 @@ ssh -N -L 3210:127.0.0.1:3210 user@your-server
 
 **警告：**`serve --no-token` 允许任何能访问该 URL 的人使用此 Codex 会话，
 包括其可访问的文件和原生账户。此选项只对本次运行生效，普通 `serve` 仍需令牌。
-Host 检查不是访问控制，HTTP 仍不加密。详见[配置说明](docs/configuration.md#optional-web-sign-in-bypass--可选的免-web-登录模式)。
+Host 检查不是访问控制，HTTP 仍不加密。详见[配置说明](docs/configuration.md#optional-web-sign-in-bypass)。
 
 普通命令自动查找默认配置；没有默认配置时，会记住首次成功初始化或使用的自定义配置，
 以后切换目录也无需反复指定 `--config`。仅操作其他实例等高级场景，才需要用

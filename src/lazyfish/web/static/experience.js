@@ -1,15 +1,16 @@
 "use strict";
 // Reference timeline, diff, outputs, message actions and native questions.
 window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNode,getConversation,getBusy,showReasoning=()=>false,onEdit,onFork,onImplement,report,duration,onEditStart,onUserContentToggle}) {
+  const quoteUI=LazyfishQuoteUI({node,icon,t});
   const $=s=>document.querySelector(s),legacy={command:'command_execution',file:'file_change',reasoning:'reasoning',skill:'skill_invocation',compact:'context_compaction',assistant:'agent_message',commentary:'agent_message'};
   const sourceNode=(tag,text,cls)=>node(tag,cls,text),finished=job=>!['queued','running','cancelling'].includes(job.status);
   const {artifactList}=window.LazyfishUI.artifacts({node:sourceNode,imageNode,t});
   const steps=window.LazyfishUI.steps({document,node:sourceNode,t,api,markdown,copyButton,imageNode,artifactList,jobFinished:finished,getFollowBottom:()=>false,showReasoning});
-  const changes=window.LazyfishUI.changes({document,node:sourceNode,icon,t,api,executionDetails:steps.executionDetails,jobFinished:finished});
+  const changes=window.LazyfishUI.changes({document,node:sourceNode,icon,t,api,executionDetails:steps.executionDetails,jobFinished:finished,legacyNotices:window.LazyfishLegacyChangeNotices});
   const users=window.LazyfishUI.messageView({document,node:sourceNode,icon,t,i18n:{get locale(){return document.documentElement.lang;},number:v=>v.toLocaleString(document.documentElement.lang)},markdown,copyButton,imageNode,artifactList,executionDetails:steps.executionDetails,jobFinished:finished,
     onFork:message=>onFork(getConversation().jobs.find(j=>j.id===message.id)),onEdit:(message,text,key)=>onEdit(message.id,text,key),canEdit:id=>!getBusy()&&getConversation()?.jobs.some(j=>j.id===id),newRequestId:()=>LazyfishRequestId(),onEditStart,onUserContentToggle});
   users.bindUserActions();
-  function userContent(card,message){const content=users.appendUserContent(card,message);content.classList.add('user-message');return content;}
+  function userContent(card,message){const content=users.appendUserContent(card,message);content.classList.add('user-message');if(message.quotes?.length)content.prepend(quoteUI.render(message.quotes,'history:'+message.id));return content;}
   function userActions(card,job){users.appendUserActions(card,{id:job.id,content:job.prompt,images:job.inputs?.images});}
   function detail(item){
     const value={...item.detail,id:item.id,eventStatus:item.status};
@@ -61,7 +62,7 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
         nodes.push(process);
       }
       if(instruction){
-        const card=node('div','message user supplementary-instruction'),content=userContent(card,{id:instruction.id,content:instruction.text});
+        const card=node('div','message user supplementary-instruction'),content=userContent(card,{id:instruction.id,content:instruction.text,quotes:instruction.quotes});
         for(const skill of instruction.skills||[])content.append(node('span','skill-chip',skill.name));
         content.append(node('p','instruction-delivery',t('instruction.'+instruction.state)));
         users.appendUserActions(card,{id:instruction.id,content:instruction.text,instruction_state:instruction.state});nodes.push(card);start=end;
@@ -89,7 +90,7 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
     // Preserve expansion state, cached tool nodes and prose anchors across streaming updates.
     view.items.replaceChildren(...nodes);
     let host=view.footer.querySelector('.changes-host');if(!host){host=node('div','changes-host');view.footer.prepend(host);}
-    const signature=JSON.stringify([job.status,job.report?.changes]);if(host.dataset.signature!==signature){host.dataset.signature=signature;host.replaceChildren();changes.appendChangePanel(host,{id:job.id},{...job,changes:job.report?.changes});}
+    const signature=JSON.stringify([document.documentElement.lang,job.status,job.report?.changes]);if(host.dataset.signature!==signature){host.dataset.signature=signature;host.replaceChildren();changes.appendChangePanel(host,{id:job.id},{...job,changes:job.report?.changes});}
     const info=view.footer.querySelector('.reply-footer');info.querySelector('.token-usage')?.remove();users.appendTokenUsage(info,job.report?.token_usage);
     if((job.artifacts||[]).length)info.hidden=false;
     users.updateUserActions();
@@ -161,5 +162,5 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
   for(const id of ['#question-close','#question-later'])$(id).addEventListener('click',dismiss);
   $('#question-dialog').addEventListener('cancel',event=>{event.preventDefault();dismiss();});
   $('#question-dialog').addEventListener('close',()=>{if(!$('#question-dialog').open){saveQuestionDraft();clearFields();}});
-  return {render,userContent,userActions,close:()=>{dismiss();questionDrafts.clear();}};
+  return {render,userContent,userActions,appendTokenUsage:users.appendTokenUsage,executionDetails:steps.executionDetails,close:()=>{dismiss();questionDrafts.clear();quoteUI.clear();}};
 };

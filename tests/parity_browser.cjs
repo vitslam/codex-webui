@@ -64,7 +64,7 @@ const {chromium}=require(process.env.LAZYFISH_BROWSER_MODULE),f=JSON.parse(fs.re
   await page.route('**/api/jobs/'+busy.id+'/cancel',async route=>{stopSeen();await stopGate;await route.fulfill({status:503,contentType:'application/json',body:'{"error":"unavailable"}'});});
   await composer();await page.locator('#cancel').click();await stopArrived;assert.equal(await page.locator('.turn[data-job="'+busy.id+'"] .task-status').getAttribute('data-state'),'cancelled');
   stopRelease();await page.locator('.stop-retry').waitFor();await page.unrouteAll({behavior:'ignoreErrors'});await page.locator('.stop-retry').click();await post('/api/jobs/'+queued.id+'/cancel',{});await page.waitForFunction(()=>document.querySelector('#composer').dataset.jobStatus==='idle');
-  await panel('#settings-toggle');await page.locator('#language').selectOption('zh');await page.locator('#account-close').click();await panel('#diagnostics-toggle');await page.getByText('执行槽',{exact:true}).waitFor();await page.waitForFunction(()=>document.querySelectorAll('.worker-slot').length===2);
+  await panel('#settings-toggle');await page.locator('#language').selectOption('zh');await page.locator('#account-close').click();await panel('#diagnostics-toggle');await page.getByText('\u6267\u884c\u69fd',{exact:true}).waitFor();await page.waitForFunction(()=>document.querySelectorAll('.worker-slot').length===2);
   assert.deepEqual(errors,[]);console.log('reference parity browser checks passed');
  }finally{await page.unrouteAll({behavior:'ignoreErrors'});await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

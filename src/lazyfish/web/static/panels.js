@@ -4,7 +4,7 @@ window.LazyfishPanels = function({node,icon,t,api,getStatus,getConversation,getC
   const $=selector=>document.querySelector(selector);
   const run=LazyfishRunSettings({node,icon,t,getStatus,getConversation,onModel});
   const account=$("#account-dialog"), search=$("#search-dialog");
-  let page="settings", returnFocus=null, searchFocus=null, epoch=0, timer=0;
+  let page="settings", returnFocus=null, searchFocus=null, epoch=0, timer=0,loadingTimer=0,composing=false;
   function visible(element) { return element?.isConnected && element.getClientRects().length; }
   function restore(element) { (visible(element) ? element : visible($("#menu-toggle")) ? $("#menu-toggle") : $("#sidebar-toggle")).focus({preventScroll:true}); }
   function closePopovers() { for(const id of ["#model-options","#permission-settings","#attachment-settings","#context-settings"]) $(id).open=false; }
@@ -64,15 +64,33 @@ window.LazyfishPanels = function({node,icon,t,api,getStatus,getConversation,getC
     }
     if(more)target.append(node("p","search-limit",t("searchLimit")));
   }
+  function stopSearch() {
+    ++epoch;clearTimeout(timer);clearTimeout(loadingTimer);timer=loadingTimer=0;
+    const target=$('#search-results');target.querySelector('.search-feedback')?.remove();target.setAttribute('aria-busy','false');
+  }
+  function feedback(message,retry=false) {
+    const target=$('#search-results');target.querySelector('.search-feedback')?.remove();
+    const status=node('p','search-feedback search-loading');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.append(node('span','',message));
+    if(retry){const button=node('button','review-retry search-retry',t('retry'));button.type='button';button.addEventListener('click',find);status.append(button);}
+    target.prepend(status);
+  }
   async function find() {
-    const request=++epoch,q=$("#conversation-search").value.trim(),target=$("#search-results");
+    stopSearch();if(!search.open||composing)return;
+    const request=epoch,q=$("#conversation-search").value.trim(),target=$("#search-results");
     if(!q){drawResults([...getConversations()].sort((a,b)=>Date.parse(b.updated_at)-Date.parse(a.updated_at)).slice(0,20));return;}
-    target.replaceChildren(node("p","search-loading",t("searching")));
+    target.querySelector('.search-empty')?.remove();target.setAttribute('aria-busy','true');
+    loadingTimer=setTimeout(()=>{if(request===epoch&&search.open)feedback(t('searching'));},300);
     try {
       const result=await api(`/api/conversations?limit=50&q=${encodeURIComponent(q)}`);
       if(request!==epoch || !search.open)return;
       drawResults(result.conversations,q,Boolean(result.next_cursor));
-    } catch { if(request===epoch)target.replaceChildren(node("p","search-loading",t("requestFailed"))); }
+    } catch { if(request===epoch&&search.open)feedback(t('searchFailed'),true); }
+    finally{if(request===epoch){clearTimeout(loadingTimer);loadingTimer=0;target.setAttribute('aria-busy','false');}}
+  }
+  function scheduleSearch() {
+    stopSearch();if(composing)return;
+    if(!$('#conversation-search').value.trim()){find();return;}
+    timer=setTimeout(find,50);
   }
   for(const button of account.querySelectorAll("[data-account-tab]"))button.addEventListener("click",()=>selectPage(button.dataset.accountTab));
   for(const button of document.querySelectorAll("[data-native-page]"))button.addEventListener("click",()=>open(button.dataset.nativePage));
@@ -82,7 +100,7 @@ window.LazyfishPanels = function({node,icon,t,api,getStatus,getConversation,getC
   $("#account-close").addEventListener("click",()=>account.close());
   $("#account-reload").addEventListener("click",()=>{if(page==="diagnostics")refreshStatus();else window.dispatchEvent(new CustomEvent("lazyfish-panel",{detail:{page,refresh:true}}));});
   account.addEventListener("close",()=>restore(returnFocus));
-  search.addEventListener("close",()=>{++epoch;clearTimeout(timer);restore(searchFocus);});
+  search.addEventListener("close",()=>{composing=false;stopSearch();restore(searchFocus);});
   for(const dialog of [account,search])dialog.addEventListener("click",event=> {
     const bounds=dialog.getBoundingClientRect();
     if(event.target===dialog&&(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom))dialog.close();
@@ -97,9 +115,11 @@ window.LazyfishPanels = function({node,icon,t,api,getStatus,getConversation,getC
     const current=["#model-options","#permission-settings","#attachment-settings","#context-settings"].find(id=>$(id).open);
     if(current){event.preventDefault();event.stopImmediatePropagation();$(current).open=false;$(current+" summary").focus();}
   });
-  $("#search-toggle").addEventListener("click",()=>{searchFocus=document.activeElement;closeMenu();closePopovers();search.showModal();$("#conversation-search").value="";$("#conversation-search").focus();find();});
-  $("#conversation-search").addEventListener("input",()=>{clearTimeout(timer);++epoch;timer=setTimeout(find,150);});
-  $("#conversation-search-form").addEventListener("submit",event=>{event.preventDefault();clearTimeout(timer);find();});
+  $("#search-toggle").addEventListener("click",()=>{searchFocus=document.activeElement;closeMenu();closePopovers();composing=false;search.showModal();$("#conversation-search").value="";$("#conversation-search").focus();find();});
+  $("#conversation-search").addEventListener('compositionstart',()=>{composing=true;stopSearch();});
+  $("#conversation-search").addEventListener('compositionend',()=>{composing=false;scheduleSearch();});
+  $("#conversation-search").addEventListener("input",event=>{if(event.isComposing){stopSearch();return;}scheduleSearch();});
+  $("#conversation-search-form").addEventListener("submit",event=>{event.preventDefault();if(!composing&&!event.isComposing)find();});
   function viewport() {
     const view=window.visualViewport;
     const adapt=matchMedia('(max-width:760px)').matches&&view&&Math.abs(view.scale-1)<.01;

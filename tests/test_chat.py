@@ -292,12 +292,12 @@ class ChatTests(ServiceCase):
         from urllib.parse import quote
         from lazyfish.storage import Store
         store = Store(self.settings.data_dir/"lazyfish.db")
-        rows=[store.create_conversation(str(self.workspace),title) for title in ["Alpha project","other","alpha notes","100% ready","项目计划"]]
+        rows=[store.create_conversation(str(self.workspace),title) for title in ["Alpha project","other","alpha notes","100% ready","\u9879\u76ee\u8ba1\u5212"]]
         first=self.call("/api/conversations?limit=1&q=ALPHA")
         second=self.call("/api/conversations?limit=1&q=alpha&cursor="+first["next_cursor"])
         self.assertEqual({first["conversations"][0]["id"],second["conversations"][0]["id"]},{rows[0]["id"],rows[2]["id"]})
         self.assertIsNone(second["next_cursor"])
         self.assertEqual(self.call("/api/conversations?q=%25")["conversations"][0]["id"],rows[3]["id"])
-        self.assertEqual(self.call("/api/conversations?q="+quote("项目"))["conversations"][0]["id"],rows[4]["id"])
+        self.assertEqual(self.call("/api/conversations?q="+quote("\u9879\u76ee"))["conversations"][0]["id"],rows[4]["id"])
         self.assertEqual(self.call("/api/conversations?q=absent")["conversations"],[])
         self.call("/api/conversations?q="+"x"*201,expected=400)

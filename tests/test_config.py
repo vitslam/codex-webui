@@ -19,28 +19,26 @@ class ConfigTests(IsolatedTest):
         return subprocess.run([sys.executable, "-m", "lazyfish", *arguments],
                               cwd=self.workspace, env=env, capture_output=True, text=True, timeout=10)
 
-    def test_init_without_workspace_uses_private_default(self):
-        config = self.root / "empty/config.toml"
-        data = self.root / "empty-data"
-        result = self.cli("--config", str(config), "init", "--data-dir", str(data))
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('workspace = ""', config.read_text())
-        settings = load(config)
-        self.assertFalse(settings.workspace_configured)
-        self.assertEqual(settings.workspace, data.resolve() / "workspace")
-        self.assert_private(settings.workspace, 0o700)
-        self.assertEqual(self.cli("--config", str(config), "token").returncode, 0)
-        self.assertEqual(load(self.config).workspace, self.workspace.resolve())
+    def test_init_without_workspace_uses_home_without_changing_permissions(self):
+        config=self.root/'empty/config.toml';data=self.root/'empty-data'
+        home=self.root/'user-home';home.mkdir();home.chmod(0o755)
+        with patch.dict(os.environ,{'HOME':str(home)}):
+            result=self.cli('--config',str(config),'init','--data-dir',str(data))
+            self.assertEqual(result.returncode,0,result.stderr)
+            settings=load(config);settings.prepare()
+            self.assertFalse(settings.workspace_configured)
+            self.assertEqual(settings.workspace,home.resolve())
+            self.assertEqual(home.stat().st_mode & 0o777,0o755)
+            self.assertFalse((data/'workspace').exists())
+        self.assertEqual(load(self.config).workspace,self.workspace.resolve())
         from types import SimpleNamespace
         from lazyfish.web.server import Handler
-        from lazyfish.storage import StoreError
-        handler = Handler.__new__(Handler)
-        handler.server = SimpleNamespace(settings=settings)
-        self.assertEqual(handler._workspace(""), str(settings.workspace))
-        self.assertEqual(handler._workspace(str(self.workspace)), str(self.workspace.resolve()))
-        handler.server.settings = self.settings
-        with self.assertRaises(StoreError):
-            handler._workspace(str(data))
+        from lazyfish.storage import Store,StoreError
+        handler=Handler.__new__(Handler)
+        handler.server=SimpleNamespace(settings=self.settings,manager=SimpleNamespace(store=Store(self.settings.data_dir/'lazyfish.db')))
+        self.assertEqual(handler._workspace(''),str(self.workspace.resolve()))
+        self.assertEqual(handler._workspace(str(data)),str(data.resolve()))
+        with self.assertRaises(StoreError):handler._workspace('../')
 
     def test_custom_init_remembers_path_for_commands_from_another_directory(self):
         before = self.config.read_bytes()

@@ -74,14 +74,14 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
     fs.writeFileSync(f.skills_fixture,JSON.stringify({data:[{skills:[],errors:result.data[0].errors.slice(0,1)}]}));await refresh();
     await page.getByText('No skills could be loaded. See the issues below.',{exact:true}).waitFor();
     await page.locator('[data-account-tab="settings"]').click();await page.locator('#language').selectOption('zh');
-    await page.locator('[data-account-tab="skills"]').click();await page.getByText('技能加载问题',{exact:true}).waitFor();
-    await page.getByText('技能缺少必填的名称，或名称为空。',{exact:true}).waitFor();
+    await page.locator('[data-account-tab="skills"]').click();await page.getByText('\u6280\u80fd\u52a0\u8f7d\u95ee\u9898',{exact:true}).waitFor();
+    await page.getByText('\u6280\u80fd\u7f3a\u5c11\u5fc5\u586b\u7684\u540d\u79f0\uff0c\u6216\u540d\u79f0\u4e3a\u7a7a\u3002',{exact:true}).waitFor();
     await page.screenshot({path:f.output+'/skill-diagnostics-zh.png'});
     fs.writeFileSync(f.skills_fixture,JSON.stringify({data:[{skills:[],errors:[]}]}));await refresh();
-    await page.getByText('此工作目录下暂无技能。',{exact:true}).waitFor();
+    await page.getByText('\u6b64\u5de5\u4f5c\u76ee\u5f55\u4e0b\u6682\u65e0\u6280\u80fd\u3002',{exact:true}).waitFor();
     assert.equal(await page.locator('.skill-discovery-errors').count(),0,'A clean refresh clears old diagnostics');
     await page.locator('#account-close').click();await load();
-    await user(2).locator('.user-content-toggle').getByText('展开',{exact:true}).waitFor();
+    await user(2).locator('.user-content-toggle').getByText('\u5c55\u5f00',{exact:true}).waitFor();
     assert.deepEqual(errors,[]);console.log('message folding and skill diagnostics passed');
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -6,6 +6,7 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
 (async()=> {
   const browser = await chromium.launch({executablePath:process.env.LAZYFISH_BROWSER_EXECUTABLE,headless:true,args:["--no-sandbox"]});
   const context = await browser.newContext({viewport:{width:1280,height:900},locale:"en-US"});
+  await context.addInitScript(()=>localStorage.setItem("lazyfish.sidebar.groups.v1",JSON.stringify({recent:true,projects:false})));
   await context.grantPermissions(["clipboard-read","clipboard-write"]);
   const page = await context.newPage(), errors = [];
   page.on("pageerror",error=>errors.push(error.message));
@@ -97,8 +98,8 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     // Both languages update ordinary and hover actions.
     if (await page.evaluate(()=>document.body.classList.contains("sidebar-hidden"))) await page.locator("#sidebar-toggle").click();
     await page.locator("#menu-toggle").click(); await page.locator("#settings-toggle").click();
-    await page.locator("#language").selectOption("zh"); await page.locator("#account-close").click(); assert.equal(await page.locator("#settings-toggle").innerText(),"设置");
-    assert.equal(await page.locator(".branch").first().getAttribute("aria-label"),"分支到新聊天");
+    await page.locator("#language").selectOption("zh"); await page.locator("#account-close").click(); assert.equal(await page.locator("#settings-toggle").innerText(),"\u8bbe\u7f6e");
+    assert.equal(await page.locator(".branch").first().getAttribute("aria-label"),"\u5206\u652f\u5230\u65b0\u804a\u5929");
     // A streaming turn must not pull a reader away from older messages.
     await page.goto(`${fixture.url}/?conversation=${fixture.main}`); await opened(fixture.main);
     await wakeComposer();await page.locator("#prompt").fill("[stream]"); await wakeComposer();await page.locator("#send").click();
@@ -137,7 +138,7 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),"dark");
     await page.screenshot({path:fixture.output+"/desktop-dark.png"});
     await page.locator("#new-chat").click(); await page.waitForSelector("#empty:not([hidden])"); await settle();
-    assert.deepEqual(await page.locator("#conversation-list .list-group").allTextContents(),["置顶","最近对话"]);
+    assert.deepEqual(await page.locator("#conversation-list .list-group,#conversation-list>.sidebar-projects>.sidebar-disclosure,#conversation-list>.sidebar-recent>.sidebar-disclosure").allTextContents(),["\u7f6e\u9876","\u9879\u76ee","\u6700\u8fd1\u5bf9\u8bdd"]);
     const welcome=await page.locator("#empty").boundingBox(), composer=await page.locator("#composer").boundingBox();
     assert.ok(welcome.y>150 && welcome.y<500); assert.ok(composer.y>welcome.y);
     await page.screenshot({path:fixture.output+"/desktop-empty.png"});
@@ -249,14 +250,14 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     assert.ok((await page.locator("#native-page").innerText()).includes("Local example"));
     assert.ok(!(await page.locator("#native-page").innerText()).includes("must-never-expose"));
     await page.keyboard.press("Escape");await page.locator("#new-chat").click();await page.waitForSelector("#empty:not([hidden])");
-    await wakeComposer();await page.locator("#context-settings summary").click();assert.equal(await page.locator("#context-percent").innerText(),"0% 已用");await page.keyboard.press("Escape");
+    await wakeComposer();await page.locator("#context-settings summary").click();assert.equal(await page.locator("#context-percent").innerText(),"0% \u5df2\u7528");await page.keyboard.press("Escape");
     await page.locator("#menu-toggle").click();await page.locator("#skills-toggle").click();
-    await page.getByRole("button",{name:"创建技能",exact:true}).click();
+    await page.getByRole("button",{name:"\u521b\u5efa\u6280\u80fd",exact:true}).click();
     await page.locator("#skill-name").fill("review-example");await page.locator("#skill-description").fill("Review local code");await page.locator("#skill-body").fill("Inspect the current changes.");
     await page.locator("#save-skill").click();await page.waitForSelector(".account-entry");
     await page.screenshot({path:fixture.output+"/skills-manager.png"});
-    await page.getByRole("button",{name:"编辑",exact:true}).click();const skillSource=await page.locator('#skill-source').inputValue();await page.locator("#skill-source").fill(skillSource.replace('Inspect the current changes.','Inspect changes and explain findings.'));await page.locator("#save-skill").click();await page.waitForSelector(".account-entry");
-    await page.getByRole("button",{name:"在消息中使用",exact:true}).click();assert.equal(await page.locator("#selected-skills .skill-chip").count(),1);
+    await page.getByRole("button",{name:"\u7f16\u8f91",exact:true}).click();const skillSource=await page.locator('#skill-source').inputValue();await page.locator("#skill-source").fill(skillSource.replace('Inspect the current changes.','Inspect changes and explain findings.'));await page.locator("#save-skill").click();await page.waitForSelector(".account-entry");
+    await page.getByRole("button",{name:"\u5728\u6d88\u606f\u4e2d\u4f7f\u7528",exact:true}).click();assert.equal(await page.locator("#selected-skills .skill-chip").count(),1);
     await page.locator("#selected-skills button").click();await wakeComposer();await page.locator("#prompt").fill("@review");await page.waitForSelector(".skill-option");await page.keyboard.press("Enter");
     assert.equal(await page.locator("#selected-skills .skill-chip").count(),1);assert.equal(await page.locator("#prompt").inputValue(),"");
     await wakeComposer();await page.locator("#attachment-settings summary").first().click();await page.screenshot({path:fixture.output+"/attachment-menu.png"});
@@ -269,11 +270,11 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     const inputRequest=page.waitForRequest(r=>r.method()==="POST"&&r.url().endsWith("/turns"));await wakeComposer();await page.locator("#send").click();
     const submitted=(await inputRequest).postDataJSON();assert.equal(submitted.images.length,1);assert.equal(submitted.skills[0].name,"review-example");
     await page.waitForFunction(()=>[...document.querySelectorAll(".turn .task-status")].some(el=>el.dataset.state==="completed"));await wakeComposer();await page.locator("#context-settings summary").click();
-    await page.waitForFunction(()=>document.querySelector("#context-percent").textContent==="32% 已用");await page.screenshot({path:fixture.output+"/context-usage.png"});
+    await page.waitForFunction(()=>document.querySelector("#context-percent").textContent==="32% \u5df2\u7528");await page.screenshot({path:fixture.output+"/context-usage.png"});
     await page.reload();await settle();await page.waitForSelector(".user-message img");
     // Reload restores this chat's submitted settings, independent of earlier chats.
     assert.equal(await page.locator("#fast-toggle").getAttribute("aria-pressed"),String(submitted.fast_mode));assert.equal(await page.locator("#model").inputValue(),submitted.model||"");assert.equal(await page.locator("#effort").inputValue(),submitted.effort||"");
-    await wakeComposer();await page.locator("#context-settings summary").click();assert.equal(await page.locator("#context-percent").innerText(),"32% 已用");
+    await wakeComposer();await page.locator("#context-settings summary").click();assert.equal(await page.locator("#context-percent").innerText(),"32% \u5df2\u7528");
     await page.setViewportSize({width:390,height:844});await settle();
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     const contextBounds=await page.locator(".context-panel").boundingBox();assert.ok(contextBounds.x>=0&&contextBounds.x+contextBounds.width<=390);
@@ -281,7 +282,7 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     // Hover and expanded context match the original in both languages and viewports.
     await page.keyboard.press("Escape");await page.setViewportSize({width:1440,height:1000});await settle();
     await wakeComposer();await page.locator("#context-settings summary").hover();
-    assert.equal(await page.locator("#context-preview").innerText(),"上下文已用：32%");assert.equal(await page.locator("#context-preview").isVisible(),true);
+    assert.equal(await page.locator("#context-preview").innerText(),"\u4e0a\u4e0b\u6587\u5df2\u7528\uff1a32%");assert.equal(await page.locator("#context-preview").isVisible(),true);
     await page.screenshot({path:fixture.output+"/context-hover.png"});
     await wakeComposer();await page.locator("#context-settings summary").click();assert.equal(await page.locator("#context-preview").isVisible(),false);
     assert.ok((await page.locator("#context-detail").innerText()).includes("3,200 / 10,000"));
@@ -292,7 +293,7 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     await page.waitForFunction(id=>document.querySelector(`.turn[data-job="${id}"] .task-status`)?.dataset.state==="completed",compactJob.id);
     assert.equal(await page.locator(`.turn[data-job="${compactJob.id}"] .user-turn`).isVisible(),false);
     assert.equal(await page.locator("#prompt").inputValue(),"draft preserved through compaction");
-    await wakeComposer();await page.locator("#context-settings summary").click();assert.equal(await page.locator("#context-percent").innerText(),"12% 已用");await page.keyboard.press("Escape");
+    await wakeComposer();await page.locator("#context-settings summary").click();assert.equal(await page.locator("#context-percent").innerText(),"12% \u5df2\u7528");await page.keyboard.press("Escape");
     await wakeComposer();await page.locator("#attachment-settings summary").click();await page.locator("#edit-workdir").click();
     assert.equal(await page.locator("#workdir-dialog").isVisible(),true);assert.equal(await page.locator("#workdir-input").isEnabled(),true);
     await page.locator("#workdir-input").fill("/missing-workspace");await page.locator("#workdir-save").click();await page.waitForSelector("#workdir-error:not([hidden])");
