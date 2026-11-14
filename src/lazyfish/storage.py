@@ -339,7 +339,7 @@ class Store:
             result["history_revision"]=db.execute("SELECT COALESCE(MAX(rowid),0) FROM edits WHERE conversation_id=?",(conversation,)).fetchone()[0]
         return result
 
-    def conversation_page(self, limit: int = 50, cursor: str | None = None, query: str = "") -> dict:
+    def conversation_page(self, limit: int = 50, cursor: str | None = None, query: str = "", workspace: str | None = None) -> dict:
         where, values = "WHERE c.archived=0", []
         if cursor:
             try:
@@ -351,6 +351,8 @@ class Store:
                 raise StoreError("invalid_cursor") from exc
             where += " AND (c.pinned,c.pin_order,c.updated_at,c.id)<(?,?,?,?)"
             values = [pin,rank,stamp,identifier]
+        if workspace is not None:
+            where += " AND c.workspace=?"; values.append(workspace)
         if query:
             where += (" AND " if where else "WHERE ")+"(instr(lower(c.title),lower(?))>0 OR EXISTS(SELECT 1 FROM jobs j WHERE j.retired=0 AND j.conversation_id=c.id AND (instr(lower(j.prompt),lower(?))>0 OR EXISTS(SELECT 1 FROM items i WHERE i.job_id=j.id AND instr(lower(i.text),lower(?))>0))))"
             values.extend([query,query,query])
@@ -375,6 +377,12 @@ class Store:
             cursor = base64.urlsafe_b64encode(json.dumps([last["pinned"],last["pin_order"],last["updated_at"],last["id"]]).encode()).decode().rstrip("=")
         with closing(self.connect()) as db:removed=[row[0] for row in db.execute('SELECT id FROM conversations WHERE archived=1 ORDER BY rowid DESC LIMIT 1000')]
         return {"conversations":rows,"next_cursor":cursor,"removed_ids":removed}
+
+    def conversation_projects(self):
+        with closing(self.connect()) as db:
+            return [dict(row) for row in db.execute("""SELECT workspace,COUNT(*) AS count,
+                MAX(updated_at) AS updated_at FROM conversations WHERE archived=0
+                GROUP BY workspace ORDER BY updated_at DESC,workspace""")]
 
     def archived_page(self, limit=50, cursor=None, query='', workspace=None):
         where, values = 'WHERE c.archived=1', []
@@ -799,6 +807,20 @@ class Store:
             row=db.execute('SELECT payload FROM job_reports WHERE job_id=?',(job,)).fetchone()
             if not db.execute('SELECT 1 FROM jobs WHERE id=?',(job,)).fetchone():raise StoreError('not_found')
             return json.loads(row[0]).get('changes') if row else None
+
+    def default_workspace(self, fallback, value=None):
+        """Shared new-chat default; updating it never rewrites conversations."""
+        with closing(self.connect()) as db,db:
+            db.execute('BEGIN IMMEDIATE' if value is not None else 'BEGIN')
+            row=db.execute("SELECT value FROM installation_settings WHERE key='default_workspace_revision'").fetchone()
+            revision=int(row[0]) if row else 0
+            if value is not None:
+                if value:db.execute("INSERT OR REPLACE INTO installation_settings VALUES ('default_workspace',?)",(value,))
+                else:db.execute("DELETE FROM installation_settings WHERE key='default_workspace'")
+                revision+=1
+                db.execute("INSERT OR REPLACE INTO installation_settings VALUES ('default_workspace_revision',?)",(str(revision),))
+            row=db.execute("SELECT value FROM installation_settings WHERE key='default_workspace'").fetchone()
+            return {'workspace':row[0] if row else fallback,'revision':revision}
 
     def concurrency(self, value=None):
         with closing(self.connect()) as db,db:

@@ -1266,3 +1266,14 @@ Object.assign(window.LazyfishReferenceI18n.zh,{"diagnostics": "诊断与性能",
 Object.assign(window.LazyfishReferenceI18n.en,{"ui.conversation.display": "Conversation display", "ui.show.reasoning.summaries": "Show reasoning summaries", "ui.reasoning.visibility.hint": "Controls display only; model reasoning effort and execution records are unchanged.", "ui.restore.defaults.this.resets.appearance.language.new.conversation.defaults": "Restore defaults? This resets appearance, language, new conversation defaults, conversation and composer visibility, and keyboard shortcuts. Existing conversations are preserved."});
 
 Object.assign(window.LazyfishReferenceI18n.zh,{"ui.conversation.display": "对话显示", "ui.show.reasoning.summaries": "显示思考摘要", "ui.reasoning.visibility.hint": "仅控制显示，不影响模型思考深度或执行记录。", "ui.restore.defaults.this.resets.appearance.language.new.conversation.defaults": "恢复默认配置？将重置主题、语言、新对话默认值、对话与输入框显示选项和快捷键，不影响已有对话。"});
+
+Object.assign(window.LazyfishReferenceI18n.en,{
+ "sidebar.projects":"Projects","sidebar.noProjects":"No project conversations yet.",
+ "sidebar.projectFailed":"Could not load conversations.","sidebar.projectMore":"Show more",
+ "sidebar.projectLoading":"Loading…"
+});
+Object.assign(window.LazyfishReferenceI18n.zh,{
+ "sidebar.projects":"项目","sidebar.noProjects":"暂无项目对话。",
+ "sidebar.projectFailed":"加载对话失败。","sidebar.projectMore":"展开显示更多",
+ "sidebar.projectLoading":"正在加载…"
+});

@@ -129,6 +129,24 @@ Object.assign(translations.zh,{
   restoreFailed:'恢复对话失败，请刷新重试。',searchFailed:'搜索失败。',
   loadingOlder:'正在加载更早的消息…',loadingNewer:'正在加载更新的消息…',
 });
+Object.assign(translations.en,{
+  invalid_workspace:'Choose an existing absolute directory.',
+  installationHelp:'Working directories and execution permissions are configured independently.',
+  'workspace.default.label':'Default working directory for new chats',
+  'workspace.default.help':'Saved on this server and shared across browsers. Existing chats keep their directories. Leave empty to restore the configured default or the server user’s home directory.',
+  'workspace.default.saved':'Default directory saved.',
+  'workspace.purpose':'The working directory sets the execution starting point, project skill discovery and change tracking. File access is governed by sandbox permissions and approvals.',
+  'preferences.reset.confirm':'Reset this browser’s appearance, language, model defaults and shortcuts? The shared server working-directory default will be kept.'
+});
+Object.assign(translations.zh,{
+  invalid_workspace:'请选择已存在的绝对目录。',
+  installationHelp:'工作目录与执行权限分别设置。',
+  'workspace.default.label':'新对话默认工作目录',
+  'workspace.default.help':'保存在服务器，所有浏览器共用。已有对话保留各自目录；留空恢复服务配置默认值，未配置时使用运行用户的家目录。',
+  'workspace.default.saved':'默认目录已保存。',
+  'workspace.purpose':'工作目录决定执行起点、项目技能发现和改动跟踪；文件读写由沙箱权限与审批控制。',
+  'preferences.reset.confirm':'恢复当前浏览器的外观、语言、模型默认值和快捷键？服务器共享的默认工作目录将保留。'
+});
 for(const code of ["en","zh"])Object.assign(translations[code],window.LazyfishReferenceI18n[code]);
 const t = (key,values={}) => {
   let text=translations[language][key] || translations[language].nativeError;
@@ -138,8 +156,9 @@ const t = (key,values={}) => {
 const panels = LazyfishPanels({node,icon,t,api,getStatus:()=>status,getConversation:()=>conversation,getConversations:()=>conversations,
   selectConversation:(id)=>loadConversation(id),onModel:renderModelPreview,
   refreshStatus:()=>refreshStatus(true).catch(report),report,closeMenu});
-const preferences=LazyfishPreferences({node,t,panels,shortcuts,getConversation:()=>conversation,onChange:()=>{features.render();renderControls();},onDisplayChange:()=>conversation?.jobs.forEach(renderJob),onReset:()=>{language=navigator.language.startsWith("zh")?"zh":"en";appearance.set("system");render();}});
-const features = LazyfishFeatures({node,icon,t,api,getStatus:()=>status,getConversation:()=>conversation,panels,report,preferences,refreshStatus,getBusy:()=>sending||Boolean(activeJob()),onCompact:()=>compactContext().catch(report),onChange:()=>{resizePrompt();renderControls();}});
+const preferences=LazyfishPreferences({node,t,panels,shortcuts,api,getStatus:()=>status,onDefaultWorkspace:applyDefaultWorkspace,getConversation:()=>conversation,onChange:()=>{features.render();renderControls();},onDisplayChange:()=>conversation?.jobs.forEach(renderJob),onReset:()=>{language=navigator.language.startsWith("zh")?"zh":"en";appearance.set("system");render();}});
+const features = LazyfishFeatures({node,icon,t,api,getStatus:()=>status,getConversation:()=>conversation,panels,report,preferences,refreshStatus,onWorkspaceChange:()=>{if(status)refreshList().catch(report);},getBusy:()=>sending||Boolean(activeJob()),onCompact:()=>compactContext().catch(report),onChange:()=>{resizePrompt();renderControls();}});
+const sidebarProjects=LazyfishSidebarProjects({node,icon,t,api,row:conversationRow,getConversation:()=>conversation,redraw:()=>{listSignature="";renderList();}});
 const archives=LazyfishArchives({node,icon,t,api,onRestore:()=>refreshList()});
 const active = (job) => ["queued","running", "cancelling"].includes(job.status);
 const activeJob = () => conversation?.jobs.find(active) || (conversation?.active_job && active(conversation.active_job) ? conversation.active_job : null);
@@ -154,7 +173,7 @@ function unauthenticated() {
   restorationFailed=false;
   authenticationEpoch++;
   scroll.suspend(); shortcuts.clear(); ++generation; closeStream(); status = null; conversation = null; conversations = []; views.clear(); savedViews.clear(); drafts.clear(); retry = null;
-  closeConversationStream();pendingSends.clear();stoppedJobs.clear();readReceipts.clear();listSignature='';
+  closeConversationStream();sidebarProjects.clear();pendingSends.clear();stoppedJobs.clear();readReceipts.clear();listSignature='';
   for(const value of settingWrites.values())clearTimeout(value.timer);settingWrites.clear();
   $("#messages").querySelectorAll(".turn").forEach((element) => element.remove());
   $("#prompt").value = ""; panels.close(); experience.close(); features.clear(); render();
@@ -247,13 +266,24 @@ function renderPending(){
     $('#transcript').insertBefore(card,$('#newer'));
   }
 }
+function applyDefaultWorkspace(value) {
+  if(!status||!value||typeof value.workspace!=='string'||!Number.isSafeInteger(value.revision)||value.revision<(status.workspace_revision||0))return;
+  const before=status.workspace;status.workspace=value.workspace;status.workspace_revision=value.revision;
+  if(before!==value.workspace){features.defaultWorkspaceChanged(before,value.workspace);preferences.render();}
+}
+async function refreshDefaultWorkspace(){
+  const epoch=authenticationEpoch,value=await api('/api/workspace/default');
+  if(epoch===authenticationEpoch)applyDefaultWorkspace(value);
+}
 function report(error) { notice = translations[language][error.message] ? error.message : "requestFailed"; renderControls(); }
 async function refreshStatus(recheck=false) {
   const epoch=authenticationEpoch;
   if(recheck)await api('/api/environment/check',{});
   const fresh=await api('/api/status');
   if(epoch!==authenticationEpoch||!status)return;
-  status=fresh;render();
+  const prior={workspace:status.workspace,revision:status.workspace_revision};
+  status={...fresh,workspace:prior.workspace,workspace_revision:prior.revision};
+  applyDefaultWorkspace({workspace:fresh.workspace,revision:fresh.workspace_revision});render();
 }
 function render() {
   document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
@@ -298,19 +328,13 @@ function listButton(entry,index,compact=false,onRename=null) {
   const activity=sidebarStatus(entry);button.append(node("span",`dot ${activity || ""}`),node("span","conversation-name",entry.title || t("emptyTitle")));
   button.title = `${entry.title || t("emptyTitle")}${activity ? " · "+t(activity) : ""}`;
   const kbd = node("kbd","shortcut-number",`${shortcuts.label()} ${index+1}`);
-  kbd.hidden = !hintsHeld || index >= 9; button.append(kbd);
+  kbd.hidden = !hintsHeld || index < 0 || index >= 9; button.append(kbd);
   button.addEventListener("click",event => {clearTimeout(listClickTimer);shortcuts.clear();if(event.detail===0)loadConversation(entry.id).catch(report);else if(event.detail===1&&entry.id!==conversation?.id)listClickTimer=setTimeout(()=>loadConversation(entry.id).catch(report),300);});
   if(onRename)button.addEventListener('dblclick',event=>{event.preventDefault();clearTimeout(listClickTimer);onRename();});
   if (compact) button.setAttribute("aria-pressed",String(hintCandidate === entry.id));
   return button;
 }
-function groupedList(container,entries,compact=false) {
-  container.replaceChildren(); let previous = null,parent=container;
-  entries.forEach((entry,index) => {
-    const group = entry.pinned ? "pinned" : "recent";
-    if (group !== previous) { container.append(node("div",`list-group${previous ? " separated" : ""}`,t(group)));parent=node("div","conversation-group");if(!compact)parent.id=group==="pinned"?"pinned-conversations":"recent-conversations";container.append(parent);previous=group; }
-    if (compact) parent.append(listButton(entry,index,true));
-    else {
+function conversationRow(entry,index) {
       const row=node("div",`conversation-row${conversation?.id === entry.id ? " active" : ""}`);row.dataset.id=entry.id;
       const button=node("button","conversation-action conversation-pin");button.type="button";button.disabled=sending;
       button.setAttribute("aria-label",t(entry.pinned ? "unpin" : "pin"));button.title=t(entry.pinned ? "unpin" : "pin");button.setAttribute("aria-pressed",String(Boolean(entry.pinned)));button.append(icon("pin"));
@@ -322,15 +346,24 @@ function groupedList(container,entries,compact=false) {
       const rename=()=>{
         const input=node("input","conversation-rename-input");input.value=entry.title;input.maxLength=100;input.setAttribute("aria-label",t("rename"));
         const original=row.querySelector(".conversation");original.replaceWith(input);input.focus();input.select();let busy=false;
-        async function save(){if(busy)return;busy=true;const title=input.value.trim();try{if(title){await api(`/api/conversations/${entry.id}/settings`,{title});entry.title=title;const current=conversations.find(chat=>chat.id===entry.id);if(current)current.title=title;if(conversation?.id===entry.id){conversation.title=title;$("#conversation-title").textContent=title;}}}catch(error){report(error);}finally{input.remove();listSignature='';renderList();}}
+        async function save(){if(busy)return;busy=true;const title=input.value.trim();try{if(title){await api(`/api/conversations/${entry.id}/settings`,{title});entry.title=title;sidebarProjects.update(entry.id,{title});const current=conversations.find(chat=>chat.id===entry.id);if(current)current.title=title;if(conversation?.id===entry.id){conversation.title=title;$("#conversation-title").textContent=title;}}}catch(error){report(error);}finally{input.remove();listSignature='';renderList();}}
         input.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();save();}else if(event.key==="Escape"){event.preventDefault();busy=true;input.remove();listSignature='';renderList();}});input.addEventListener("blur",save);
       };
       const remove=node("button","conversation-action conversation-archive");remove.type="button";remove.title=t("archive.action");remove.setAttribute("aria-label",t("archive.action"));remove.append(icon("archive"));
       remove.disabled=sending||["queued","running","cancelling"].includes(entry.status);
       remove.addEventListener("click",async()=>{remove.disabled=true;
-        try{await api(`/api/conversations/${entry.id}/archive`,{});conversations=conversations.filter(c=>c.id!==entry.id);if(conversation?.id===entry.id)await newConversation();else renderList();savedViews.delete(entry.id);readReceipts.delete(entry.id);}catch(error){report(error);remove.disabled=false;}
+        try{await api(`/api/conversations/${entry.id}/archive`,{});conversations=conversations.filter(c=>c.id!==entry.id);if(conversation?.id===entry.id)await newConversation();else renderList();savedViews.delete(entry.id);readReceipts.delete(entry.id);await refreshList();}catch(error){report(error);remove.disabled=false;}
       });
-      row.append(listButton(entry,index,false,rename),button,remove);parent.append(row);
+      row.append(listButton(entry,index,false,rename),button,remove);return row;
+}
+function groupedList(container,entries,compact=false) {
+  container.replaceChildren(); let previous = null,parent=container;
+  entries.forEach((entry,index) => {
+    const group = entry.pinned ? "pinned" : "recent";
+    if (group !== previous) { container.append(node("div",`list-group${previous ? " separated" : ""}`,t(group)));parent=node("div","conversation-group");if(!compact)parent.id=group==="pinned"?"pinned-conversations":"recent-conversations";container.append(parent);previous=group; }
+    if (compact) parent.append(listButton(entry,index,true));
+    else {
+      parent.append(conversationRow(entry,index));
     }
   });
 }
@@ -338,11 +371,12 @@ function showHints(held,candidate) {
   hintsHeld = held; hintCandidate = candidate;
   $("#conversation-list").querySelectorAll(".conversation").forEach((button,index) => {
     button.classList.toggle("preselected",candidate === button.dataset.id);
-    const kbd = button.querySelector("kbd"); kbd.hidden = !held || index >= 9;
-    kbd.textContent = `${shortcuts.label()} ${index+1}`;
+    const shortcutIndex=conversations.findIndex(entry=>entry.id===button.dataset.id);
+    const kbd = button.querySelector("kbd"); kbd.hidden = !held || shortcutIndex < 0 || shortcutIndex >= 9;
+    kbd.textContent = `${shortcuts.label()} ${shortcutIndex+1}`;
   });
   const popup = $("#shortcut-hints");
-  const selected = [...$("#conversation-list").querySelectorAll(".conversation")].find((button)=>button.dataset.id === candidate);
+  const selected = [...$("#conversation-list").querySelectorAll(".conversation")].find((button)=>button.dataset.id === candidate && button.getClientRects().length);
   const bounds = selected?.getBoundingClientRect(), listBounds = $("#conversation-list").getBoundingClientRect();
   popup.hidden = !held || (!document.body.classList.contains("sidebar-hidden") && (!selected || (bounds.top >= listBounds.top && bounds.bottom <= listBounds.bottom)));
   if (!held) popup.replaceChildren();
@@ -354,14 +388,14 @@ function showHints(held,candidate) {
 }
 function renderList() {
   if($("#conversation-list").dataset.reordering || $("#conversation-list .conversation-rename-input"))return;
-  const signature=JSON.stringify([language,conversation?.id,conversations.map(c=>[c.id,c.title,c.pinned,c.pin_order,sidebarStatus(c)])]);
+  const signature=JSON.stringify([language,conversation?.id,conversation?.workspace,sidebarProjects.version(),conversations.map(c=>[c.id,c.title,c.workspace,c.pinned,c.pin_order,sidebarStatus(c)])]);
   if(signature===listSignature){showHints(hintsHeld,hintCandidate);return;}listSignature=signature;
   const top = $("#conversation-list").scrollTop;
   const focused = document.activeElement?.closest("#conversation-list .conversation")?.dataset.id;
-  groupedList($("#conversation-list"),conversations);
+  sidebarProjects.render($("#conversation-list"),conversations);
   $("#conversation-list").scrollTop = top;
   if (focused) [...$("#conversation-list").querySelectorAll(".conversation")].find((button)=>button.dataset.id===focused)?.focus({preventScroll:true});
-  $("#more-conversations").hidden = !listCursor; $("#more-conversations").disabled = listPaging;
+  $("#more-conversations").hidden = !listCursor || !sidebarProjects.recentOpen(); $("#more-conversations").disabled = listPaging;
   showHints(hintsHeld,hintCandidate);
 }
 function syncSidebar() {
@@ -592,6 +626,7 @@ function sortConversations(entries) {
 async function refreshList(more=false) {
   if (more && !listCursor) return;
   const result = await api(`/api/conversations${more ? "?cursor="+encodeURIComponent(listCursor) : ""}`);
+  applyDefaultWorkspace(result.default_workspace);sidebarProjects.sync(result.projects);
   const merged = new Map((more?conversations:conversations.filter(entry=>!entry.archived)).map((entry)=>[entry.id,entry]));
   if(!more){
     const first=result.conversations.at(-1);
@@ -704,7 +739,7 @@ async function pageHistory(direction) {
 async function newConversation() {
   savePosition();cacheView();++generation;closeConversationStream();resetMessages();conversation=null;notice='';restorationFailed=false;
   try{localStorage.removeItem('lazyfish.activeConversation');}catch{}
-  history.replaceState(null,'','/');preferences.applyDefaults();$('#prompt').value=drafts.get('new')||'';resizePrompt();panels.closePopovers();features.switch();render();renderPending();$('#prompt').focus({preventScroll:true});
+  history.replaceState(null,'','/');preferences.applyDefaults();$('#prompt').value=drafts.get('new')||'';resizePrompt();panels.closePopovers();features.switch();render();renderPending();$('#prompt').focus({preventScroll:true});refreshDefaultWorkspace().catch(report);
 }
 async function authenticate() {
   const epoch=++authenticationEpoch;
@@ -718,7 +753,7 @@ async function authenticate() {
   status=verified;loginMessage="";notice="";
   $("#model").value=status.execution.model||"";$("#effort").value=status.execution.effort||"";
   panels.restoreRunSettings();render();features.refreshBasics();
-  const listDone=listed.then(result=>{if(epoch!==authenticationEpoch)return;conversations=sortConversations(result.conversations);listCursor=result.next_cursor;renderList();});
+  const listDone=listed.then(result=>{if(epoch!==authenticationEpoch)return;applyDefaultWorkspace(result.default_workspace);sidebarProjects.sync(result.projects);conversations=sortConversations(result.conversations);listCursor=result.next_cursor;renderList();});
   listDone.catch(()=>{});
   if(target){try{await loadConversation(target,false,prepared);}catch(error){if(error.message==='not_found')await newConversation();else throw error;}}
   else{await listDone;preferences.applyDefaults();}
@@ -779,7 +814,7 @@ $('#composer').addEventListener('submit',event=>{
   if(sending||features.busy()||running&&(running.status!=='running'||!$('#prompt').value.trim())||(!$('#prompt').value.trim()&&!features.hasInputs()))return;
   if(running&&features.hasImages()){report(new Error('supplement_text_only'));return;}
   const record={key:LazyfishRequestId(),epoch:generation,conversationId:conversation?.id||null,targetJob:running?.id,
-    text:$('#prompt').value,inputs:{...features.inputs(),...panels.runSettings()},settings:runChoices(),workspace:features.workspace(),images:features.selectedImages(),state:'sending'};
+    text:$('#prompt').value,inputs:{...features.inputs(),...panels.runSettings()},settings:runChoices(),workspace:features.newWorkspace(),images:features.selectedImages(),state:'sending'};
   pendingSends.set(record.key,record);$('#prompt').value='';drafts.delete(conversation?.id||'new');features.sent(conversation?.id||'new');resizePrompt();dock.reset();sendPending(record);
 });
 $("#prompt").addEventListener("keydown",event=>preferences.keydown(event,()=>$("#composer").requestSubmit()));

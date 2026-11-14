@@ -59,11 +59,11 @@ level = "INFO"
 
 Relative paths are resolved against the configuration directory. A bare Codex
 command is resolved through PATH; executable paths may also be absolute or relative.
-Workspace is optional. An empty value uses a private `workspace/` under the data directory. An explicit workspace must exist and restricts directory selection to that tree. Port `0` asks the OS for an available port, shown at start.
+Workspace is optional. An empty value uses the service user’s home directory without creating or changing permissions on that directory. An explicit workspace must exist and supplies only the default for new chats. Any existing absolute directory can be selected. Settings saves a shared server default in the private application database; clearing it restores the configured default (or the home directory when unconfigured). Changing a default never rewrites existing conversation directories. Port `0` asks the OS for an available port, shown at start.
 The server binds to `127.0.0.1` by default. Set `server.host = "0.0.0.0"` (or `LAZYFISH_HOST=0.0.0.0`) to listen on all IPv4 interfaces; startup prints the available addresses. A specific unicast IPv4 (e.g. `192.168.1.10` or a public address) can bind just one interface. Token authentication remains required by default. Host checks reject requests whose Host header is not an address of this process; they are not a firewall. HTTP is unencrypted; use a firewall to limit who can connect, and use an SSH tunnel on untrusted networks. You choose the bind address and are responsible for who can reach it.
 Unknown keys are rejected so spelling errors do not silently disable settings.
 
-相对路径以配置文件目录为基准。工作目录可留空，执行时使用数据目录下的私有 `workspace/`；显式指定时目录必须已存在，且网页选择目录被限制在该目录内。端口 `0` 由系统分配。
+配置中的相对路径以配置文件目录为基准。工作目录留空时使用运行用户的家目录，不创建该目录或修改其权限；显式目录必须已存在，仅作为新对话的默认值。网页可选择任意已存在的绝对目录。设置页的默认目录保存在私有应用数据库，所有浏览器共用；清空后恢复配置默认值，未配置则使用家目录。修改默认值不会改写已有对话的目录。端口 `0` 由系统分配。
 默认从 PATH 查找 `codex`，找不到时请手动设置 `codex.binary` 或 `LAZYFISH_CODEX_BIN`。
 默认绑定 `127.0.0.1`。设 `server.host = "0.0.0.0"`（或 `LAZYFISH_HOST=0.0.0.0`）后会监听所有 IPv4 网卡，启动时打印可用地址；也可指定单个 IPv4（例如 `192.168.1.10` 或公网地址）只绑定一个网卡。默认仍需令牌认证。Host 检查只拒绝 Host 不是本进程地址的请求，不能替代防火墙。HTTP 不加密，请用防火墙限制访问，不可信网络使用 SSH 隧道。绑定地址由你选择，谁能访问由你负责。未知配置键会报错。
 

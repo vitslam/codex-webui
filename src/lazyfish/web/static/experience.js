@@ -89,7 +89,7 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
     // Preserve expansion state, cached tool nodes and prose anchors across streaming updates.
     view.items.replaceChildren(...nodes);
     let host=view.footer.querySelector('.changes-host');if(!host){host=node('div','changes-host');view.footer.prepend(host);}
-    const signature=JSON.stringify([job.status,job.report?.changes]);if(host.dataset.signature!==signature){host.dataset.signature=signature;host.replaceChildren();changes.appendChangePanel(host,{id:job.id},{...job,changes:job.report?.changes});}
+    const signature=JSON.stringify([document.documentElement.lang,job.status,job.report?.changes]);if(host.dataset.signature!==signature){host.dataset.signature=signature;host.replaceChildren();changes.appendChangePanel(host,{id:job.id},{...job,changes:job.report?.changes});}
     const info=view.footer.querySelector('.reply-footer');info.querySelector('.token-usage')?.remove();users.appendTokenUsage(info,job.report?.token_usage);
     if((job.artifacts||[]).length)info.hidden=false;
     users.updateUserActions();

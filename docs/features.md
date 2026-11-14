@@ -88,6 +88,38 @@ PNG/JPEG/WebP/GIF 保存成授权产物，复用图片查看器，刷新及分�
 输入加输出 token 及缓存输入命中比例，不代表费用。schema 6 持久化产物及报告，分支时
 复制并改写授权链接。
 
+## Project history / 项目历史
+
+The sidebar shows pinned chats, projects grouped by the exact saved working directory,
+and a recent-chat section that starts collapsed. The current project's history opens
+by default; other projects load on expansion with pagination for older conversations.
+Disclosure choices are remembered in the browser. Same-named folders keep distinct
+full paths. Renaming, pinning and archiving remain available within each project.
+
+侧栏依次显示置顶、按已保存工作目录分组的项目、默认收起的最近对话。默认展开当前项目，
+其他项目点击后加载，可继续翻页查看更早的对话。折叠状态在浏览器中记忆，同名文件夹按完整
+路径区分。项目内继续支持重命名、置顶和归档，不移动或改写对话本身。
+
+## Working directories / 工作目录
+
+Without a configured default, new chats start in the service user's home directory.
+Settings → Default working directory for new chats saves a server-wide default
+shared across browsers. Clear that field to restore the configured default, or
+the home directory when unconfigured. Every chat keeps its own saved directory;
+neither a global default change nor another chat's directory change rewrites it.
+Any existing absolute directory can be selected while the chat is idle.
+
+The directory determines the execution starting point, project skill discovery and
+Git change tracking. It is not an access whitelist. Native sandbox permissions
+and approvals still determine which reads and writes are allowed.
+
+未配置默认值时，新对话从运行用户的家目录开始。设置中的“新对话默认工作目录”保存在服务器，
+所有浏览器共用；清空后恢复服务配置默认值，未配置则使用家目录。每个对话独立保存目录，
+修改全局默认值或其他对话的目录不会改写它。对话空闲时可选择任意已存在的绝对目录。
+
+工作目录决定执行起点、项目技能发现和 Git 改动跟踪，不是文件访问白名单。
+实际读写授权仍由原生沙箱权限与审批控制。
+
 ## Credentials and storage / 凭据与存储
 
 Account sign-in supports device code, browser ChatGPT and API key. The Web service

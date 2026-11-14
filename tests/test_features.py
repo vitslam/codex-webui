@@ -12,6 +12,67 @@ PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a2
 
 
 class FeatureTests(ServiceCase):
+    def test_project_groups_cover_history_and_filter_pages_by_exact_directory(self):
+        from lazyfish.storage import Store
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        paths=[self.workspace/'alpha/shared',self.workspace/'beta/shared']
+        for path in paths:path.mkdir(parents=True)
+        ids=[store.create_conversation(str(paths[0]),'Project message '+str(i))['id'] for i in range(65)]
+        other=store.create_conversation(str(paths[1]),'Other project')
+        store.archive(ids.pop())
+        initial=self.call('/api/conversations')
+        counts={p['workspace']:p['count'] for p in initial['projects']}
+        self.assertEqual(counts,{str(paths[0]):64,str(paths[1]):1})
+        found=[];cursor=None
+        while True:
+            query='?limit=7&workspace='+quote(str(paths[0]),safe='')
+            if cursor:query+='&cursor='+quote(cursor,safe='')
+            page=self.call('/api/conversations'+query)
+            self.assertTrue(all(c['workspace']==str(paths[0]) for c in page['conversations']))
+            found.extend(c['id'] for c in page['conversations']);cursor=page['next_cursor']
+            if not cursor:break
+        self.assertEqual(set(found),set(ids));self.assertEqual(len(found),64)
+        self.assertEqual(self.call('/api/conversations?workspace='+quote(str(paths[1]),safe=''))['conversations'][0]['id'],other['id'])
+        self.assertEqual(self.call('/api/conversations?workspace='+quote(str(paths[1]),safe='')+'&q=Project%20message')['conversations'],[])
+        self.call('/api/conversations/'+other['id']+'/settings',{'workspace':str(paths[0])})
+        self.assertEqual(len(self.call('/api/conversations')['projects']),1)
+        self.call('/api/conversations?workspace=%00',expected=400)
+        self.assertEqual(self.http('/api/conversations?workspace='+quote(str(paths[0]),safe=''))[0],401)
+
+    def test_server_default_is_shared_persistent_and_does_not_rewrite_chats(self):
+        from lazyfish.storage import Store
+        before=self.call('/api/workspace/default')
+        self.assertEqual(before['workspace'],str(self.workspace))
+        old=self.call('/api/conversations',{},201)
+        other=self.root/'other-project';other.mkdir();other.chmod(0o755)
+        changed=self.call('/api/workspace/default',{'workspace':str(other)})
+        self.assertGreater(changed['revision'],before['revision'])
+        self.assertEqual(self.call('/api/status')['workspace'],str(other))
+        self.assertEqual(self.call('/api/conversations')['default_workspace']['workspace'],str(other))
+        self.assertEqual(Store(self.settings.data_dir/'lazyfish.db').default_workspace('unused')['workspace'],str(other))
+        new=self.call('/api/conversations',{},201)
+        self.assertEqual(new['workspace'],str(other))
+        self.assertEqual(self.call('/api/conversations/'+old['id'])['workspace'],str(self.workspace))
+        third=self.root/'third-project';third.mkdir()
+        self.call('/api/conversations/'+old['id']+'/settings',{'workspace':str(third)})
+        self.assertEqual(self.call('/api/conversations/'+new['id'])['workspace'],str(other))
+        self.assertEqual(self.call('/api/workspace/default')['workspace'],str(other))
+        job=self.call('/api/conversations/'+new['id']+'/turns',{'text':'Check the execution directory','client_request_id':uuid.uuid4().hex},202)
+        self.assertEqual(self.finish(job)['status'],'completed')
+        methods=[json.loads(line) for line in (self.settings.runtime_dir/'tmp/fake-methods.jsonl').read_text().splitlines()]
+        start=next(m['params'] for m in methods if m['method']=='thread/start')
+        self.assertEqual(start['cwd'],str(other))
+        self.assertEqual(start['sandbox'],self.settings.sandbox)
+        self.assertEqual(start['approvalPolicy'],self.settings.approval_policy)
+        for value in ('relative-path',str(self.root/'missing-project')):
+            self.call('/api/workspace/default',{'workspace':value},409)
+        self.assertEqual(self.call('/api/workspace/default')['revision'],changed['revision'])
+        reset=self.call('/api/workspace/default',{'workspace':''})
+        self.assertEqual(reset['workspace'],str(self.workspace))
+        self.assertEqual(self.call('/api/conversations/'+new['id'])['workspace'],str(other))
+        self.assertEqual(other.stat().st_mode & 0o777,0o755)
+        self.assertEqual(self.http('/api/workspace/default')[0],401)
+
     def test_new_chat_skill_operations_use_validated_workspace(self):
         a,b=self.workspace/'project-a',self.workspace/'project-b'
         a.mkdir();b.mkdir()
@@ -23,8 +84,9 @@ class FeatureTests(ServiceCase):
         self.assertNotEqual(changed['hash'],source['hash'])
         self.call('/api/skills/enabled',{'workspace':str(b),'path':skill['path'],'enabled':False})
         self.call('/api/skills/document?workspace='+quote(str(a))+'&path='+quote(skill['path']),expected=409)
-        self.call('/api/native/skills?workspace='+quote(str(self.root)),expected=409)
-        self.call('/api/skills',{'workspace':str(self.root),'name':'outside','description':'Fixture','body':'Do not write'},expected=409)
+        self.call('/api/native/skills?workspace='+quote(str(self.root)))
+        outside=self.call('/api/skills',{'workspace':str(self.root),'name':'outside','description':'Fixture','body':'Outside the default directory'})
+        self.assertTrue(Path(outside['path']).is_relative_to(self.root))
         deadline=time.monotonic()+8
         while time.monotonic()<deadline:
             result=self.call('/api/native/skills?workspace='+quote(str(b)))
@@ -101,7 +163,8 @@ class FeatureTests(ServiceCase):
     def test_input_and_workspace_boundaries_and_skill_edits(self):
         child=self.workspace/'child';child.mkdir()
         conversation=self.call('/api/conversations',{'workspace':str(child)},201)['id']
-        self.call('/api/conversations',{'workspace':str(self.root)},409)
+        outside=self.call('/api/conversations',{'workspace':str(self.root)},201)
+        self.assertEqual(outside['workspace'],str(self.root.resolve()))
         self.call('/api/conversations',{'workspace':'../'},409)
         self.call('/api/conversations/'+conversation+'/settings',{'workspace':str(self.workspace)})
         self.call('/api/attachments',{'name':'fake.png','mime':'image/png','data':base64.b64encode(b'not png').decode()},400)

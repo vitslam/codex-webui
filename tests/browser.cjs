@@ -6,6 +6,7 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
 (async()=> {
   const browser = await chromium.launch({executablePath:process.env.LAZYFISH_BROWSER_EXECUTABLE,headless:true,args:["--no-sandbox"]});
   const context = await browser.newContext({viewport:{width:1280,height:900},locale:"en-US"});
+  await context.addInitScript(()=>localStorage.setItem("lazyfish.sidebar.groups.v1",JSON.stringify({recent:true,projects:false})));
   await context.grantPermissions(["clipboard-read","clipboard-write"]);
   const page = await context.newPage(), errors = [];
   page.on("pageerror",error=>errors.push(error.message));
@@ -137,7 +138,7 @@ const fixture = JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,
     assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),"dark");
     await page.screenshot({path:fixture.output+"/desktop-dark.png"});
     await page.locator("#new-chat").click(); await page.waitForSelector("#empty:not([hidden])"); await settle();
-    assert.deepEqual(await page.locator("#conversation-list .list-group").allTextContents(),["置顶","最近对话"]);
+    assert.deepEqual(await page.locator("#conversation-list .list-group,#conversation-list>.sidebar-projects>.sidebar-disclosure,#conversation-list>.sidebar-recent>.sidebar-disclosure").allTextContents(),["置顶","项目","最近对话"]);
     const welcome=await page.locator("#empty").boundingBox(), composer=await page.locator("#composer").boundingBox();
     assert.ok(welcome.y>150 && welcome.y<500); assert.ok(composer.y>welcome.y);
     await page.screenshot({path:fixture.output+"/desktop-empty.png"});

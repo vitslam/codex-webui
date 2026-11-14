@@ -173,8 +173,6 @@ class Settings:
         return self.data_dir / "runtime"
 
     def prepare(self) -> None:
-        if not self.workspace_configured:
-            private_dir(self.workspace)
         for path in (self.data_dir, self.runtime_dir, self.runtime_dir / "tmp",
                      self.runtime_dir / "jobs", self.data_dir / "logs", self.data_dir / "attachments"):
             private_dir(path)
@@ -200,8 +198,8 @@ def load(path: Path) -> Settings:
     if not isinstance(workspace, str):
         raise ConfigError("Workspace must be a directory path or empty.")
     data = _path(env.get("LAZYFISH_DATA_DIR") or paths.get("data_dir", str(default_data())), base)
-    workspace_path = _path(workspace, base).resolve() if workspace else data.resolve() / "workspace"
-    if workspace and not workspace_path.is_dir():
+    workspace_path = _path(workspace, base).resolve() if workspace else Path.home().resolve()
+    if not workspace_path.is_dir():
         raise ConfigError("Workspace must be an existing directory.")
     host = env.get("LAZYFISH_HOST") or raw.get("server", {}).get("host", "127.0.0.1")
     if not _valid_bind_host(host):

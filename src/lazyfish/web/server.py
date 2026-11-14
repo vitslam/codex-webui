@@ -136,16 +136,22 @@ class Handler(BaseHTTPRequestHandler):
         except (OSError,sqlite3.Error):
             self._send(503,{"error":"storage_unavailable"})
 
+    def _workspace_state(self):
+        if not self.server.manager:return {"workspace":str(self.server.settings.workspace),"revision":0}
+        return self.server.manager.store.default_workspace(str(self.server.settings.workspace))
+
     def _cwd(self, identifier=None, workspace=None):
         if identifier:
             if not isinstance(identifier,str) or not re.fullmatch(r"[a-f0-9]{32}",identifier): raise StoreError("not_found")
             return self.server.manager.store.conversation(identifier)["workspace"]
-        return self._workspace(workspace) if workspace is not None else str(self.server.settings.workspace)
+        return self._workspace(workspace) if workspace is not None else self._workspace_state()["workspace"]
 
     def _workspace(self, value):
         if not isinstance(value,str) or len(value)>4096 or "\x00" in value: raise StoreError("invalid_workspace")
-        path = (self.server.settings.workspace/value).resolve()
-        if (self.server.settings.workspace_configured and not path.is_relative_to(self.server.settings.workspace)) or not path.is_dir(): raise StoreError("invalid_workspace")
+        path = Path(value or self._workspace_state()['workspace'])
+        if not path.is_absolute():raise StoreError('invalid_workspace')
+        path=path.resolve()
+        if not path.is_dir():raise StoreError('invalid_workspace')
         return str(path)
 
     def _get(self) -> None:
@@ -160,11 +166,14 @@ class Handler(BaseHTTPRequestHandler):
             authorized = self._credential_authorized() if self.path == "/api/control/status" else self._authorized()
             if not authorized:
                 return self._send(401, {"error": "authentication_required"})
+            workspace_state=self._workspace_state()
             return self._send(200, {
                 "version": __version__, "stage": 4, "instance": self.server.instance,
                 "web_auth_required": not self.server.no_token,
                 "metadata_scope": self.server.manager.capabilities.scope if self.server.manager else "",
-                "workspace": str(self.server.settings.workspace) if self.server.settings.workspace_configured else "",
+                "workspace": workspace_state['workspace'],
+                "workspace_revision": workspace_state['revision'],
+                "configured_workspace": str(self.server.settings.workspace),
                 "data_dir": str(self.server.settings.data_dir), "codex": self.server.report,
                 "execution": {"available":bool(self.server.manager) and not self.server.manager.blocked and self.server.report["ready"],
                               "recovery_blocked":bool(self.server.manager and self.server.manager.blocked),
@@ -190,6 +199,8 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError
             except ValueError:
                 return self._send(400,{"error":"invalid_limit"})
+            if parsed.path=='/api/workspace/default':
+                return self._send(200,{**self._workspace_state(),'configured_workspace':str(self.server.settings.workspace)})
             if parsed.path=='/api/native/sessions':
                 return self._send(200,{'sessions':self.server.manager.auth.pending()})
             if match := re.fullmatch(r"/api/native/sessions/([a-f0-9]{32})",parsed.path):
@@ -237,7 +248,12 @@ class Handler(BaseHTTPRequestHandler):
                     if workspace is not None and len(workspace)>4096:
                         return self._send(400,{'error':'invalid_query'})
                     return self._send(200,store.archived_page(limit,cursor,search,workspace))
-                return self._send(200,store.conversation_page(limit,cursor,search))
+                workspace=query.get('workspace',[None])[0]
+                if workspace is not None and (len(workspace)>4096 or '\x00' in workspace):
+                    return self._send(400,{'error':'invalid_query'})
+                result=store.conversation_page(limit,cursor,search,workspace)
+                if workspace is None and not search:result['projects']=store.conversation_projects()
+                return self._send(200,{**result,'default_workspace':self._workspace_state()})
             if match := re.fullmatch(r'/api/conversations/([a-f0-9]{32})/(events|sync)',parsed.path):
                 if match[2]=='events':return self._conversation_events(match[1],query.get('since',[''])[0])
                 revision=store.revision(match[1])
@@ -454,6 +470,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200,manager.capabilities.set_skill_enabled(self._cwd(body.get("conversation"),body.get('workspace')),body.get("path"),body.get("enabled")))
         if self.path == "/api/skills":
             return self._send(200,manager.capabilities.save_skill(self._cwd(body.get("conversation"),body.get('workspace')),body.get("name"),body.get("description"),body.get("body"),body.get("replace") is True,body.get("scope","project")))
+        if self.path == '/api/workspace/default':
+            value=body.get('workspace')
+            if not isinstance(value,str):raise StoreError('invalid_workspace')
+            value=self._workspace(value) if value else ''
+            state=manager.store.default_workspace(str(self.server.settings.workspace),value)
+            return self._send(200,{**state,'configured_workspace':str(self.server.settings.workspace)})
         if self.path == "/api/workspace/validate":
             return self._send(200,{"workspace":self._workspace(body.get("workspace"))})
         if self.path == "/api/conversations":
@@ -463,7 +485,7 @@ class Handler(BaseHTTPRequestHandler):
             from ..run_settings import validate
             key=body.get('client_request_id')
             if key is not None and (not isinstance(key,str) or not re.fullmatch(r'[a-zA-Z0-9_-]{16,80}',key)):raise StoreError('invalid_request_key')
-            return self._send(201,manager.store.create_conversation(self._workspace(body.get("workspace",str(self.server.settings.workspace))),title,validate(body.get('run_settings',{})),key))
+            return self._send(201,manager.store.create_conversation(self._workspace(body.get("workspace",self._workspace_state()["workspace"])),title,validate(body.get('run_settings',{})),key))
         if match := re.fullmatch(r"/api/conversations/([a-f0-9]{32})/(archive|delete)",self.path):
             return self._send(200,manager.store.archive(match[1]))
         if match := re.fullmatch(r"/api/conversations/([a-f0-9]{32})/restore",self.path):

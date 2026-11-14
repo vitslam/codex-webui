@@ -26,6 +26,7 @@
   <script defer src="/artifacts.js"></script>
   <script defer src="/message-view.js"></script>
   <script defer src="/composer-dock.js"></script>
+  <script defer src="/sidebar-projects.js"></script>
   <script defer src="/sidebar-order.js"></script>
   <script defer src="/experience.js"></script>
   <script defer src="/worker-monitor.js"></script>
@@ -171,7 +172,7 @@
     <h2 id="workdir-heading"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span data-text="ui.working.directory">工作目录</span></h2>
     <label for="workdir-input" data-text="directory.path">目录路径</label>
     <input id="workdir-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" aria-describedby="workdir-hint workdir-error">
-    <p id="workdir-hint" data-text="directory.hint">输入服务器上的绝对路径；留空使用默认工作目录。</p>
+    <p id="workdir-hint" data-text="workspace.purpose">工作目录决定执行起点、项目技能发现和改动跟踪；文件读写由沙箱权限与审批控制。</p>
     <p id="workdir-error" role="alert" hidden></p>
     <div class="directory-actions"><button type="button" id="workdir-cancel" data-text="ui.cancel">取消</button><button type="submit" id="workdir-save" data-text="ui.save">保存</button></div>
   </form>

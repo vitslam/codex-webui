@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Group sidebar history by saved project directory between pinned and recent chats, with on-demand pagination, remembered disclosures and recent chats initially collapsed.
+- 侧栏在置顶与最近对话之间按已保存工作目录收纳项目历史，按需分页并记住折叠状态，最近对话默认收起。
+
+- Use the service user's home when no working directory is configured; persist a server-wide new-chat default, allow any existing absolute directory, and keep conversation directories separate from sandbox and approval permissions.
+- 未配置工作目录时使用运行用户家目录；新对话默认目录在服务端共享保存，可选择任意已存在的绝对目录；各对话独立保存目录，文件授权继续由沙箱与审批控制。
+
 - Search after 50 ms of settled input, defer loading feedback until requests take 300 ms, retain previous results, and support IME composition and explicit retry; restore conversations silently without a loading splash.
 - 搜索输入防抖改为 50ms，请求超过 300ms 才显示加载提示并保留上一组结果，支持中文输入、过期结果隔离与失败重试；刷新静默恢复会话，不再显示整屏加载文案。
 

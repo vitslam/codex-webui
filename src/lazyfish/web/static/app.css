@@ -1136,8 +1136,6 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 
 /* Archived chats keep the project groups and quiet controls of the sidebar. */
 .conversation-archive .icon { width:17px; height:17px; stroke-width:1.5; }
-#account-dialog[data-page="dataManagement"] { width:min(1120px,calc(100vw - 40px)); height:min(780px,calc(100dvh - 56px)); }
-#account-dialog[data-page="dataManagement"] .account-nav { width:196px; }
 #account-dialog[data-page="dataManagement"] .account-main { background:var(--bg); }
 #account-dialog[data-page="dataManagement"] .account-toolbar { padding:38px 36px 26px; border-bottom:0; }
 #account-dialog[data-page="dataManagement"] .account-toolbar h2 { font-size:27px; letter-spacing:-.7px; }
@@ -1169,8 +1167,6 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 .archive-empty { padding:64px 12px; text-align:center; font-size:14px; color:var(--muted); }
 .archive-more { display:block; margin:12px auto; }
 @media(max-width:600px) {
-  #account-dialog[data-page="dataManagement"] { width:calc(100vw - 20px); height:calc(var(--viewport-height,100dvh) - 24px); }
-  #account-dialog[data-page="dataManagement"] .account-nav { width:100%; }
   #account-dialog[data-page="dataManagement"] .account-toolbar { padding:20px 18px; }
   #account-dialog[data-page="dataManagement"] .account-toolbar h2 { font-size:22px; }
   #account-dialog[data-page="dataManagement"] .account-content { padding:4px 18px 24px; }
@@ -1181,3 +1177,18 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
   .archive-row { gap:12px; }
   .archive-restore { padding:8px 10px; font-size:12px; }
 }
+
+/* Projects are the primary sidebar history; recent chats are an optional view. */
+.sidebar-projects,.sidebar-recent { margin-top:14px; }
+.sidebar-disclosure { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; padding:7px 10px; background:transparent; color:var(--muted); font-size:10px; text-align:left; border-radius:7px; }
+.sidebar-disclosure:hover,.sidebar-project-toggle:hover { background:var(--soft); }
+.sidebar-disclosure .icon,.sidebar-project-toggle>.icon:last-child { width:12px; height:12px; flex-shrink:0; transform:rotate(-90deg); }
+.sidebar-disclosure[aria-expanded="true"] .icon,.sidebar-project-toggle[aria-expanded="true"]>.icon:last-child { transform:rotate(0); }
+.sidebar-project-toggle { display:flex; align-items:center; gap:8px; width:100%; padding:8px 10px; background:transparent; color:var(--secondary); text-align:left; border-radius:7px; }
+.sidebar-project-toggle>.icon:first-child { width:17px; height:17px; flex-shrink:0; }
+.sidebar-project-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.sidebar-project-path { display:block; overflow:hidden; text-overflow:ellipsis; color:var(--muted); font-size:9px; }
+.sidebar-project-count { color:var(--muted); font-size:10px; }
+.sidebar-project-chats { padding-left:12px; }
+.sidebar-project-more { margin:3px 8px 7px 28px; padding:5px; background:transparent; color:var(--muted); font-size:11px; text-align:left; }
+.sidebar-project-empty { margin:4px 10px 9px; color:var(--muted); font-size:11px; }

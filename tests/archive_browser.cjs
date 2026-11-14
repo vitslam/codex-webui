@@ -7,11 +7,19 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
   const context=await browser.newContext({viewport:{width:1440,height:1000},locale:'zh-CN',timezoneId:'Asia/Shanghai'});
   await context.addInitScript(()=>localStorage.setItem('lazyfish.appearance','dark'));
   const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
-  const chatRow=id=>page.locator('.conversation-row[data-id="'+id+'"]');
+  const chatRow=id=>page.locator('.conversation-row[data-id="'+id+'"]').first();
   async function management(){
     if(!await page.locator('#menu-toggle').isVisible())await page.locator('#sidebar-toggle').click();
     await page.locator('#menu-toggle').click();await page.locator('#settings-toggle').click();
     await page.locator('[data-account-tab="dataManagement"]').click();await page.locator('#data-management[aria-busy="false"]').waitFor();
+  }
+  async function sameSettingsSize(){
+    const size=()=>page.locator('#account-dialog').evaluate(el=>{const box=el.getBoundingClientRect();return [box.x,box.y,box.width,box.height,el.querySelector('.account-nav').getBoundingClientRect().width];});
+    await page.locator('[data-account-tab="settings"]').click();const baseline=await size();
+    await page.locator('[data-account-tab="dataManagement"]').click();await page.locator('#data-management[aria-busy="false"]').waitFor();
+    assert.deepEqual(await size(),baseline,'Data management keeps the same dialog and navigation size');
+    const content=await page.locator('#account-dialog .account-content').evaluate(el=>({client:el.clientWidth,scroll:el.scrollWidth}));
+    assert.ok(content.scroll<=content.client+1,'Archived chats stay inside the settings content width');
   }
   try{
     await page.goto(f.url+'/?conversation='+f.active[0]);await page.locator('#token').fill(f.token);await page.locator('#login button').click();
@@ -32,7 +40,7 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
     await pin.click();await page.waitForFunction(id=>document.querySelector('.conversation-row[data-id="'+id+'"] .conversation-pin')?.getAttribute('aria-pressed')==='false',f.active[2]);
     assert.equal(await pin.locator('.icon').evaluate(el=>getComputedStyle(el).fill),'none');
     await archive.click();await chatRow(f.active[2]).waitFor({state:'detached'});
-    await management();assert.equal(await page.locator('.archive-row').count(),5);
+    await management();assert.equal(await page.locator('.archive-row').count(),5);await sameSettingsSize();
     assert.equal(await page.locator('[data-account-tab="dataManagement"] svg').count(),0,'Data management matches the text-only navigation');
     await page.mouse.move(1300,950);await page.locator('#account-dialog').screenshot({path:f.output+'/archived-chats-dark.png',animations:'disabled'});
     const search=page.locator('#archive-search');await search.fill('技能');
@@ -50,10 +58,11 @@ const f=JSON.parse(fs.readFileSync(process.env.LAZYFISH_BROWSER_FIXTURE,'utf8'))
     // Archiving the selected chat returns to a draft; reloading keeps it archived.
     await chatRow(f.active[2]).hover();await chatRow(f.active[2]).locator('.conversation-archive').click();await page.locator('#empty:not([hidden])').waitFor();
     await page.reload();await page.locator('#app:not([hidden])').waitFor();assert.equal(await chatRow(f.active[2]).count(),0);
-    await management();await page.setViewportSize({width:390,height:844});
+    await management();await page.setViewportSize({width:390,height:844});await sameSettingsSize();
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     assert.equal(await page.locator('.archive-restore').first().isVisible(),true);
     await page.screenshot({path:f.output+'/archived-chats-mobile.png',animations:'disabled'});
+    await page.setViewportSize({width:390,height:1000});await sameSettingsSize();
     await page.setViewportSize({width:1440,height:1000});await page.locator('[data-account-tab="settings"]').click();
     await page.locator('#appearance').selectOption('light');await page.locator('[data-account-tab="dataManagement"]').click();await page.locator('#data-management[aria-busy="false"]').waitFor();
     await page.mouse.move(1300,950);await page.locator('#account-dialog').screenshot({path:f.output+'/archived-chats-light.png',animations:'disabled'});

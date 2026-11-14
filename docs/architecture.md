@@ -188,11 +188,11 @@ signature checks. Native `localImage` files are atomically materialized with pri
 permissions inside the data directory. Skill selections are validated against native
 discovery, rechecked before send, and transmitted as native skill inputs. Input payloads
 participate in send idempotency and are copied when branching. Workspace changes are
-restricted to the configured root and allowed only before any native thread/history.
+allowed while a conversation is idle and are independent of the server-wide new-chat default. The default is persisted in installation settings with a revision for cross-browser synchronization; existing conversation records are never rewritten by a default update.
 
 第四版数据库新增图片、消息输入引用和上下文快照。上传需认证及同源写入，限制大小与格式；
 原生图片文件在数据目录内以私有权限原子写入。技能按原生发现结果校验后发送。图片/技能
-参与发送幂等比较，分支保留输入引用。工作目录只能在配置根目录内且对话尚未开始时调整。
+参与发送幂等比较，分支保留输入引用。工作目录可在对话空闲时独立调整，不受默认目录范围限制。全局新对话默认目录保存在安装设置中，通过版本号同步到各浏览器，修改默认值不会改写已有对话记录。
 
 Workspace skill editing writes only direct, non-symlink `.agents/skills/<slug>/SKILL.md`
 files. Other discovered documents are read-only. Enabling/disabling a discovered skill

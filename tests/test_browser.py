@@ -45,6 +45,72 @@ class BrowserTests(ServiceCase):
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         self.assertIn(mode+' checks passed',result.stdout)
 
+    def test_project_sidebar_groups_pagination_actions_and_disclosures(self):
+        fixture=self._project_sidebar_fixture()
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('sidebar_projects_browser.cjs'))],
+                              env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=120)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('project sidebar checks passed',result.stdout)
+
+    def _project_sidebar_fixture(self):
+        from contextlib import closing
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        paths=[self.workspace/'alpha/shared',self.workspace/'beta/shared',self.workspace/'old-project']
+        for path in paths:path.mkdir(parents=True)
+        chats=[]
+        for index in range(140):
+            project=0 if index<14 else 1 if index<139 else 2
+            chat=store.create_conversation(str(paths[project]),('Alpha ' if project==0 else 'Beta ' if project==1 else 'Old ')+str(index));chats.append(chat['id'])
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question',None,None)
+            store.item(job['id'],'reply','assistant','Saved project answer','completed');store.finish(job['id'],'completed')
+        with closing(store.connect()) as db,db:
+            db.execute('UPDATE conversations SET pinned=1 WHERE id=?',(chats[13],))
+            db.execute('UPDATE conversations SET updated_at=? WHERE id=?',('2000-01-01T00:00:00+00:00',chats[-1]))
+        fixture=self.root/'sidebar-projects.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,chats=chats,paths=[str(p) for p in paths])))
+        return fixture
+
+    def test_file_change_footer_updates_when_language_changes(self):
+        fixture=self._footer_language_fixture()
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('footer_language_browser.cjs'))],
+                              env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=60)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('footer language checks passed',result.stdout)
+
+    def _footer_language_fixture(self):
+        store=Store(self.settings.data_dir/'lazyfish.db')
+        chat=store.create_conversation(str(self.workspace),'Footer translation regression')
+        for count in (1,7):
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question',None,None)
+            store.item(job['id'],'reply','assistant','Saved answer','completed')
+            store.report(job['id'],{'changes':{'state':'complete','file_count':count,'additions':56,'deletions':4,'files':[]}})
+            store.finish(job['id'],'completed')
+        fixture=self.root/'footer-language.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,chat=chat['id'])))
+        return fixture
+
+    def test_server_shared_working_directory_defaults(self):
+        fixture=self._workspace_browser_fixture()
+        result=subprocess.run([os.environ['LAZYFISH_BROWSER_NODE'],str(Path(__file__).with_name('workspace_browser.cjs'))],
+                              env=dict(os.environ,LAZYFISH_BROWSER_FIXTURE=str(fixture)),capture_output=True,text=True,timeout=120)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('shared workspace checks passed',result.stdout)
+
+    def _workspace_browser_fixture(self):
+        store=Store(self.settings.data_dir/'lazyfish.db');projects=[];chats=[]
+        for index in range(2):
+            project=self.root/('outside-default-'+str(index));project.mkdir(mode=0o755);projects.append(str(project))
+            skill=project/'.agents/skills'/('skill-'+str(index))/'SKILL.md';skill.parent.mkdir(parents=True)
+            skill.write_text(f'---\nname: skill-{index}\ndescription: Project fixture\n---\nFixture instructions.\n')
+            chat=store.create_conversation(str(project),'Independent project '+str(index));chats.append(chat['id'])
+            job,_=store.reserve(chat['id'],'fixture',uuid.uuid4().hex,'Saved question',None,None)
+            store.item(job['id'],'reply','assistant','Saved answer','completed');store.finish(job['id'],'completed')
+        code,_,raw=self.http('/api/workspace/default',headers={'Authorization':'Bearer '+self.settings.token})
+        self.assertEqual(code,200)
+        fixture=self.root/'workspace-browser.json'
+        fixture.write_text(json.dumps(dict(url=f'http://127.0.0.1:{self.port}',token=self.settings.token,chats=chats,projects=projects,workspace=json.loads(raw)['workspace'])))
+        return fixture
+
     def test_workspace_skill_context_and_new_chat_defaults(self):
         self._interaction_browser('workspace')
 

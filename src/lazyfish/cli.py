@@ -45,7 +45,7 @@ def _main(argv: list[str] | None = None) -> int:
     parser.add_argument("--config", help="Optional configuration override; otherwise use the default or saved installation")
     commands = parser.add_subparsers(dest="command", required=True)
     init = commands.add_parser("init", help="Create private configuration; never overwrite existing configuration")
-    init.add_argument("--workspace", default="", help="Optional existing project/workspace directory")
+    init.add_argument("--workspace", default="", help="Optional default working directory for new chats; not an access boundary")
     init.add_argument("--data-dir")
     init.add_argument("--port", type=int, default=3210)
     init.add_argument("--codex-bin", default="codex")

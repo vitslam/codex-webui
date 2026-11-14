@@ -1,11 +1,16 @@
 "use strict";
 // Original Lazyfish account and composer components, wired to local native APIs.
-window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,panels,report,onChange,onCompact,getBusy,preferences,refreshStatus}) {
+window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,panels,report,onChange,onCompact,getBusy,preferences,refreshStatus,onWorkspaceChange=()=>{}}) {
   const $=s=>document.querySelector(s), drafts=new Map();
   let epoch=0, pending=0, contextRevision=0,contextId=null, basics=0,visiblePage=null,authSession=null,authTimer=0,authStarting=false,authPolling=null,authRevision=0;
   const current=()=>getConversation()?.id || "new";
+  function defaultWorkspaceChanged(before,after){
+    const state=drafts.get('new');
+    if(before!==after&&!state?.workspace&&state?.skills.length){state.skills=[];if(!getConversation())report(new Error('skills.workspace.changed'));}
+    picker.close();render();
+  }
   function draft(id=current()) { if(!drafts.has(id))drafts.set(id,{images:[],skills:[]});return drafts.get(id); }
-  const workspace=()=>getConversation()?.workspace || drafts.get('new')?.workspace || preferences.settings().workspace || getStatus()?.workspace || '';
+  const workspace=()=>getConversation()?.workspace || drafts.get('new')?.workspace || getStatus()?.workspace || '';
   const skillContext=()=>getConversation() ? {conversation:getConversation().id} : workspace() ? {workspace:workspace()} : {};
   const skillQuery=()=>new URLSearchParams(skillContext()).toString();
   function path(section,refresh=false) {return `/api/native/${section}?${section==='skills' ? skillQuery()+'&' : getConversation() ? 'conversation='+getConversation().id+'&' : ''}${refresh ? "refresh=1" : ""}`;}
@@ -362,7 +367,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
     edit.saving=true;$("#workdir-save").disabled=true;
     try {
       const result=chat ? await api(`/api/conversations/${chat.id}/settings`,{workspace:value}) : await api("/api/workspace/validate",{workspace:value});
-      if(chat)chat.workspace=result.workspace;
+      if(chat){chat.workspace=result.workspace;onWorkspaceChange();}
       const changed=before!==result.workspace,state=drafts.get(edit.id),hadSkills=changed&&Boolean(state?.skills.length);
       if(chat&&hadSkills)state.skills=[];
       if(directoryEdit!==edit||edit.revision!==contextRevision||edit.id!==current())return;
@@ -396,7 +401,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
     for(const button of document.querySelectorAll("[data-permission]")) {button.setAttribute("aria-pressed",String(button.dataset.permission===(settings.permission||(getStatus()?.execution.sandbox==="danger-full-access"&&getStatus()?.execution.approval_policy==="never"?"full_access":getStatus()?.execution.sandbox==="read-only"?"read_only":getStatus()?.execution.sandbox==="workspace-write"&&getStatus()?.execution.approval_policy==="on-request"?"ask":null))));button.disabled=getBusy();}
 
   }
-  return {render,renderContext,updateBusy,refreshBasics,imageNode,nativeImageNode:images.imageNode,preview,workspace,inputs:()=>({images:draft().images.map(i=>i.id),skills:draft().skills,...preferences.inputs()}),selectedImages:()=>draft().images.slice(),hasImages:()=>draft().images.length,hasInputs:()=>draft().images.length||draft().skills.length,busy:()=>pending>0,
+  return {render,renderContext,updateBusy,refreshBasics,imageNode,nativeImageNode:images.imageNode,preview,workspace,newWorkspace:()=>drafts.get('new')?.workspace,defaultWorkspaceChanged,inputs:()=>({images:draft().images.map(i=>i.id),skills:draft().skills,...preferences.inputs()}),selectedImages:()=>draft().images.slice(),hasImages:()=>draft().images.length,hasInputs:()=>draft().images.length||draft().skills.length,busy:()=>pending>0,
     clear:()=>{cacheGeneration++;snapshots.clear();metadataRequests.clear();snapshotScope="";clearTimeout(authTimer);authSession=null;++authRevision;++epoch;++basics;++contextRevision;contextId=null;directoryEdit=null;drafts.clear();picker.close();$("#account-name").textContent=t("account");$("#account-plan").textContent="Codex CLI";$("#usage-remaining").textContent="";},
     sent:id=>{drafts.delete(id);picker.close();render();},
     move:(from,to)=>{if(drafts.has(from)){drafts.set(to,drafts.get(from));drafts.delete(from);}picker.close();},switch:()=>{if(contextId!==current()){contextId=current();++contextRevision;++epoch;directoryEdit=null;if(directory.open)directory.close();}picker.close();render();}};
