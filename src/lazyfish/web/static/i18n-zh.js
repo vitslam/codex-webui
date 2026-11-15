@@ -1,6 +1,10 @@
 "use strict";
 // Simplified Chinese interface strings.
 window.LazyfishReferenceI18n.zh = {
+  "quote.clear": "移除全部引用",
+  "quote.edit": "编辑引用",
+  "quote.selected": "所选文本：",
+  "quote.draftCount": "{count} 条引用",
   "model.changed": "模型已从 {from} 更改为 {to}。",
   "eyebrow": "你的本机 CODEX",
   "title": "你的机器，你的 Codex。",

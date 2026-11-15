@@ -1292,3 +1292,33 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 .model-change-notice::before, .model-change-notice::after { content: ""; flex: 1; min-width: 12px; border-top: 1px solid var(--border); }
 .model-change-notice > svg { width: 16px; height: 16px; flex-shrink: 0; }
 .model-change-notice > span { overflow-wrap: anywhere; }
+
+/* Composer references stay compact; passage details open above the input. */
+.quote-draft > .quote-summary { padding:6px 9px; border-radius:10px; background:transparent; color:var(--text); }
+.quote-draft > .quote-summary:hover, .quote-draft[open] > .quote-summary { background:var(--hover); }
+.quote-draft > .quote-passages { position:fixed; inset:auto; box-sizing:border-box; margin:0; padding:8px; border:1px solid var(--border); border-radius:14px; background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
+.quote-draft > .quote-passages::backdrop { background:transparent; }
+.quote-draft .quote-passage { position:relative; padding:12px 40px 14px 34px; margin:0; border:0; }
+.quote-draft .quote-passage + .quote-passage { border-top:1px solid var(--border); }
+.quote-draft .quote-number { position:absolute; top:12px; left:10px; color:var(--muted); font-size:13px; line-height:1.6; }
+.quote-draft .quote-passage-heading { margin:0 0 3px; font-size:12px; line-height:1.6; }
+.quote-draft .quote-text { font-size:13px; line-height:1.6; }
+.quote-draft .quote-remove { position:absolute; top:8px; right:6px; display:grid; place-items:center; width:28px; height:28px; padding:5px; border-radius:7px; }
+.quote-draft .quote-remove .icon { width:16px; height:16px; }
+
+.quote-draft .quote-passage { padding-right:72px; }
+.quote-draft .quote-edit { position:absolute; top:8px; right:36px; display:grid; place-items:center; width:28px; height:28px; padding:5px; border-radius:7px; background:transparent; color:var(--muted); }
+.quote-draft .quote-edit:hover { background:var(--hover); color:var(--text); }
+.quote-draft .quote-edit .icon { width:16px; height:16px; }
+.quote-editor-dialog { width:min(520px,calc(100vw - 24px)); max-height:calc(100dvh - 32px); padding:20px; border:1px solid var(--border); border-radius:14px; background:var(--surface); color:var(--text); }
+.quote-editor-form { display:grid; gap:16px; }
+.quote-editor-form h2 { margin:0; font-size:16px; }
+.quote-editor-text { box-sizing:border-box; width:100%; min-height:140px; max-height:45dvh; resize:vertical; padding:10px; border:1px solid var(--strong-border); border-radius:8px; background:var(--bg); color:var(--text); font:inherit; font-size:13px; line-height:1.6; }
+.quote-editor-actions { display:flex; justify-content:flex-end; gap:8px; }
+.quote-editor-actions button { padding:7px 14px; border-radius:8px; background:var(--soft); color:var(--text); }
+.quote-editor-actions button:hover { background:var(--hover); }
+
+.quote-clear { display:grid; place-items:center; flex-shrink:0; width:22px; height:22px; padding:0; border:0; border-radius:50%; background:var(--text); color:var(--surface); font-size:17px; line-height:1; visibility:hidden; }
+.quote-summary:is(:hover,:focus-within) .quote-clear, .quote-draft[open] .quote-clear { visibility:visible; }
+.quote-clear:hover { opacity:.8; }
+@media(hover:none) { .quote-clear { visibility:visible; } }
