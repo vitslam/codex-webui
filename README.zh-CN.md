@@ -1,199 +1,195 @@
-# Lazyfish
-
 <p align="center">
-  <img src="docs/assets/lazyfish-logo.png" alt="Lazyfish logo" width="640">
+  <img src="docs/assets/lazyfish-logo.png" alt="Lazyfish — 悠闲的橙色小鱼" width="640">
 </p>
 
-[English](README.md) · [配置说明](docs/configuration.md) · [架构](docs/architecture.md) · [路线图](docs/roadmap.md)
+<h1 align="center">Lazyfish</h1>
 
-为已经安装 **Codex CLI** 的机器提供轻量、自托管的 Web 界面。
-Web 服务和 CLI 部署在**同一台机器**，通过本机浏览器、显式开启的可信局域网或 SSH 隧道访问，
-不需要另一台执行机，也不需要安装桌面客户端。
+<p align="center"><strong>你的 Codex，你的记录，你的工作台。</strong></p>
 
-在浏览器中管理对话、查看执行进度、处理文件与图片，并按自己的习惯选择模型、主题和快捷键。
+<p align="center">自托管的 Codex 网页工作台：本地历史、侧边聊天、上下文由你掌控。</p>
 
-Lazyfish 是独立开发的第三方项目，与 OpenAI 无隶属、赞助或认可关系。OpenAI、Codex、ChatGPT 等名称及相关商标归各自权利人所有。
+<p align="center">
+  <a href="README.md">English</a> · 简体中文<br>
+  <a href="#快速开始">快速开始</a> ·
+  <a href="#为什么选择-lazyfish">产品特色</a> ·
+  <a href="docs/configuration.md">配置说明</a> ·
+  <a href="docs/troubleshooting.md">常见问题</a>
+</p>
 
-## 界面预览
+Lazyfish 把你已有的 **Codex CLI** 变成个人网页工作台。把对话记录保存在自己掌控的机器上，在主任务旁随手展开讨论，自主决定何时压缩长对话。Codex 在你的 Linux 或 macOS 主机上工作，电脑、手机都能打开同一个工作台。
 
-| 深色模式 · 中文 | 浅色模式 · English |
-| --- | --- |
-| ![Lazyfish 深色主题与中文界面](docs/assets/screenshot-dark.png) | ![Lazyfish 浅色主题与英文界面，展示推理强度选择](docs/assets/screenshot-light.png) |
+如果你正在选择 Codex 客户端，Lazyfish 把**自托管、记录自主保管和浏览器工作流**放在首位。访问设备无需安装 CLI 或桌面客户端；Lazyfish 本身**没有第三方 Python 运行时依赖**。
 
 ## 为什么选择 Lazyfish
 
-如果你希望通过浏览器使用 Codex，或在多台设备之间切换，Lazyfish 提供了一个轻量、自托管的入口。
+### 对话记录，自己保管
 
-- **轻装上阵，打开网页就能用**：无需为每台访问设备下载和维护独立的桌面客户端，也不用额外安装一套桌面运行环境。服务端使用 Python 标准库，Lazyfish 本身没有额外的 Python 运行时依赖。
-- **电脑、手机及配备兼容浏览器的嵌入式设备，都能成为工作入口**：界面适配不同屏幕，在电脑浏览器中处理项目，也可以从手机查看进度、补充指令。配备兼容现代网页功能的浏览器的平板、嵌入式设备，也可以作为访问终端；Codex 与任务仍在服务机器上运行，访问设备无需安装 CLI。
-- **让等待尽量少一点**：静态资源缓存、首屏请求并行、最近对话视图缓存，让刷新与切换少做重复加载。长对话分页读取，执行详情按需展开，用量面板先显示已有记录再后台更新，让界面及时呈现可用内容。
-- **任务留在服务端，操作不局限于一台设备**：通过安全的远程访问方式连接同一服务，继续查看保存在服务端的对话、文件产物和任务进度。关闭浏览器不打断任务，重新打开后仍可继续跟进。
-- **ChatGPT 登录与 API Key 都能用**：通过 Codex CLI，既可使用 ChatGPT 账户登录，也可使用自己的 OpenAI API Key，在浏览器中继续工作。API Key 用量按 API 规则单独计费，支持的功能取决于账户与 CLI。参见[官方认证说明](https://learn.chatgpt.com/docs/auth)。
-- **自己的机器，自己的工作空间**：自行选择运行环境和项目目录，复用已有 Codex 登录与配置，对话和附件保存在自己的服务机器上。主题、语言与快捷键也可以按使用习惯调整。
+对话、任务记录和已保存的附件，都存放在**服务主机上的 SQLite 数据库和本地文件**里。查看已保存的 Lazyfish 历史，无需重新登录 OpenAI 账号。登录失效或失去模型访问权限，不会删除这份本地记录；备份与保留多久，由你决定。
 
-Lazyfish 优化的是网页加载、交互和访问方式；模型生成速度仍取决于所选模型、服务提供方与网络。
+这里的“本地”指运行 Lazyfish 的机器，也可以是你管理的服务器。Lazyfish 不依赖 OpenAI 云端会话库来保存自己的历史。提示词与相关上下文仍会发送给配置的模型和工具，并受其数据政策约束；继续调用模型需要有效权限。详见[数据与访问](#数据与访问)及[备份说明](docs/deployment.md#upgrade-and-backup)。
+
+### ChatGPT 或 API Key，在网页里登录
+
+直接复用已有 Codex 登录，也可以在网页账户面板中登录 ChatGPT，或**填写 API Key**。远程无桌面的主机可使用设备码登录。凭据由原生 Codex 管理，Lazyfish 把支持的登录流程整合到同一个界面。
+
+<details>
+<summary>登录与额度说明</summary>
+
+API Key 用量按服务提供方规则计费。OpenAI 桌面客户端目前也支持 API Key；Lazyfish 的价值在于自托管的网页登录与工作流程。目前 ChatGPT Pro/Business 赠送的 API credits **不覆盖通过 API Key 使用 Codex 的用量**。参见[认证说明](https://learn.chatgpt.com/docs/auth)与[赠送额度适用范围](https://developers.openai.com/api/docs/guides/chatgpt-api-credits)。
+
+</details>
+
+### 主动压缩，让长对话随时接着用
+
+随时查看对话的上下文占用，直接从输入框旁**手动触发原生上下文压缩**。常用长对话可以提前整理好，为下一阶段工作留出空间，无需等到自动压缩触发。侧聊也有同样的入口。
+
+如果订阅额度即将刷新、当前还有余量，可以考虑提前整理接下来会继续使用的长对话：等待任务结束，打开上下文指示器，选择**压缩上下文**。压缩本身可能消耗额度，具体取决于模型和历史长度；它不会把剩余额度结转，也不保证降低总成本。是否可用取决于 CLI 与服务提供方。
+
+### 主线继续，问题在旁边聊
+
+选中一段文字，直接发起侧边讨论：追问一个假设、拆解一个结果，或比较另一种方案。**多个侧聊标签**分别保留自己的对话、草稿和模型设置。讨论出有用的结论，再带回主输入框。
+
+侧边讨论从创建时的主对话文本快照开始，后续消息不会自动同步。不同对话仍可能操作同一工作目录。具体行为见[功能指南](docs/features.md)。
+
+### 换个设备，还是同一个工作台
+
+在电脑上发起任务，用手机查看进度，再回到同一段对话。**关闭浏览器不会停止任务**，前提是主机与服务保持运行。通过本机访问或安全的远程连接，继续使用同一套项目、文件与 CLI。
+
+## 日常使用，也照顾到细节
+
+- **找回思路。** 项目分组、全文搜索、对话置顶、归档与恢复。编辑消息或创建分支，尝试另一条思路；这些操作不会撤销工作目录中的文件改动。
+- **边做边补充。** 给执行中的任务追加指令，在不同对话中并行工作，在浏览器里回答原生问题、处理审批。
+- **先看结果，再看过程。** 流式回复、图片预览和文件下载；需要时再展开命令、网页结果与文件差异。
+- **沿用你的配置。** 模型、推理强度、速度、权限与 Plan 控制，图片附件、项目/个人技能及 MCP 连接。查看 CLI 提供的可用额度、用量与上下文信息。
+- **调成顺手的样子。** 中英文、八套配色、浅色/深色/跟随系统，可调整面板宽度，也能自定义快捷键。
+
+## 界面预览
+
+| 深色外观 · 中文界面 | 浅色外观 · 英文界面 |
+| --- | --- |
+| ![Lazyfish 深色界面，展示对话历史与可展开的执行详情](docs/assets/screenshot-dark.png) | ![Lazyfish 浅色界面，展示流式回复与推理强度选择](docs/assets/screenshot-light.png) |
 
 ## 环境要求
 
-- Linux 或 macOS、Python **3.11–3.14**、`venv` 和 `pip`。运行时没有额外 Python 依赖。
-- 同一系统用户下可运行支持 `app-server` 的 Codex CLI；需自行安装和登录，项目直接复用已有安装。
-- 聊天前完成原生 CLI 登录，也可在网页账户面板发起登录。
-  参考 [Codex 登录说明](https://learn.chatgpt.com/docs/auth)。
-- 工作目录可留空，无需在安装时指定。
+- **Linux 或 macOS**，以及 Python **3.11–3.14**、`venv` 和 `pip`。
+- 单独安装支持 **`app-server` 的 Codex CLI**，并确保运行 Lazyfish 的系统用户可以使用它。已有 CLI 登录会直接复用，也可以在网页账户面板中登录。
+- 现代浏览器。使用下方克隆命令需要 Git，也可以下载并解压仓库。
 
-项目不捆绑或自动安装 Codex。
-默认复用 CLI 的登录状态；原生登录可用时，不需要额外填写
-OpenAI API Key。API Key 登录方式和网络代理均由用户自行配置，没有内置地址或密钥。
+Lazyfish 目前处于 pre-alpha 阶段。原生能力取决于 CLI 版本、账户与服务提供方；保留指定历史范围的对话分支需要 Codex CLI **0.162.1+**。已有可用的 ChatGPT 登录时，无需额外填写 API Key；API Key 用量由服务提供方单独计费。参考 [Codex CLI 文档](https://learn.chatgpt.com/docs/codex/cli)与[认证说明](https://learn.chatgpt.com/docs/auth)。
 
 ## 快速开始
 
-在下载或克隆的项目目录中运行：
+### 1. 在运行 Codex 的机器上安装
 
 ```bash
+git clone https://github.com/vitslam/codex-webui.git
+cd codex-webui
 bash scripts/install.sh
-# 如有提示，先执行安装器输出的 source 命令。
+```
+
+安装器会创建独立的 Python 环境与 `~/.local/bin/lazyfish` 命令，初始化私有配置和 Web 令牌，不会安装 Codex 或启动服务。无需 `sudo`，安装完成后请保留安装目录。
+
+**如果安装器提示执行 `source` 命令，请先执行再继续**，也可以打开新终端，让更新后的 PATH 生效。
+
+### 2. 启动 Lazyfish
+
+```bash
 lazyfish token
 lazyfish serve
 ```
 
-访问 **http://127.0.0.1:3210**，输入 `lazyfish token` 显示的 **Web 登录令牌**。
-它与 Codex/OpenAI 凭据相互独立，由安装程序自动生成，安装日志不会显示令牌。
-页面可以切换中英文。
-默认绑定 `127.0.0.1`，仅限本机访问。跨设备访问见下方[远程访问](#远程访问)；
-局域网访问需要显式开启，仍需 Web 登录令牌。
+打开 **http://127.0.0.1:3210**，输入 `lazyfish token` 显示的令牌。这是 **Web 登录令牌**，与 Codex/OpenAI 凭据相互独立。服务在前台运行，请保持终端开启；按 Ctrl+C 可停止。
 
-安装器会创建 `~/.local/bin/lazyfish`，Python 虚拟环境仅作为内部运行环境。
-如果该目录不在 PATH 中，会自动配置 Bash/Zsh 启动文件，并提示在当前终端执行一次
-`source` 命令；请先执行提示的命令，再使用 `lazyfish`（也可重新打开终端）。
-重复安装会更新命令入口，不会重复添加 PATH 配置，也不会覆盖其他已有的同名命令。
-请保留安装目录。
-工作目录配置默认留空，新对话从运行用户的家目录开始；安装时可用 `--workspace /项目路径` 指定其他默认值。设置中的“新对话默认工作目录”在服务器保存，所有浏览器共用。默认值不限制可选目录，也不修改已有对话；每个对话独立保存自己的工作目录，读写权限仍由沙箱和审批控制。
+### 3. 开始第一段对话
 
-安装脚本仅安装 Lazyfish、初始化配置和数据。Codex 请按照[官方 CLI 文档](https://learn.chatgpt.com/docs/codex/cli)自行安装并登录。
-找不到 `codex` 命令时，可手动指定路径：
+1. 如果 Codex 尚未就绪，在网页的安装或账户面板检查状态并完成登录。
+2. 新建对话，选择项目目录。未设置默认目录时，新对话从运行服务的系统用户家目录开始。
+3. 选择模型和权限，描述任务。例如：*“先阅读这个项目，提出一项小改进，确认方案后再修改文件。”*
+4. 跟随流式回复查看进展。任务执行中可以补充指令，也可以选中文字，打开侧边讨论深入一个细节。
 
-```bash
-LAZYFISH_CODEX_BIN=/实际路径/codex lazyfish serve
-```
+在**设置**中可以指定新对话的默认工作目录。每段对话独立保存自己的目录，修改默认值不会移动已有对话。
 
-也可在 `config.toml` 的 `[codex]` 下填写 `binary`，无需重复登录已有 Codex 账户。
+<details>
+<summary>需要指定 Python 或 Codex 路径？</summary>
 
-不需要 `sudo`，不注册系统服务，也不会自动启动后台进程。
-`serve` 在前台运行，Ctrl+C 可退出，也可在另一终端执行：
-
-```bash
-lazyfish status
-lazyfish stop
-```
-
-系统 Python 版本过低时，可以指定其他已安装的解释器：
+安装时选择已有的 Python 解释器：
 
 ```bash
 PYTHON=/path/to/python3.14 bash scripts/install.sh
 ```
 
-## 远程访问
+如果 PATH 中找不到 Codex，启动时指定其可执行文件：
 
-**可信局域网：** 在本地 `~/.config/lazyfish/config.toml`（或你选用的配置文件）中，
-将 `[server]` 下的 `host` 改为 `"0.0.0.0"`，然后重启服务：
-
-```toml
-[server]
-host = "0.0.0.0"
+```bash
+LAZYFISH_CODEX_BIN=/path/to/codex lazyfish serve
 ```
 
-启动时会打印本机地址和探测到的 IPv4 地址。在另一台设备打开其中一个地址，
-使用 `lazyfish token` 显示的令牌登录。启动信息会省略常见容器和网桥接口；
-如果只想绑定一个网卡，也可指定该网卡的 IPv4（例如 `192.168.1.10`）。详见[配置说明](docs/configuration.md)。
+也可以在 `config.toml` 的 `[codex]` 下设置 `binary`。工作目录默认值、自定义安装位置和代理配置见[配置说明](docs/configuration.md)。
 
-`0.0.0.0` 会监听**所有 IPv4 网卡**，不只局域网；也可以绑定某个公网或内网 IPv4。
-HTTP 不会加密令牌和传输内容，请用防火墙限制谁可以连接。Host 检查只拒绝 Host
-不是本进程地址的请求，**不能替代防火墙**。绑定地址由你选择，谁能访问由你负责。
-不可信网络应使用 SSH。
+</details>
 
-**SSH 备选方式：** 保留默认的 `127.0.0.1` 绑定，并转发端口：
+## 远程访问
+
+Web 服务与 Codex 运行在**同一台机器**上。其他设备通过浏览器访问，无需另外部署执行节点。
+
+**通过 SSH 访问：** 保留默认的 `127.0.0.1` 监听地址，在用来浏览的电脑上执行：
 
 ```bash
 ssh -N -L 3210:127.0.0.1:3210 user@your-server
 ```
 
-然后在自己的浏览器打开 `http://127.0.0.1:3210`，使用 Web 令牌登录。
-工作目录是执行时的起点，**不是操作系统沙箱**；建议使用独立系统用户，
-只授予希望 Agent 访问的文件权限。
+保持隧道开启，在本机打开 **http://127.0.0.1:3210**，使用服务器上的 Web 令牌登录。如果本机 3210 端口已被占用，可改用 `-L 3211:127.0.0.1:3210`，并访问本机 3211 端口。
 
-## 功能特色
+**通过可信局域网访问：** 在 `~/.config/lazyfish/config.toml` 的 `[server]` 下设置 `host = "0.0.0.0"`，然后重启服务。启动时会列出可用的 IPv4 地址；在另一台设备上打开对应网址，使用 Web 令牌登录。
 
-- **在浏览器中使用 Codex**：连接同一台机器上已安装的 Codex CLI，直接使用已有登录状态和项目目录。无需额外安装桌面客户端，也无需单独部署执行节点。
-- **多对话与历史搜索**：创建、重命名、置顶和拖动排序对话，按标题或消息正文搜索历史。切换对话或刷新页面后，恢复之前的阅读位置。
-- **编辑消息与对话分支**：修改已发送的消息，或从历史消息之前创建分支，尝试不同思路。分支会保留原对话供后续查看；编辑和分支不会回滚工作目录中的文件。
-- **多任务并行与执行控制**：不同对话可以同时执行任务，并发数量可在诊断面板中设置为 1–16。刷新页面、切换对话或关闭标签页不会停止任务；执行中可补充指令，也可随时停止并保留已收到的回复。
-- **清晰的执行过程与结果**：流式展示回复，支持 Markdown、表格、代码复制和可折叠执行详情。查看命令、网页搜索结果、文件变更与 diff，预览生成的图片，并下载回复中的文件。Markdown 中的本地绝对路径会显示为名称链接，点击可复制服务端路径，或在浏览器所在设备的 VS Code 中打开；支持空格、括号和行号，远程路径需要对应的远程工作区。 图片产物以紧凑缩略图展示，点击可放大；正文已显示的图片不再重复展示；文字链接对应的图片仍保留缩略图。
-- **模型、推理与权限选择**：在输入框中选择模型、调整推理强度和快速/标准速度，按任务需要选择权限模式。支持 Plan 模式，先查看方案，再决定是否执行；需要确认或补充信息时，可直接在页面中回答。
-- **图片、技能与工具连接**：通过选择、粘贴或拖放添加图片。使用 `@`、`$` 或添加菜单选择技能，创建和编辑项目或个人技能；查看 MCP 工具与连接状态，并为支持 OAuth 的服务完成授权。
-- **账户、用量与上下文管理**：支持设备码、浏览器和 API Key 登录。查看可用的额度、重置时间和使用记录，了解当前上下文占用，并按需手动压缩。功能及数据是否可用取决于 CLI 版本、账户和服务提供方。
-- **多主题、多语言与快捷操作**：中英文界面自由切换，提供 8 套配色、明暗外观及跟随系统选项。自定义发送、换行和对话切换快捷键；按住快捷键前缀即可查看切换提示，侧栏收起时也能快速找到目标对话。
-
-详细操作与功能限制见[功能说明](docs/features.md)，安装及运行选项见[配置说明](docs/configuration.md)。
+`0.0.0.0` 会监听所有 IPv4 网卡，HTTP 不加密流量或令牌。请用防火墙限制访问范围；不可信网络使用 SSH。支持的部署方式见[部署指南](docs/deployment.md)，指定单个 IPv4 地址的方法见[配置说明](docs/configuration.md)。
 
 ## 常用命令
 
-| 命令 | 作用 |
+| 命令 | 用途 |
 | --- | --- |
-| `lazyfish init [--workspace PATH]` | 初始化；已有配置和令牌不会被覆盖 |
-| `lazyfish doctor` | 检查可执行文件、已保存的登录状态、工作目录和 app-server 命令 |
-| `lazyfish doctor --probe --json` | 额外启动并关闭独立 app-server，只做初始化握手，不调用模型 |
-| `lazyfish serve` | 前台启动聊天服务，默认需要 Web 令牌 |
-| `lazyfish serve --no-token` | 显式关闭本次运行的 Web 登录认证，风险见下方说明 |
-| `lazyfish status` | 通过认证接口查看当前数据目录对应的实例 |
-| `lazyfish stop` | 安全停止该实例，不会根据遗留 PID 文件直接结束进程 |
-| `lazyfish token [--rotate]` | 在终端显示 Web 登录令牌；`--rotate` 在停服后更换令牌 |
+| `lazyfish serve` | 在前台启动服务 |
+| `lazyfish token` | 查看 Web 登录令牌 |
+| `lazyfish status` | 查看当前安装实例的运行状态 |
+| `lazyfish stop` | 从另一终端正常停止服务 |
+| `lazyfish doctor` | 检查本机 CLI 安装和已保存的登录状态 |
+| `lazyfish doctor --probe` | 额外验证 app-server 初始化，不调用模型 |
+| `lazyfish token --rotate` | 在服务停止时更换 Web 令牌 |
 
-**警告：**`serve --no-token` 允许任何能访问该 URL 的人使用此 Codex 会话，
-包括其可访问的文件和原生账户。此选项只对本次运行生效，普通 `serve` 仍需令牌。
-Host 检查不是访问控制，HTTP 仍不加密。详见[配置说明](docs/configuration.md#optional-web-sign-in-bypass)。
+这些命令会自动查找默认或已记住的安装配置。本机检查不验证网络、模型可用性或计费状态。自定义配置与可选的单次免登录模式见[配置说明](docs/configuration.md)。
 
-普通命令自动查找默认配置；没有默认配置时，会记住首次成功初始化或使用的自定义配置，
-以后切换目录也无需反复指定 `--config`。仅操作其他实例等高级场景，才需要用
-`lazyfish --config /path/to/config.toml 命令` 或 `LAZYFISH_CONFIG` 覆盖自动选择。
-修改配置后需重启服务。安装 CLI 或改变登录状态后，可在“本机安装 → 重新检测”或
-“诊断与性能”右上角重新检查，无需重启；网页账户登录或退出后会自动更新检查。
-账户、用量、技能或连接面板的刷新会启动并关闭
-归属于本服务的短期 CLI 进程读取信息，不创建原生对话、不调用模型。
+## 数据与访问
 
-`doctor` 通过只代表本机环境及原生 CLI 保存的登录状态正常。
-即使 `--probe` 握手成功，也**不等于**网络、模型调用、余额和所有后续聊天接口都已验证。
+默认配置保存在 `~/.config/lazyfish/`，对话、任务记录、附件和日志保存在 `~/.local/share/lazyfish/`。原生 Codex 自行管理登录凭据。Lazyfish 不包含分析埋点或 CDN 资源；模型请求与连接的工具仍会访问 Codex 中配置的服务。
 
-## 数据与隐私
+默认要求 Web 登录，并使用 HttpOnly 浏览器会话 Cookie。请将 Web 令牌视为访问 Codex 会话与工作空间的凭证。工作目录是执行起点，**不是操作系统沙箱**；文件访问由原生沙箱权限和审批控制。这是单机个人服务，不提供多用户隔离边界。
 
-| 默认位置（遵循 XDG） | 用途 |
-| --- | --- |
-| `~/.config/lazyfish/config.toml` | 工作目录、数据目录、CLI 路径、端口、日志级别 |
-| `~/.config/lazyfish/secrets.env` | 自动生成的 Web 令牌及可选私有环境配置 |
-| `~/.local/share/lazyfish/` | SQLite 对话/任务/事件、日志、执行归属记录、上传图片、附件文件及上下文用量快照 |
-| 原有 Codex home / 系统凭据存储 | 原生登录，Lazyfish 不复制或修改凭据文件 |
+备份、升级与访问细节见[部署指南](docs/deployment.md)、[配置说明](docs/configuration.md)和[安全政策](SECURITY.md)。
 
-应用目录权限为 `700`，配置、密钥及数据文件为 `600`，权限不安全的配置及密钥文件会被拒绝。
-Git 默认忽略填写过的环境文件、数据库、日志和运行数据。
-不包含统计服务、外部 CDN、账号凭据或私有部署钩子。
-默认模式下浏览器使用 HttpOnly Cookie 保存会话，不将令牌写入 localStorage；重启后需重新登录。
-localStorage 仅保存语言、外观、快捷键、侧边栏偏好，以及数量受限的消息 ID、滚动几何信息和
-工具展开状态，不保存消息正文和令牌。
-
-详见[配置](docs/configuration.md)、[部署](docs/deployment.md)、
-[排障](docs/troubleshooting.md)和[安全说明](SECURITY.md)。
-
-## 开发
+## 参与开发
 
 ```bash
 python3.11 -m venv .venv
 .venv/bin/python -m pip install -e .
 .venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m pip install build
-.venv/bin/python -m build
 ```
 
-测试使用隔离目录和模拟 Codex，不需要真实凭据，也不消耗模型额度。
-CI 覆盖 Python 3.11–3.14、隔离 Chromium 界面检查，以及 wheel 构建和安装。
-本地可选浏览器测试命令见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-参考 [CONTRIBUTING.md](CONTRIBUTING.md)。项目代码采用 MIT 许可证；
-Codex 及第三方服务保留各自的许可证与使用条款。
+测试使用隔离目录和模拟 Codex 可执行文件，无需真实模型调用或凭据。打包与可选的浏览器检查见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 继续了解
+
+以下详细文档以英文维护。
+
+| 文档 | 内容 |
+| --- | --- |
+| [功能指南](docs/features.md) | 侧边讨论、分支、文件、技能与原生集成限制 |
+| [配置说明](docs/configuration.md) | 路径、环境变量、代理与执行设置 |
+| [部署指南](docs/deployment.md) | 远程访问、升级、备份与离线安装 |
+| [常见问题](docs/troubleshooting.md) | 安装、登录与运行问题 |
+| [架构](docs/architecture.md) · [路线图](docs/roadmap.md) · [更新记录](CHANGELOG.md) | 实现方式、后续计划与版本变化 |
+
+## 许可与声明
+
+Lazyfish 采用 [MIT 许可](LICENSE)。欢迎贡献代码或提交明确的问题报告，参见[贡献指南](CONTRIBUTING.md)与[第三方声明](THIRD_PARTY_NOTICES.md)。
+
+Lazyfish 是独立开发的第三方项目，与 OpenAI 无隶属、赞助或认可关系。OpenAI、Codex、ChatGPT 等商标归各自权利人所有。Codex 与连接的服务遵循各自的许可和使用条款。

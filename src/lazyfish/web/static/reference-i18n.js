@@ -2,6 +2,12 @@
 // English interface strings; load the Chinese locale separately.
 window.LazyfishReferenceI18n = {
   en: {
+  "quote.clear": "Remove all references",
+  "quote.edit": "Edit reference",
+  "quote.selected": "Selected text:",
+  "quote.draftCount": {"one":"{count} reference","other":"{count} references"},
+  "model.changed": "Model changed from {from} to {to}.",
+
   "eyebrow": "YOUR LOCAL CODEX",
   "title": "Your machine. Your Codex.",
   "intro": "Work with your local projects, from a browser.",

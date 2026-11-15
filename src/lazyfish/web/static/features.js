@@ -399,7 +399,7 @@ window.LazyfishFeatures = function({node,icon,t,api,getStatus,getConversation,pa
   }
   function render() {
     const quotes=draft().quotes,host=$('#selected-quotes');host.hidden=!quotes.length;host.replaceChildren();
-    if(quotes.length)host.append(quoteUI.render(quotes,'draft:'+current(),index=>{draft().quotes.splice(index,1);render();onChange();}));
+    if(quotes.length)host.append(quoteUI.render(quotes,'draft:'+current(),index=>{quotes.splice(index,1);render();onChange();},(index,text)=>{quotes[index]={...quotes[index],text};render();onChange();},()=>{quotes.length=0;render();onChange();}));
     picker.drawSelection();renderImages();renderContext();
     if(document.activeElement!==$("#workdir"))$("#workdir").value=workspace();
     $("#workdir-preview").textContent=$("#workdir").value.split("/").filter(Boolean).pop()||"/";$("#workdir-preview").title=$("#workdir").value;

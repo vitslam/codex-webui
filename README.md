@@ -1,201 +1,170 @@
-# Lazyfish
-
 <p align="center">
-  <img src="docs/assets/lazyfish-logo.png" alt="Lazyfish logo" width="640">
+  <img src="docs/assets/lazyfish-logo.png" alt="Lazyfish — the relaxed orange fish" width="640">
 </p>
 
-[Simplified Chinese](README.zh-CN.md) · [Configuration](docs/configuration.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
+<h1 align="center">Lazyfish</h1>
 
-A lightweight, self-hosted web companion for an existing **Codex CLI** installation.
-The Web service and CLI run on the **same machine**. Use a browser locally, on a
-trusted LAN (opt-in), or through an SSH tunnel from another device. No separate execution worker or second server is required.
+<p align="center"><strong>Your Codex. Your history. Your workspace.</strong></p>
 
-Manage conversations, follow task progress, work with files and images, and choose the models, themes and shortcuts that suit your workflow.
+<p align="center">A self-hosted Codex workspace with local history, side chats and context control.</p>
 
-Lazyfish is an independently developed third-party project. It is not affiliated with, sponsored by, or endorsed by OpenAI. OpenAI, Codex, ChatGPT, and other referenced trademarks belong to their respective owners.
+<p align="center">
+  English · <a href="README.zh-CN.md">Simplified Chinese</a><br>
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#why-lazyfish">Why Lazyfish</a> ·
+  <a href="docs/configuration.md">Configuration</a> ·
+  <a href="docs/troubleshooting.md">Troubleshooting</a>
+</p>
+
+Lazyfish turns your existing **Codex CLI** into a personal web workspace. Keep your conversation archive on a machine you control, explore ideas beside the main task, and decide when to compact a long-running chat. Open the same workspace from your laptop or phone while Codex works on your Linux or macOS host.
+
+For developers choosing a Codex client, Lazyfish puts **self-hosting, control of your records and a browser-based workflow** first. The browsing device needs no CLI or desktop installation; Lazyfish itself has **zero third-party Python runtime dependencies**.
+
+## Why Lazyfish
+
+### Your history stays yours
+
+Conversations, task records and saved attachments live in a **local SQLite database and files on your service host**. Reading your saved Lazyfish history does not depend on signing back into an OpenAI account. An expired login or loss of model access does not delete this archive; you control its backups and retention.
+
+Here, “local” means the machine running Lazyfish, including a server you manage. Lazyfish does not use an OpenAI-hosted conversation archive as its history store. Prompts and relevant context still go to the configured model and tools; their data policies apply. Continuing model work requires valid access. See [data and access](#your-data-and-access) and [backup guidance](docs/deployment.md#upgrade-and-backup).
+
+### Sign in your way, from the browser
+
+Use an existing Codex login, sign in with ChatGPT, or enter an **API key in the Web account panel**. Device-code login makes a remote, headless host easy to set up. Native Codex manages credentials, while Lazyfish brings the supported sign-in flows into one interface.
+
+<details>
+<summary>API access and credits</summary>
+
+API-key usage follows provider billing. OpenAI's desktop client also supports API keys; Lazyfish's benefit is the self-hosted Web workflow. The ChatGPT Pro/Business API-credit benefit currently **excludes Codex usage through API keys**. See [authentication](https://learn.chatgpt.com/docs/auth) and [credit eligibility](https://developers.openai.com/api/docs/guides/chatgpt-api-credits).
+
+</details>
+
+### Compact context on your schedule
+
+See how much context a conversation uses and **trigger native compaction directly from its composer**. Prepare a frequently used chat for the next stretch of work without waiting for automatic compaction. The same control is available in side chats.
+
+If your subscription quota is about to reset and you have capacity left, consider preparing long chats you plan to revisit: wait for the task to finish, open the context indicator and choose **Compact context**. Compaction can itself consume usage; the amount depends on the model and history. It does not roll unused quota forward or guarantee lower total cost. Availability follows your CLI and provider.
+
+### Ask on the side. Keep the main task moving.
+
+Select a passage and open a side discussion to question an assumption, unpack a result or compare another approach. **Multiple side-chat tabs** keep their own conversations, drafts and model settings. Bring a useful reply back into the main composer when you are ready.
+
+Side discussions start from a snapshot of the parent transcript; later messages are not automatically synchronized. Separate conversations can still share workspace files. See the [feature guide](docs/features.md) for details.
+
+### One workspace, across your devices
+
+Start a task on your laptop, check it from your phone, and return to the same conversation. **Closing the browser does not stop the task**, as long as the host and service stay running. Use the same projects, files and CLI through local access or a secure remote connection.
+
+## More to make daily work easier
+
+- **Find the thread again.** Project grouping, full-text search, pinned chats, archive and restore. Edit a message or branch a conversation to explore a different approach; this does not undo workspace changes.
+- **Steer work as it happens.** Add instructions to a running task, work across conversations in parallel, and handle native questions and approvals in the browser.
+- **Read results first.** Streamed replies, image previews and downloadable outputs, with commands, web results and file diffs available in expandable execution details.
+- **Bring your setup.** Model, reasoning, speed, permission and Plan controls; image attachments, project/personal skills and MCP connections. Inspect available quota, usage and context information from your CLI.
+- **Make it feel right.** English and Chinese, eight palettes, light/dark/system appearance, resizable panels and configurable keyboard shortcuts.
 
 ## Interface preview
 
-| Dark mode · Chinese | Light mode · English |
+| Dark appearance · Chinese UI | Light appearance · English UI |
 | --- | --- |
-| ![Lazyfish dark theme with Chinese interface](docs/assets/screenshot-dark.png) | ![Lazyfish light theme with English interface and reasoning controls](docs/assets/screenshot-light.png) |
-
-## Why choose Lazyfish?
-
-If you prefer using Codex in a browser or switching between devices, Lazyfish offers a lightweight, self-hosted way to do it.
-
-- **Open a page instead of installing another desktop app**: each device can use its existing browser, without downloading and maintaining a separate desktop client or runtime. On the server, Lazyfish uses the Python standard library with no additional Python runtime dependencies.
-- **Work from computers, phones and embedded devices with compatible browsers**: the interface adapts to different screen sizes. Use a computer for project work or a phone to check progress and send follow-up instructions. Tablets and embedded devices with a browser supporting modern web features can also act as access terminals. Codex and its tasks run on the service machine; browsing devices do not need the CLI.
-- **Less repeated loading**: static asset caching, parallel initial requests and cached recent conversation views reduce repeated work when refreshing or switching chats. Long histories load in pages, execution details load on demand, and usage panels show saved records while updating in the background.
-- **Tasks stay on the server, with access across devices**: connect to the same service through secure remote access to view saved conversations, generated files and task progress. Closing the browser does not interrupt a task; return later to follow its progress.
-- **Use ChatGPT sign-in or your own API key**: Lazyfish connects through Codex CLI, supporting both ChatGPT sign-in and your own OpenAI API key in a browser interface. API key usage is billed separately under API pricing; feature availability depends on your account and CLI. See the [official authentication guide](https://learn.chatgpt.com/docs/auth).
-- **Your machine and your workspace**: choose where to run the service and which project directories to use, with your existing Codex login and configuration. Conversations and attachments stay on your service machine. Adjust themes, language and shortcuts to suit your workflow.
-
-These optimizations improve page loading, interaction and access. Model generation speed still depends on the selected model, provider and network.
+| ![Lazyfish dark appearance with conversation history and expandable execution details](docs/assets/screenshot-dark.png) | ![Lazyfish light appearance with streamed replies and reasoning controls](docs/assets/screenshot-light.png) |
 
 ## Requirements
 
-- Linux or macOS, Python **3.11–3.14**, `venv` and `pip`. No runtime Python dependencies.
-- A Codex CLI with `app-server` support, available to the same OS user. The
-  CLI is installed and authenticated separately; existing installations are reused.
-- Authenticate with your chosen native Codex login method, or use the Web account panel before chatting.
-  See [Codex authentication](https://learn.chatgpt.com/docs/auth).
-- An optional default project directory; leave it empty to start new chats in the service user’s home directory.
+- **Linux or macOS**, with Python **3.11–3.14**, `venv` and `pip`.
+- **Codex CLI with `app-server` support**, installed separately and available to the same OS user as Lazyfish. Existing CLI authentication is reused; you can also sign in through the Web account panel.
+- A modern browser. Install Git if you use the clone command below, or download and extract the repository instead.
 
-Codex is not bundled or installed by Lazyfish. An existing CLI login is reused;
-a separate OpenAI API key is **not required** when your native login already works.
-API-key setups and proxies remain user configuration, not project defaults.
+Lazyfish is pre-alpha. Native features depend on your CLI version, account and provider; bounded conversation forks require Codex CLI **0.162.1+**. A working ChatGPT login does not require an additional API key. API-key usage is billed separately by the provider. See the [Codex CLI documentation](https://learn.chatgpt.com/docs/codex/cli) and [authentication guide](https://learn.chatgpt.com/docs/auth).
 
 ## Quick start
 
-From a downloaded/cloned checkout:
+### 1. Install on the machine that runs Codex
 
 ```bash
+git clone https://github.com/vitslam/codex-webui.git
+cd codex-webui
 bash scripts/install.sh
-# If prompted, run the printed source command first.
+```
+
+The installer creates an isolated Python environment and a `~/.local/bin/lazyfish` command. It initializes private configuration and a Web token, without installing Codex or starting a service. No `sudo` is needed. Keep the installation directory in place.
+
+**If the installer prints a `source` command, run it before continuing**, or open a new terminal to pick up the updated PATH.
+
+### 2. Start Lazyfish
+
+```bash
 lazyfish token
 lazyfish serve
 ```
 
-Open **http://127.0.0.1:3210** and paste the **Web token** printed by `lazyfish token`.
-This token is separate from your Codex/OpenAI credentials. The installer generates
-it automatically and never prints it. The page supports English and Chinese.
-The default bind address is `127.0.0.1` (local access only). For another device,
-see [remote access](#remote-access) below; LAN access is opt-in and still requires the Web token.
+Open **http://127.0.0.1:3210** and paste the token from `lazyfish token`. This is your **Web sign-in token**, separate from your Codex/OpenAI credentials. The service runs in the foreground; keep its terminal open and use Ctrl+C to stop it.
 
-The installer creates `~/.local/bin/lazyfish`; its Python environment stays isolated
-internally. If that directory is missing from PATH, it updates your Bash/Zsh startup
-file and prints the `source` command to run once in the current terminal. Run that
-command before using `lazyfish` (or open a new terminal). Reinstalling updates the
-managed launcher without duplicating PATH configuration; unrelated existing commands
-are not overwritten. Keep the installation directory in place.
-Workspace configuration defaults to empty, so new chats start in the service user’s home directory. Use `--workspace /path/to/project` to choose another default. Settings → Default working directory for new chats saves a server-wide override shared across browsers. Defaults never restrict directory selection or change existing chats; every chat stores its own working directory. Sandbox permissions and approvals control file access.
+### 3. Start your first conversation
 
-The installer installs Lazyfish and initializes private configuration and data only.
-Install and sign in to Codex separately using the [official CLI documentation](https://learn.chatgpt.com/docs/codex/cli).
-If `codex` is not on PATH, provide its executable path when starting Lazyfish:
+1. Check the Web installation/account panel if Codex is not ready, and finish signing in.
+2. Create a conversation and choose your project directory. With no default configured, new chats start in the service user's home directory.
+3. Choose your model and permissions, then describe the task. For example: *“Review this project and propose one small improvement before changing files.”*
+4. Follow the streamed response. Add instructions while a task runs, or select a passage and open a side discussion to explore a detail.
 
-```bash
-LAZYFISH_CODEX_BIN=/path/to/codex lazyfish serve
-```
+Set the default directory for new conversations in **Settings**. Each conversation keeps its own directory; changing the default does not move existing chats.
 
-Alternatively, set `binary` under `[codex]` in `config.toml`. Existing CLI login is reused.
+<details>
+<summary>Need a different Python or Codex executable?</summary>
 
-It needs no `sudo`, installs no system
-service and starts no background daemon. `serve` runs in the foreground; stop it
-with Ctrl+C or, from another terminal:
-
-```bash
-lazyfish status
-lazyfish stop
-```
-
-If `python3` is too old, select an existing newer interpreter:
+Choose an installed Python interpreter when running the installer:
 
 ```bash
 PYTHON=/path/to/python3.14 bash scripts/install.sh
 ```
 
-## Remote access
+If Codex is not on PATH, provide its executable when starting the service:
 
-**Trusted LAN:** in your local `~/.config/lazyfish/config.toml` (or your selected
-config), change `host` under `[server]` to `"0.0.0.0"`, then restart the service:
-
-```toml
-[server]
-host = "0.0.0.0"
+```bash
+LAZYFISH_CODEX_BIN=/path/to/codex lazyfish serve
 ```
 
-Startup prints the localhost URL and detected IPv4 URLs. Open one from the other
-device and sign in with `lazyfish token`. Common container/bridge interfaces are
-omitted from the banner. To bind only one interface, set that IPv4 instead (for
-example `192.168.1.10`). See [configuration](docs/configuration.md).
+You can also set `binary` under `[codex]` in `config.toml`. See [configuration](docs/configuration.md) for workspace defaults, custom installations and proxy settings.
 
-`0.0.0.0` listens on **all IPv4 interfaces**, not just the LAN. You may also bind a
-specific public or private IPv4. HTTP does not encrypt tokens or traffic; use a
-firewall to limit who can connect. Host checks only reject requests whose Host
-header is not an address of this process; they are **not a firewall**. You choose
-the bind address and are responsible for who can reach it. Use SSH on untrusted
-networks.
+</details>
 
-**SSH alternative:** leave the default `127.0.0.1` binding and forward its port:
+## Remote access
+
+The Web service and Codex run on the **same machine**. Your browser can connect from another device; no separate execution worker is needed.
+
+**Through SSH:** keep the default `127.0.0.1` binding. On your browsing computer, run:
 
 ```bash
 ssh -N -L 3210:127.0.0.1:3210 user@your-server
 ```
 
-Then open `http://127.0.0.1:3210` locally and sign in with the Web token.
-A workspace is an execution context, **not an OS sandbox**; use a dedicated OS
-user for files you intend to expose to an agent.
+Keep the tunnel open, visit **http://127.0.0.1:3210** locally, and use the Web token from the server. If local port 3210 is occupied, use `-L 3211:127.0.0.1:3210` and open port 3211 instead.
 
-## Features
+**On a trusted LAN:** explicitly enable access by setting `host = "0.0.0.0"` under `[server]` in `~/.config/lazyfish/config.toml`, then restart. Startup prints the available IPv4 URLs; open one on your other device and sign in with the Web token.
 
-- **Codex in your browser**: connect to an existing Codex CLI installation on the same machine, using your current login and project directories. No desktop client or separate execution server is needed.
-- **Conversations and history search**: create, rename, pin and reorder conversations. Search titles and message content, and return to your reading position after switching chats or refreshing.
-- **Message editing and branches**: edit a sent message or branch from an earlier point to explore another approach. Branching keeps the source conversation for reference. Editing and branching do not roll back workspace files.
-- **Parallel tasks and execution controls**: run tasks across different conversations, with concurrency adjustable from 1 to 16 in Diagnostics. Refreshing, switching chats or closing a tab does not stop a task. Send supplementary instructions while it runs, or stop it and retain the output already received.
-- **Readable progress and results**: stream replies with Markdown, tables, copyable code and collapsible execution details. Inspect commands, web results, file changes and diffs; preview generated images and download files linked in replies. Absolute local Markdown paths render as named links: click to copy the server path or open it in VS Code on your browser device. Paths with spaces, parentheses and line numbers are supported; remote paths need a matching remote workspace. Image outputs use compact thumbnails with click-to-enlarge previews. Images already shown inline are not repeated below the reply; text links keep their image thumbnails visible.
-- **Models, reasoning and permissions**: choose a model, reasoning effort, fast/standard speed and permission mode from the composer. Use Plan mode to review an approach before implementing it, and answer clarification or approval requests directly in the page.
-- **Images, skills and connected tools**: upload, paste or drag images into a message. Select skills with `@`, `$` or the add menu; create and edit project or personal skills. Inspect MCP tools and connection status, and authorize services that support OAuth.
-- **Accounts, usage and context**: sign in with a device code, browser or API key. View available quota, reset times and usage history, monitor context usage and compact it manually when needed. Availability depends on your CLI version, account and provider.
-- **Themes, languages and shortcuts**: switch between English and Chinese, choose from eight palettes, and use light, dark or system appearance. Customize send, newline and conversation shortcuts. Hold your shortcut prefix to see switching hints, including a compact conversation picker when the sidebar is hidden.
+`0.0.0.0` listens on all IPv4 interfaces, and HTTP does not encrypt traffic or tokens. Restrict access with a firewall; use SSH on untrusted networks. See [deployment](docs/deployment.md) for the supported setup and [configuration](docs/configuration.md) to bind a specific IPv4 address.
 
-See the [feature guide](docs/features.md) for detailed behavior and limits, and [configuration](docs/configuration.md) for installation and runtime options.
+## Everyday commands
 
-## Commands
-
-| Command | Purpose |
+| Command | Use it to |
 | --- | --- |
-| `lazyfish init [--workspace PATH]` | Initialize; preserve existing configuration and token |
-| `lazyfish doctor` | Check executable, stored login, workspace and app-server command |
-| `lazyfish doctor --probe --json` | Also initialize and close an owned app-server; no inference |
-| `lazyfish serve` | Start the chat service in the foreground (Web token required) |
-| `lazyfish serve --no-token` | Explicitly disable Web sign-in for this run; see warning below |
-| `lazyfish status` | Query the authenticated instance for this data directory |
-| `lazyfish stop` | Stop that instance gracefully; never signal a PID from a stale file |
-| `lazyfish token [--rotate]` | Reveal the Web sign-in token; `--rotate` replaces it while the service is stopped |
+| `lazyfish serve` | Start the foreground service |
+| `lazyfish token` | Show the Web sign-in token |
+| `lazyfish status` | Check this installation's running instance |
+| `lazyfish stop` | Stop it gracefully from another terminal |
+| `lazyfish doctor` | Check the local CLI installation and saved login |
+| `lazyfish doctor --probe` | Also check app-server initialization, without a model request |
+| `lazyfish token --rotate` | Replace the Web token while the service is stopped |
 
-**Warning:** `serve --no-token` lets anyone who can reach the URL use this Codex
-session, including its files and native account. It applies only to that run;
-normal `serve` still requires the token. Host checks are not access control and
-HTTP remains unencrypted. See [configuration](docs/configuration.md#optional-web-sign-in-bypass).
+These commands find the default or remembered installation automatically. Local checks do not verify network access, model availability or billing. For custom configuration and the optional per-run sign-in bypass, see [configuration](docs/configuration.md).
 
-Ordinary commands find the default configuration automatically. If no default
-exists, the first successfully initialized/used custom configuration is remembered
-for later commands, including from another directory. No repeated `--config` is
-needed. Use `lazyfish --config /path/to/config.toml COMMAND` or `LAZYFISH_CONFIG`
-only to override that selection, such as for another instance.
-Configuration changes require restarting `serve`. After
-installing the CLI or changing its login, use **Installation → Check again** or the
-Diagnostics header refresh to rerun local checks without restarting. Web account
-login/logout automatically refreshes these checks. Refreshing native account,
-usage, skills or connections panels queries an owned, short-lived CLI process;
-these metadata reads do not create threads or start inference.
+## Your data and access
 
-`doctor` checks local installation and the CLI's saved login status. Even a passing
-`--probe` only verifies protocol initialization. It does **not** test network access,
-model access, billing, or guarantee every future chat API is compatible.
+By default, configuration lives in `~/.config/lazyfish/`, and conversations, task records, attachments and logs live in `~/.local/share/lazyfish/`. Native Codex manages its own credentials. Lazyfish ships no analytics or CDN resources; model requests and connected tools still use the services configured in Codex.
 
-## Files and privacy
+Web sign-in is required by default, with an HttpOnly browser session cookie. Treat the Web token as access to your Codex session and workspace. A working directory is an execution context, **not an OS sandbox**; native sandbox permissions and approvals govern file access. This is a single-machine, personal service, not a multi-user isolation boundary.
 
-| Location (XDG defaults) | Contents |
-| --- | --- |
-| `~/.config/lazyfish/config.toml` | Workspace, data directory, executable, port and log level |
-| `~/.config/lazyfish/secrets.env` | Generated Web token and optional private environment settings |
-| `~/.local/share/lazyfish/` | SQLite conversations/tasks/events, logs, runtime ownership and uploaded image bytes, attachment materializations and context snapshots |
-| Existing Codex home / OS credential store | Native CLI authentication; Lazyfish does not copy or edit it |
-
-Application directories are private (`700`) and config/secrets/data files are
-private (`600`). Configuration and secrets with unsafe permissions are rejected. Filled-in
-environment files, databases, logs and runtime data are excluded from Git.
-No analytics, CDN resources, account credentials or production deployment hooks
-are included. By default, the browser stores authentication in an HttpOnly session cookie,
-not local storage. Only language, shortcut/sidebar preferences, bounded message
-IDs/scroll geometry, appearance and expanded-tool IDs are saved in browser local storage;
-message bodies and tokens are not. Sanitized quota/activity snapshots are additionally cached under a native account scope. Restarting the service invalidates browser sessions.
-
-See [configuration](docs/configuration.md), [deployment](docs/deployment.md),
-[troubleshooting](docs/troubleshooting.md) and [security](SECURITY.md).
+For backups, upgrades and access details, read [deployment](docs/deployment.md), [configuration](docs/configuration.md) and the [security policy](SECURITY.md).
 
 ## Development
 
@@ -203,12 +172,22 @@ See [configuration](docs/configuration.md), [deployment](docs/deployment.md),
 python3.11 -m venv .venv
 .venv/bin/python -m pip install -e .
 .venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m pip install build
-.venv/bin/python -m build
 ```
 
-Tests use isolated directories and fake Codex executables; no real inference or
-credentials are required. CI tests Python 3.11–3.14, runs isolated Chromium UI checks and builds/installs a wheel.
-See the optional local browser-test commands in [CONTRIBUTING.md](CONTRIBUTING.md).
-See [CONTRIBUTING.md](CONTRIBUTING.md). Project code is MIT licensed; Codex and
-third-party services keep their own licenses and terms.
+Tests use isolated directories and fake Codex executables, with no real inference or credentials. See [CONTRIBUTING.md](CONTRIBUTING.md) for packaging and optional browser checks.
+
+## Explore further
+
+| Guide | What's inside |
+| --- | --- |
+| [Features](docs/features.md) | Side discussions, branches, files, skills and native integration limits |
+| [Configuration](docs/configuration.md) | Paths, environment variables, proxies and execution settings |
+| [Deployment](docs/deployment.md) | Remote access, upgrades, backups and offline installation |
+| [Troubleshooting](docs/troubleshooting.md) | Installation, authentication and runtime problems |
+| [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md) | How it works, what's planned and what's changed |
+
+## License and attribution
+
+Lazyfish is [MIT licensed](LICENSE). Contributions and focused bug reports are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+Lazyfish is an independent third-party project, not affiliated with, sponsored by or endorsed by OpenAI. OpenAI, Codex and ChatGPT are trademarks of their respective owners. Codex and connected services retain their own licenses and terms.

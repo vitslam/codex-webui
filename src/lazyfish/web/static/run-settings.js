@@ -4,6 +4,7 @@ window.LazyfishRunSettings = function({node,icon,t,getStatus,getConversation,onM
   const $=query||((s)=>document.querySelector(s)), models=new Map(), fallback=["low","medium","high","xhigh","max","ultra"];
   const validEfforts=new Set(["","none","minimal",...fallback]), slider=$("#effort-slider"), track=$(".effort-slider");
   let defaults={},fast=false,drag=null,signature="";
+  const initialModels=new Map();
   const current=()=>$("#model").value;
   function model() {const id=current() || getStatus()?.execution.model || defaults.model;return id ? models.get(id) : [...models.values()].find(m=>m.is_default);}
   function display(value) {return value?.name || String(value?.id || "").replace(/^([^-]+-[^-]+)-/,"$1 ");}
@@ -14,7 +15,7 @@ window.LazyfishRunSettings = function({node,icon,t,getStatus,getConversation,onM
   function save() {try{storageKey&&localStorage.setItem(storageKey,JSON.stringify({model:current(),effort:$("#effort").value,fast}));}catch{ /* optional browser preferences */ }onChange({model:current()||null,effort:$('#effort').value||null,fast_mode:fast});if(notify)window.dispatchEvent(new Event('lazyfish-run-settings'));}
   function changed() {onModel();save();}
   function resetPicker(focus=false) {$("#model-picker").hidden=true;$("#dashboard-controls").hidden=false;$("#model-toggle").setAttribute("aria-expanded","false");if(focus)$("#model-toggle").focus();}
-  function choose(value) {finishDrag(true);$("#model").value=value;if(value&&!models.has(value))models.set(value,{id:value});normalize();resetPicker(true);changed();}
+  function choose(value) {const key=getConversation()?.id||'new';if(!initialModels.has(key))initialModels.set(key,current()||getStatus()?.execution.model||defaults.model||'');finishDrag(true);$("#model").value=value;if(value&&!models.has(value))models.set(value,{id:value});normalize();resetPicker(true);changed();}
   function choices() {
     const configured=getStatus()?.execution.model;
     for(const value of [current(),configured,...(getConversation()?.jobs || []).map(j=>j.model)])if(value&&!models.has(value))models.set(value,{id:value});
@@ -37,7 +38,29 @@ window.LazyfishRunSettings = function({node,icon,t,getStatus,getConversation,onM
     const fill=position ?? (drag&&sameContext(drag)?drag.position:index);
     track.style.setProperty("--effort-fill",`${supported.length>1?fill/(supported.length-1)*100:0}%`);
     const ticks=$("#effort-ticks");if(ticks.children.length!==supported.length){ticks.replaceChildren(...supported.map(()=>node("i")));}
-    [...ticks.children].forEach((tick,i)=>tick.classList.toggle("passed",i<index));choices();
+    [...ticks.children].forEach((tick,i)=>tick.classList.toggle("passed",i<index));choices();renderModelChanges();
+  }
+  function renderModelChanges() {
+    const chat=getConversation(),root=document.querySelector(query?'#side-transcript':'#transcript');
+    if(!root)return;
+    for(const notice of root.querySelectorAll('.model-change-notice'))notice.remove();
+    const selected=current()||getStatus()?.execution.model||defaults.model||[...models.values()].find(value=>value.is_default)?.id;
+    const key=chat?.id||'new';
+    if(!initialModels.has(key)&&selected){initialModels.set(key,selected);if(initialModels.size>100)initialModels.delete(initialModels.keys().next().value);}
+    const name=id=>id?display(models.get(id)||{id}):t('nativeDefaultShort');
+    function notice(from,to,before) {
+      if(from==null||to==null||from===to)return;
+      const row=node('div','model-change-notice');row.setAttribute('role','status');
+      row.append(icon('bolt'),node('span','',t('model.changed',{from:name(from),to:name(to)})));
+      root.insertBefore(row,before||null);
+    }
+    let previous;
+    for(const job of chat?.jobs||[]){
+      const article=[...root.children].find(el=>el.dataset.job===job.id);
+      if(article)notice(previous,job.model,article);
+      previous=job.model;
+    }
+    notice(previous||initialModels.get(key),selected,root.querySelector('#newer'));
   }
   function openPicker() {finishDrag(true);choices();$("#custom-model").value=current();$("#dashboard-controls").hidden=true;$("#model-picker").hidden=false;$("#model-toggle").setAttribute("aria-expanded","true");($("#model-choices [aria-selected='true']") || $("#model-choices button")).focus();}
   $("#model-toggle").addEventListener("click",openPicker);
