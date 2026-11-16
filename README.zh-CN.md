@@ -18,6 +18,10 @@
 
 Lazyfish 把你已有的 **Codex CLI** 变成个人网页工作台。把对话记录保存在自己掌控的机器上，在主任务旁随手展开讨论，自主决定何时压缩长对话。Codex 在你的 Linux 或 macOS 主机上工作，电脑、手机都能打开同一个工作台。
 
+![Lazyfish 主对话、执行过程与独立侧边聊天](docs/assets/screenshot-side-chat.png)
+
+*主对话与独立侧聊并排展示。*
+
 如果你正在选择 Codex 客户端，Lazyfish 把**自托管、记录自主保管和浏览器工作流**放在首位。访问设备无需安装 CLI 或桌面客户端；Lazyfish 本身**没有第三方 Python 运行时依赖**。
 
 ## 为什么选择 Lazyfish

@@ -50,7 +50,7 @@ window.LazyfishQuoteUI=function({node,icon,t}){
       let closeTimer=0;
       const cancelClose=()=>clearTimeout(closeTimer);
       function leave(){cancelClose();closeTimer=setTimeout(()=>{if(!details.isConnected||summary.matches(':hover')||list.matches(':hover')||details.contains(document.activeElement))return;if(list.matches(':popover-open'))list.hidePopover();details.open=false;expanded.delete(key);},180);}
-      summary.addEventListener('pointerenter',event=>{if(event.pointerType!=='mouse'||!matchMedia('(hover:hover)').matches||editor?.open)return;cancelClose();details.open=true;});
+      summary.addEventListener('pointerenter',event=>{if(event.pointerType!=='mouse'||editor?.open)return;cancelClose();details.open=true;});
       summary.addEventListener('pointerleave',leave);list.addEventListener('pointerenter',cancelClose);list.addEventListener('pointerleave',leave);
       details.addEventListener('focusin',cancelClose);details.addEventListener('focusout',leave);
       list.addEventListener('toggle',event=>{if(event.newState==='closed'&&details.isConnected){details.open=false;expanded.delete(key);}});

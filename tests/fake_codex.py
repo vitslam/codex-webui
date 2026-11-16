@@ -151,6 +151,18 @@ def main():
                 job = {"id":uuid.uuid4().hex,"text":text,"index":0,"prompt":prompt}
                 history["prompts"].append(prompt); history["turns"].append(job["id"]); path.write_text(json.dumps(history))
                 event("turn/started",{"turn":{"id":job["id"],"status":"inProgress"}})
+                if prompt=='[ordered-commentary]':
+                    send({'id':message['id'],'result':{'turn':{'id':job['id'],'status':'inProgress'}}})
+                    for number in (1,2):
+                        item_id='commentary-'+str(number)
+                        note='Checking step '+str(number)+'.'
+                        event('item/started',{'turnId':job['id'],'item':{'id':item_id,'type':'agentMessage','phase':'commentary','text':''}})
+                        event('item/agentMessage/delta',{'turnId':job['id'],'itemId':item_id,'delta':note})
+                        event('item/completed',{'turnId':job['id'],'item':{'id':item_id,'type':'agentMessage','text':note}})
+                        event('item/completed',{'turnId':job['id'],'item':{'id':'command-'+str(number),'type':'commandExecution','command':'echo step-'+str(number),'aggregatedOutput':'ok','exitCode':0}})
+                    job['text']='Finished checking.'
+                    event('item/started',{'turnId':job['id'],'item':{'id':'reply','type':'agentMessage','phase':'final_answer','text':''}})
+                    finish();continue
                 event("item/started",{"turnId":job["id"],"item":{"id":"reply","type":"plan" if prompt=='[plan-only]' else "agentMessage","text":""}})
                 if prompt=='[user-message-echo]':
                     echo={'type':'userMessage','id':'echo-live','content':[{'type':'text','text':prompt}]}

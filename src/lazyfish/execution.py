@@ -285,6 +285,8 @@ class Worker:
         self.interrupt_sent = False
         self.replied = set()
         self.sizes = {}
+        # Streaming deltas and completion snapshots may omit the message phase.
+        self.message_kinds = {}
         self.outbound=queue.Queue(maxsize=100);self.pending_steers={};self.pending_questions={};self.usage_baseline=None
         self.tracker=None;self.outputs=None;self.image_snapshots={}
 
@@ -338,7 +340,13 @@ class Worker:
         if kind in ('agentMessage','plan'):
             text=item.get('text','')
             if complete:text=self.outputs.rewrite(text)
-            self.item(identifier,'commentary' if item.get('phase')=='commentary' or kind=='plan' and not complete else 'assistant',text,state)
+            if kind=='agentMessage':
+                phase=item.get('phase')
+                if phase in ('commentary','final_answer'):
+                    self.message_kinds[identifier]='commentary' if phase=='commentary' else 'assistant'
+                message_kind=self.message_kinds.get(identifier,'assistant')
+            else:message_kind='commentary' if item.get('phase')=='commentary' or not complete else 'assistant'
+            self.item(identifier,message_kind,text,state)
             payload['text']=text
         elif kind=='reasoning':self.item(identifier,'reasoning',payload.get('text',''),state)
         elif kind=='commandExecution':self.item(identifier,'command',str(item.get('command',''))[:4000]+'\n'+str(item.get('aggregatedOutput',''))[:24000],state)
@@ -430,7 +438,7 @@ class Worker:
         elif method in {"item/started","item/completed"}:
             self.native_item(params.get("item",{}),method=="item/completed")
         elif method == "item/agentMessage/delta":
-            self.item(params.get("itemId"),"assistant",params.get("delta"),delta=True)
+            self.item(params.get("itemId"),self.message_kinds.get(params.get("itemId"),"assistant"),params.get("delta"),delta=True)
         elif method == 'item/plan/delta':
             self.item(params.get('itemId'),'commentary',params.get('delta'),delta=True)
         elif method == 'item/commandExecution/outputDelta':

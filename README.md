@@ -18,6 +18,10 @@
 
 Lazyfish turns your existing **Codex CLI** into a personal web workspace. Keep your conversation archive on a machine you control, explore ideas beside the main task, and decide when to compact a long-running chat. Open the same workspace from your laptop or phone while Codex works on your Linux or macOS host.
 
+![Lazyfish main conversation, execution timeline and independent side chat](docs/assets/screenshot-side-chat.png)
+
+*Main conversation and independent side chat, side by side.*
+
 For developers choosing a Codex client, Lazyfish puts **self-hosting, control of your records and a browser-based workflow** first. The browsing device needs no CLI or desktop installation; Lazyfish itself has **zero third-party Python runtime dependencies**.
 
 ## Why Lazyfish

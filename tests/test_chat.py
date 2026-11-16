@@ -64,6 +64,21 @@ class ChatTests(ServiceCase):
         self.assertEqual(self.methods().count("thread/resume"),1)
         self.assertEqual(self.methods().count("turn/start"),2)
 
+    def test_commentary_deltas_keep_phase_and_chronological_order(self):
+        conversation=self.create()
+        job=self.finished(self.send(conversation,'[ordered-commentary]')['id'])
+        expected=[('commentary-1','commentary'),('command-1','command'),('commentary-2','commentary'),('command-2','command'),('reply','assistant')]
+        self.assertEqual([(item['id'],item['kind']) for item in job['items']],expected)
+        self.assertEqual(job['items'][-1]['text'],'Finished checking.')
+        saved=self.call('/api/conversations/'+conversation)['jobs'][0]
+        self.assertEqual([(item['id'],item['kind']) for item in saved['items']],expected)
+        code,_,data=self.http('/api/jobs/'+job['id']+'/events',headers={'Authorization':'Bearer '+self.settings.token})
+        self.assertEqual(code,200)
+        events=[json.loads(line[6:]) for line in data.decode().splitlines() if line.startswith('data: ')]
+        notes=[event for event in events if event.get('id','').startswith('commentary-') and event.get('type') in ('item','delta')]
+        self.assertTrue(any(event['type']=='delta' for event in notes))
+        self.assertTrue(all(event['kind']=='commentary' for event in notes))
+
     def test_duplicate_send_never_starts_twice_and_busy_is_rejected(self):
         conversation,key = self.create(),uuid.uuid4().hex
         job = self.send(conversation,"[slow]",key)
