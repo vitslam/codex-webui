@@ -1322,3 +1322,15 @@ button.activity-day:hover, button.activity-day:focus-visible, button.activity-da
 .quote-summary:is(:hover,:focus-within) .quote-clear, .quote-draft[open] .quote-clear { visibility:visible; }
 .quote-clear:hover { opacity:.8; }
 @media(hover:none) { .quote-clear { visibility:visible; } }
+
+/* Align execution activity with the answer and identify each tool by its icon. */
+.execution-process > summary { width:100%; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.elapsed { padding-bottom:8px; border-bottom:1px solid var(--border); }
+.execution-process > .execution-timeline { padding-left:0; border-left:0; }
+:is(.command-group,.step-group) > .tool-step { margin-left:0; padding-left:0; border-left:0; }
+:is(.tool-step,.command-group,.step-group) > summary::before { display:none; }
+:is(.tool-step,.command-group,.step-group) > summary > .icon { width:15px; height:15px; margin-right:8px; vertical-align:-3px; }
+.reasoning-body,.step-image-body,.agent-step-body,.web-step-body { padding-left:0; }
+
+/* Mouse-event fallback for stale native hover state in WebKit. */
+.message.user.mouse-hover .user-actions { opacity:1; pointer-events:auto; }

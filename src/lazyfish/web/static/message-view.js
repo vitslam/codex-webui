@@ -54,6 +54,21 @@ function createMessageView({document, node, icon, t, i18n, markdown, copyButton,
     if (transcript) new document.defaultView.ResizeObserver(refreshUserMessages).observe(transcript);
     document.defaultView.addEventListener('resize', refreshUserMessages);
     document.fonts?.ready.then(refreshUserMessages);
+    // WebKit can leave CSS hover stale; real mouse events keep actions reachable.
+    let hoveredActions=null;
+    function hoverActions(event){
+      if(event.pointerType!=='mouse')return;
+      const card=event.target.closest('.message.user');
+      if(hoveredActions===card)return;
+      if(hoveredActions)hoveredActions.classList.remove('mouse-hover');
+      hoveredActions=card;if(card)card.classList.add('mouse-hover');
+    }
+    document.addEventListener('pointerover',hoverActions);
+    document.addEventListener('pointermove',hoverActions);
+    function clearHover(){if(hoveredActions)hoveredActions.classList.remove('mouse-hover');hoveredActions=null;}
+    document.addEventListener('pointerout',event=>{if(event.pointerType==='mouse'&&!event.relatedTarget)clearHover();});
+    document.addEventListener('pointerdown',event=>{if(event.pointerType==='touch')clearHover();});
+    document.defaultView.addEventListener('blur',clearHover);
     document.addEventListener('click', event => {
       const card = event.target.closest('.message.user');
       if (selectedActions && selectedActions !== card) { selectedActions.classList.remove('actions-open'); selectedActions = null; }

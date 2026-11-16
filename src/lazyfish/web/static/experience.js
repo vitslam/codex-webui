@@ -5,7 +5,7 @@ window.LazyfishExperience=function({node,icon,t,api,markdown,copyButton,imageNod
   const $=s=>document.querySelector(s),legacy={command:'command_execution',file:'file_change',reasoning:'reasoning',skill:'skill_invocation',compact:'context_compaction',assistant:'agent_message',commentary:'agent_message'};
   const sourceNode=(tag,text,cls)=>node(tag,cls,text),finished=job=>!['queued','running','cancelling'].includes(job.status);
   const {artifactList}=window.LazyfishUI.artifacts({node:sourceNode,imageNode,t});
-  const steps=window.LazyfishUI.steps({document,node:sourceNode,t,api,markdown,copyButton,imageNode,artifactList,jobFinished:finished,getFollowBottom:()=>false,showReasoning});
+  const steps=window.LazyfishUI.steps({document,node:sourceNode,icon,t,api,markdown,copyButton,imageNode,artifactList,jobFinished:finished,getFollowBottom:()=>false,showReasoning});
   const changes=window.LazyfishUI.changes({document,node:sourceNode,icon,t,api,executionDetails:steps.executionDetails,jobFinished:finished,legacyNotices:window.LazyfishLegacyChangeNotices});
   const users=window.LazyfishUI.messageView({document,node:sourceNode,icon,t,i18n:{get locale(){return document.documentElement.lang;},number:v=>v.toLocaleString(document.documentElement.lang)},markdown,copyButton,imageNode,artifactList,executionDetails:steps.executionDetails,jobFinished:finished,
     onFork:message=>onFork(getConversation().jobs.find(j=>j.id===message.id)),onEdit:(message,text,key)=>onEdit(message.id,text,key),canEdit:id=>!getBusy()&&getConversation()?.jobs.some(j=>j.id===id),newRequestId:()=>LazyfishRequestId(),onEditStart,onUserContentToggle});

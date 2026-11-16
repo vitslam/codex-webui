@@ -4,7 +4,7 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = create;
   else (root.LazyfishUI || (root.LazyfishUI = {})).steps = create;
 })(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global,
-function createSteps({document, node, t, api, markdown, copyButton, imageNode, artifactList = () => null, jobFinished, getFollowBottom,
+function createSteps({document, node, icon = null, t, api, markdown, copyButton, imageNode, artifactList = () => null, jobFinished, getFollowBottom,
   showReasoning = () => false,
   setTimeout = (typeof globalThis !== 'undefined' ? globalThis : global).setTimeout,
   clearTimeout = (typeof globalThis !== 'undefined' ? globalThis : global).clearTimeout}) {
@@ -135,6 +135,11 @@ function createSteps({document, node, t, api, markdown, copyButton, imageNode, a
     }
     return [label, state, name].filter(Boolean).join(' · ');
   }
+  function stepIcon(summary, type) {
+    if(!icon)return;
+    const name={command_execution:'command',file_change:'edit',web_search:'search',image_view:'image',image_generation:'image',reasoning:'pulse',todo_list:'check',plan:'check',skill_invocation:'bolt',mcp_tool_call:'plug',dynamic_tool_call:'plug',sub_agent_activity:'fork',collab_tool_call:'fork',collab_agent_tool_call:'fork',context_compaction:'archive',sleep:'gauge'}[type]||'settings';
+    summary.prepend(icon(name));
+  }
   function toolStep(message, item) {
     const key = message.id + ':' + item.id;
     const details = executionDetails(key + (item.type === 'reasoning' ? ':' + (item.eventStatus === 'running' ? 'active' : 'finished') : ''), toolLabel(item), 'tool-step',
@@ -142,6 +147,7 @@ function createSteps({document, node, t, api, markdown, copyButton, imageNode, a
     function updateSummary() {
       const summary = details.children[0];
       summary.replaceChildren(); summary.textContent = toolLabel(item);
+      stepIcon(summary,item.type);
       if (item.type === 'command_execution' && typeof item.command === 'string') {
         summary.append(node('span', ' · ' + item.command.replace(/\s+/g, ' ').trim()));
         summary.className = 'command-summary';
@@ -409,6 +415,7 @@ function createSteps({document, node, t, api, markdown, copyButton, imageNode, a
         // The first step's ID stays stable as more adjacent operations arrive.
         const group = executionDetails(message.id + ':' + className + ':' + item.id, label, className,
           item.type === 'reasoning' && running);
+        stepIcon(group.children[0],item.type);
         for (const step of batch) group.append(tool(step));
         timeline.append(group);
         index = end - 1;
